@@ -1,0 +1,41 @@
+<?xml version="1.0"?>
+<extension key="com.joineryhq.stepw" type="module">
+  <file>stepw</file>
+  <name>com.joineryhq.stepw</name>
+  <description>FIXME</description>
+  <license>GPL-3.0</license>
+  <authors>
+    <author>
+      <name>Allen Shaw</name>
+      <email>allen@JoineryHQ.com</email>
+      <role>Maintainer</role>
+    </author>
+  </authors>
+  <urls>
+    <url desc="Main Extension Page">https://FIXME</url>
+    <url desc="Documentation">https://FIXME</url>
+    <url desc="Support">https://FIXME</url>
+    <url desc="Licensing">https://www.gnu.org/licenses/gpl-3.0.html</url>
+  </urls>
+  <releaseDate>2025-01-19</releaseDate>
+  <version>1.0.0</version>
+  <develStage>alpha</develStage>
+  <compatibility>
+    <ver>5.81</ver>
+  </compatibility>
+  <comments>This is a new, undeveloped module</comments>
+  <classloader>
+    <psr0 prefix="CRM_" path="."/>
+    <psr4 prefix="Civi\" path="Civi"/>
+  </classloader>
+  <civix>
+    <namespace>CRM/Stepw</namespace>
+    <format>24.09.1</format>
+    <angularModule>crmStepw</angularModule>
+  </civix>
+  <mixins>
+    <mixin>mgd-php@1.0.0</mixin>
+    <mixin>setting-php@1.0.0</mixin>
+    <mixin>smarty@1.0.3</mixin>
+  </mixins>
+</extension>
