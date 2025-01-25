@@ -11,7 +11,8 @@ class CRM_Stepw_APIWrapper {
     $requestSignature = $event->getApiRequestSig();
 
     // fixme: only act if we're sure we're in a Stepwise workflow (examine $_GET, probably?)
-    // fixme: if we're going to pass state via $_GET, we MUST have some way (a hash maybe) to ensure query params like 'sw' as 'ss' are really ours (not coliding with some other extension)
+    // fixme: if we're going to pass state via $_GET, we MUST have some way (a hash maybe) 
+    // to ensure query params like 'sw' as 'ss' are really ours (not coliding with some other extension)
     
     if ($requestSignature == "4.afform.get") {
       $responseValues = $event->getResponse();
