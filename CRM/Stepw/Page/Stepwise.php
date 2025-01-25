@@ -22,7 +22,12 @@ class CRM_Stepw_Page_Stepwise extends CRM_Core_Page {
       die('fixme: step not found in this workflow; should return 404');
     }
     
-    $redirect = $step['url'] . "&sw={$workflowId}&ss={$stepId}";
+    $params = [
+      'sw' => $workflowId,
+      'ss' => $stepId,
+    ];
+    $redirect = CRM_Stepw_Utils::alterUrlParams($step['url'], $params);
+    
     CRM_Utils_System::redirect($redirect);
     
     
