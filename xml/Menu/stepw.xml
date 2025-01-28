@@ -4,6 +4,6 @@
     <path>civicrm/stepwise</path>
     <page_callback>CRM_Stepw_Page_Stepwise</page_callback>
     <title>Stepwise</title>
-    <access_arguments>access CiviCRM</access_arguments>
+    <access_callback>1</access_callback>
   </item>
 </menu>
