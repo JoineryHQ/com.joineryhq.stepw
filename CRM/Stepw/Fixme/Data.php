@@ -8,7 +8,7 @@ class CRM_Stepw_Fixme_Data {
       '1' => [
         '1' =>  [
           'type' => 'afform',
-          'url' => 'http://plana.l/?page_id=5&civiwp=CiviCRM&q=civicrm%2Fquick-add%2FIndividual',
+          'url' => 'http://plana.l/civicrm/example-form-1/',
         ],
         '2' => [
           'type' => 'post',
