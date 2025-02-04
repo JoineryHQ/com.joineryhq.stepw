@@ -64,7 +64,7 @@ class CRM_Stepw_APIWrapper {
       $workflow = $configData[$workflowId];
       $nextStepId = $stepId + 1;
       // fixme: refactor this into a util function, once we're decided on using query params to track state.
-      $redirect = CRM_Utils_System::url('/civicrm/stepwise', ['sw' => $workflowId, 'ss' => $nextStepId], TRUE, NULL, FALSE);
+      $redirect = CRM_Utils_System::url('civicrm/stepwise', ['sw' => $workflowId, 'ss' => $nextStepId], TRUE, NULL, FALSE);
       
       $responseValues = $event->getResponse();
       foreach ($responseValues as &$responseValue) {
