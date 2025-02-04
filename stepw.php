@@ -17,7 +17,7 @@ function stepw_foo(phpQueryObject $doc, $path) {
   $button = $doc->find('button[ng-click="afform.submit()"]');
   // FIXME: get correct button name from stepwise config.
   $button->html('foobar');
-  
+
   if(CRM_Stepw_Utils::getRefererQueryParams('stepwisereload')) {
     // Only on stepwise 'reload submission' (i.e. "back-button") afforms, append a submit button.
     // FIXME: only do this if referer params indicate we're in a stepwise workflow (e.g.., not for core 'submission view' forms)
@@ -49,10 +49,10 @@ function stepw_civicrm_alterAngular(\Civi\Angular\Manager $angular) {
 
 function stepw_afform_submit(\Civi\Afform\Event\AfformSubmitEvent $event) {
   // FIXME: this is POC code that allows us to re-save afform submissions and update
-  // the related entity. This code causes an existing activity (the one linked to the submission) 
-  // to actually be overwritten. We need to improve this so it handles entities 
+  // the related entity. This code causes an existing activity (the one linked to the submission)
+  // to actually be overwritten. We need to improve this so it handles entities
   // other than activities.
-  // FIXME: this should only be done on 'submission view' forms in the midst of 
+  // FIXME: this should only be done on 'submission view' forms in the midst of
   // a stepwise workflow (i.e., "back-button" handling for form resubmission)
   if ($event->getEntityType() == 'Activity') {
     $records = $event->getRecords();
@@ -91,21 +91,31 @@ function stepw_civicrm_config(&$config): void {
 }
 
 function stepw_civicrm_permission_check($permission, &$granted) {
-  // FIXME: this permission is required for loading afform submission data (e.g.
+  // FIXME: Additional permissions are required for loading afform submission data (e.g.
   // stepwise form re-submission during 'back-button' handling), but of course
   // we should only grant it momentarily and only after confirming the (typically anonymous)
-  // user is actual allowed to edit this submission as part of his current 
-  // workflow instance.  
-  if ($permission == 'administer afform') {
-    $granted = true;
+  // user is actual allowed to edit this submission as part of his current
+  // workflow instance.
+  switch($permission) {
+    // If missing, anon will probably generate an IDS check failure.
+    case 'skip IDS check':
+    // If missing, anon will get API4 access denied on AfformSubmission::get,
+    // and user-visible error on afform load
+    case 'administer afform':
+    // if missing, afform prefill will be empty (depending on various permissions/ACLs)
+    case 'view all contacts':
+      \Civi::log()->debug(__FUNCTION__, ['8oom05JEP34HAJOJ0geXoVMvLLgRn1Sq: granting:'. $permission]);
+      
+      $q = CRM_Utils_Request::retrieve('q', 'String', '');
+      // Only take action on afform.submission.prefill.
+      // fixme: we must also verify that the submission id (available in $param['args']['sid'])
+      // is valid for the current user's workflow instance.
+      if ($q == "civicrm/ajax/api4/Afform/prefill") {
+        $params = json_decode($r['params'], true);
+        $granted = true;
+      }
+      break;
   }
-  // FIXME: the 'administer afform' permission is STILL not enough for anonymous 
-  // users (which our workflow users will be) to view prefilled afform submission
-  // data (e.g., in a "back-button" form). But if we grant all permissions
-  // with unconditional `$granted = true;`, then they do. So we need to figure
-  // out which permission is needed and grant that (again, momentarily and only
-  // with proper workflow-instance authentication.
-  $granted = true;
 }
 
 /**
