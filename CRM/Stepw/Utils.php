@@ -16,4 +16,17 @@ class CRM_Stepw_Utils {
     $u->addQuery($params);
     return (string)$u;
   }
+  
+  public static function getRefererQueryParams($name = '') {
+    static $ret = [];
+    if (empty($ret)) {
+      parse_str(parse_url($_SERVER['HTTP_REFERER'], PHP_URL_QUERY), $ret);
+    }
+    if (!empty($name)) {
+      return $ret[$name];
+    }
+    else {
+      return $ret;
+    }
+  }
 }
