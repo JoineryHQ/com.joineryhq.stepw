@@ -6,4 +6,10 @@
     <title>Stepwise</title>
     <access_callback>1</access_callback>
   </item>
+  <item>
+    <path>civicrm/stepwise/start</path>
+    <page_callback>CRM_Stepw_Page_Start</page_callback>
+    <title>Start</title>
+    <access_callback>1</access_callback>
+  </item>
 </menu>

@@ -18,7 +18,7 @@ function stepw_foo(phpQueryObject $doc, $path) {
   // FIXME: get correct button name from stepwise config.
   $button->html('foobar');
 
-  if(CRM_Stepw_Utils::getRefererQueryParams('stepwisereload')) {
+  if(CRM_Stepw_Utils_Userparams::getRefererQueryParams('stepwisereload')) {
     // Only on stepwise 'reload submission' (i.e. "back-button") afforms, append a submit button.
     // FIXME: only do this if referer params indicate we're in a stepwise workflow (e.g.., not for core 'submission view' forms)
     $doc->append('<button class="af-button btn btn-primary" crm-icon="fa-check" ng-click="afform.submit()">Submit</button>');

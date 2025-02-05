@@ -5,15 +5,14 @@ class CRM_Stepw_Page_Stepwise extends CRM_Core_Page {
 
   public function run() {
 
-    $data = CRM_Stepw_Utils::getWorkflowConfig();
     $workflowId = CRM_Utils_Request::retrieve('sw', 'Int');
     $stepId = CRM_Utils_Request::retrieve('ss', 'Int');
+    $workflow = CRM_Stepw_Utils_WorkflowData::getWorkflowConfigById($workflowId);
     // fixme: if no stepid, we should start at step 1, but also need a mechanism to ensure previous steps have been completed -- i.e., no bookmarking 'step 2' and starting there.
     if (empty($stepId)) {
       $stepId = 1;
     }
       
-    $workflow = $data[$workflowId] ?? NULL;
     $step = $workflow[$stepId] ?? NULL;
     if (empty($workflow)) {
       die('fixme: workflow not found; should return 404');
@@ -26,15 +25,10 @@ class CRM_Stepw_Page_Stepwise extends CRM_Core_Page {
       'sw' => $workflowId,
       'ss' => $stepId,
     ];
-    $redirect = CRM_Stepw_Utils::alterUrlParams($step['url'], $params);
-    
+    // fixme: this won't be the correct redirect
+    $redirect = CRM_Stepw_Utils_Userparams::appendParamsToUrl($params, $step['url']);
+    die('fixme: probably need to fix this redirect url: '. $redirect);
     CRM_Utils_System::redirect($redirect);
-    
-    
-    
-    
-//    CRM_Utils_System::redirect();
-//    parent::run();
   }
 
 }

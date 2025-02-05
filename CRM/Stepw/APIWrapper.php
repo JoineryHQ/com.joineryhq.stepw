@@ -14,7 +14,7 @@ class CRM_Stepw_APIWrapper {
       // submission id from request args, but only on certain conditions.
       // (Note that this will facilitate OVERWRITING of existing entities
       // that were created by the original submission.)
-      if (CRM_Stepw_Utils::getRefererQueryParams('stepwisereload')) {
+      if (CRM_Stepw_Utils_Userparams::getRefererQueryParams('stepwisereload')) {
         $args = $event->getApiRequest()->getArgs();
         unset($args['sid']);
         $event->getApiRequest()->setArgs($args);
@@ -49,28 +49,29 @@ class CRM_Stepw_APIWrapper {
       // to ensure query params like 'sw' as 'ss' are really ours (not coliding with some other extension)
 
       // Get stepwise configuration.
-      $configData = CRM_Stepw_Utils::getWorkflowConfig();
       
       // Track worfklowid and stepid via referrer, because the xhr request that
       // gets us to this point is not easily overloaded in order to put sw and ss 
       // into the post/get values. 
       // fixme: should add some kind of hashing as well, to make this more trustworty.
-      $queryParams = CRM_Stepw_Utils::getRefererQueryParams();
+      $queryParams = CRM_Stepw_Utils_Userparams::getRefererQueryParams();
       $workflowId = $queryParams['sw'];
       $stepId = $queryParams['ss'];
       
-      // determine redirect.
-      // fixme: need a solid way to handle the final page.
-      $workflow = $configData[$workflowId];
-      $nextStepId = $stepId + 1;
-      // fixme: refactor this into a util function, once we're decided on using query params to track state.
-      $redirect = CRM_Utils_System::url('civicrm/stepwise', ['sw' => $workflowId, 'ss' => $nextStepId], TRUE, NULL, FALSE);
-      
-      $responseValues = $event->getResponse();
-      foreach ($responseValues as &$responseValue) {
-        $responseValue['redirect'] = urldecode($redirect);
+      if (!empty($workflowId)) {
+        // determine redirect.
+        // fixme: need a solid way to handle the final page.
+        $workflow = CRM_Stepw_Utils_WorkflowData::getWorkflowConfigById($workflowId);
+        $nextStepId = $stepId + 1;
+        // fixme: refactor this into a util function, once we're decided on using query params to track state.
+        $redirect = CRM_Utils_System::url('civicrm/stepwise', ['sw' => $workflowId, 'ss' => $nextStepId], TRUE, NULL, FALSE);
+
+        $responseValues = $event->getResponse();
+        foreach ($responseValues as &$responseValue) {
+          $responseValue['redirect'] = urldecode($redirect);
+        }
+        $event->setResponse($responseValues);
       }
-      $event->setResponse($responseValues);
     }
   }
 
