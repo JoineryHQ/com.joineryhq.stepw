@@ -15,9 +15,11 @@ class CRM_Stepw_WorkflowInstance {
   private static $_singleton = NULL;
   private $workflowid;
   private $publicId;
+  private $lastModified;
   
   private function __construct(Int $workflowId) {
     $this->workflowid = $workflowId;
+    $this->updateLastModified();
   }
 
   /**
@@ -35,14 +37,20 @@ class CRM_Stepw_WorkflowInstance {
     return self::$_singleton;
   }
   
+  private function updateLastModified() {
+    $this->lastModified = time();
+  }
+
   public function initialize() {
     $this->publicId = CRM_Stepw_Utils_General::generatePublicId();
+    $this->updateLastModified();
+
     $state = CRM_Stepw_State::singleton();
-    $state->createWorkflowInstance($this);
+    $state->storeWorkflowInstance($this);
   }
   
-  public function getPublicId() {
-    return $this->publicId;
+  public function getVar($name) {
+    return ($this->$name ?? NULL);
   }
 
 }
