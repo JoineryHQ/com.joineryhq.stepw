@@ -16,6 +16,10 @@ class CRM_Stepw_WorkflowInstance {
   private $workflowid;
   private $publicId;
   private $lastModified;
+  private $steps = [];
+
+  const STEPW_WI_STEP_STATUS_OPEN = 0;
+  const STEPW_WI_STEP_STATUS_CLOSED = 1;
   
   private function __construct(Int $workflowId) {
     $this->workflowid = $workflowId;
@@ -49,6 +53,20 @@ class CRM_Stepw_WorkflowInstance {
     $state->storeWorkflowInstance($this);
   }
   
+  public function openStep($stepId) {
+    $publicId = CRM_Stepw_Utils_General::generatePublicId();
+    $this->steps[$publicId] = [
+      'status' => self::STEPW_WI_STEP_STATUS_OPEN,
+    ];
+    // Fixme: We can't allow more than one open step at a time. If we open this step,
+    // we must (obliterate? close?) any steps that would come later.
+    //  - obliterate: but what about long-term record that some afform submission was tied to a certain step/workflowInstance?
+    //  - close: seems odd to leave them lying about in a "closed" state. If the user starts step 2 anew, he surely must
+    //    be required to also complete steps 2,3,4... anew, right?
+    //
+    return $publicId;
+  }
+
   public function getVar($name) {
     return ($this->$name ?? NULL);
   }

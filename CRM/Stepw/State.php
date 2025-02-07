@@ -88,9 +88,14 @@ class CRM_Stepw_State {
     $this->set('workflowInstances', $workflowInstances);
   }
 
-  public function getWorkflowInstance($workflowPublicId) {
+  /**
+   * 
+   * @param type $workflowInstancePublicId
+   * @return CRM_Stepw_WorkflowInstance
+   */
+  public function getWorkflowInstance($workflowInstancePublicId) {
     $stateWorkflows = $this->get('workflowInstances');
-    return $stateWorkflows[$workflowPublicId] ?? null;
+    return $stateWorkflows[$workflowInstancePublicId] ?? NULL;
   }
 
   /**
@@ -134,5 +139,27 @@ class CRM_Stepw_State {
     // Update state with trimmed data.
     $state['workflowInstances'] = $retainedWorkflowInstances;
     return $state;
+  }
+  
+  public function validateWorkflowInstanceStep($requireStatus) {
+    $urlParams = CRM_Stepw_Utils_Userparams::getUrlQueryParams();
+    $workflowInstancePublicId = $urlParams[CRM_Stepw_Utils_Userparams::QP_WORKFLOW_INSTANCE_ID];
+    $stepPublicId = $urlParams[CRM_Stepw_Utils_Userparams::QP_STEP_ID];
+
+    $workflowInstance = $this->getWorkflowInstance($workflowInstancePublicId);
+    
+    $isValid = FALSE;
+    
+    if (
+      !empty($workflowInstance) 
+      && is_a($workflowInstance, 'CRM_Stepw_WorkflowInstance')
+      && is_array($workflowInstanceSteps = $workflowInstance->getVar('steps'))
+      && (($workflowInstanceSteps[$stepPublicId]['status'] ?? NULL) === $requireStatus)
+    ) {
+      $isValid = TRUE;
+    }
+    
+    return $isValid;
+    
   }
 }

@@ -1,7 +1,7 @@
 <?php
 use CRM_Stepw_ExtensionUtil as E;
 
-class CRM_Stepw_Page_Stepwise extends CRM_Core_Page {
+class CRM_Stepw_Page_Next extends CRM_Core_Page {
 
   public function run() {
 

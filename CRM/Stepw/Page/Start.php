@@ -4,8 +4,6 @@ use CRM_Stepw_ExtensionUtil as E;
 class CRM_Stepw_Page_Start extends CRM_Core_Page {
 
   public function run() {
-//    parent::run();
-//    return;
     $workflowId = CRM_Stepw_Utils_Userparams::getStartWorkflowid();
     if (!$workflowId) {
       throw new CRM_Extension_Exception('Missing required parameter: '. CRM_Stepw_Utils_Userparams::QP_START_WORKFLOW_ID);
@@ -23,10 +21,13 @@ class CRM_Stepw_Page_Start extends CRM_Core_Page {
     // At start, always use the first step:
     $stepId = 1;
     $step = $workflow[$stepId];
+    
+    // Open step 1 in workflowInstance.
+    $stepPublicId = $workflowinstance->openStep($stepId);
 
     // Append parameters to step url and redirect thence.
     $params = [
-      's' => $stepId,
+      's' => $stepPublicId,
       'i' => $workflowinstance->getVar('publicId'),
     ];
     $redirect = CRM_Stepw_Utils_Userparams::appendParamsToUrl($params, $step['url']);

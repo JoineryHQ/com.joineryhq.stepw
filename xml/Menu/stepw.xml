@@ -1,15 +1,24 @@
 <?xml version="1.0"?>
 <menu>
   <item>
-    <path>civicrm/stepwise</path>
-    <page_callback>CRM_Stepw_Page_Stepwise</page_callback>
+    <path>civicrm/stepwise/next</path>
+    <page_callback>CRM_Stepw_Page_Next</page_callback>
     <title>Stepwise</title>
     <access_callback>1</access_callback>
+    <is_public>1</is_public>
   </item>
   <item>
     <path>civicrm/stepwise/start</path>
     <page_callback>CRM_Stepw_Page_Start</page_callback>
     <title>Start</title>
     <access_callback>1</access_callback>
+    <is_public>1</is_public>
+  </item>
+  <item>
+    <path>civicrm/stepwise/invalid</path>
+    <page_callback>CRM_Stepw_Page_Invalid</page_callback>
+    <title>Invalid Stepwise Workflow Request</title>
+    <access_callback>1</access_callback>
+    <is_public>1</is_public>
   </item>
 </menu>
