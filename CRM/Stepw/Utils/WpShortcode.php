@@ -6,20 +6,17 @@
  */
 class CRM_Stepw_Utils_WpShortcode {
   public static function getStepwiseProperties() {
-    // fixme: stub.
+    // fixme: stub for shortcode properties.
     $stepOrdinal = $_GET['stepwise-step'] ?? 1;
     $buttonDisabled = ($_GET['stepwise-button-disabled'] ?? NULL);
     $workflowStepCount = $_GET['stepwise-step-count'] ?? 10;
     $buttonText = $_GET['stepwise-button-text'] ?? 'Next';
 
-    $stepPublicId = CRM_Stepw_Utils_Userparams::getUrlQueryParams(CRM_Stepw_Utils_Userparams::QP_STEP_ID);
-    $isValid = CRM_Stepw_State::singleton()->validateWorkflowInstanceStep($stepPublicId, 'open');
-        
-    if (!$isValid) {
+    if (!self::validate()) {
       // Request is invalid, i.e., somebody's mucking about with url parameters,
       // so we should shut the whole thing down, albeit with some explanation.
       // In the context of a shortcode, we're on a WP page; therefore, redirection 
-      // decent way to shut things down and display an explanation.
+      // is a decent way to shut things down and display an explanation.
       CRM_Stepw_Utils_General::redirectToInvalid();
     }
     
@@ -41,4 +38,16 @@ class CRM_Stepw_Utils_WpShortcode {
     return $ret;
   }
 
+  static private function validate() {
+    $isValid = FALSE;
+    
+    $stepPublicId = CRM_Stepw_Utils_Userparams::getUrlQueryParams(CRM_Stepw_Utils_Userparams::QP_STEP_ID);
+    if (
+      !empty($stepPublicId)
+      && CRM_Stepw_State::singleton()->validateWorkflowInstanceStep($stepPublicId)
+    ) {
+      $isValid = TRUE;
+    }
+    return $isValid;
+  }
 }
