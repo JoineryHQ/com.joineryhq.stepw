@@ -13,7 +13,7 @@ class CRM_Stepw_Utils_WpShortcode {
     $buttonText = $_GET['stepwise-button-text'] ?? 'Next';
 
     $stepPublicId = CRM_Stepw_Utils_Userparams::getUrlQueryParams(CRM_Stepw_Utils_Userparams::QP_STEP_ID);
-    $isValid = CRM_Stepw_State::singleton()->validateWorkflowInstanceStep($stepPublicId, CRM_Stepw_WorkflowInstance::STEPW_WI_STEP_STATUS_OPEN);
+    $isValid = CRM_Stepw_State::singleton()->validateWorkflowInstanceStep($stepPublicId, 'open');
         
     if (!$isValid) {
       // Request is invalid, i.e., somebody's mucking about with url parameters,

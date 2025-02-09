@@ -9,7 +9,7 @@ class CRM_Stepw_Page_Next extends CRM_Core_Page {
     $workflowInstancePublicId = CRM_Stepw_Utils_Userparams::getUrlQueryParams(CRM_Stepw_Utils_Userparams::QP_WORKFLOW_INSTANCE_ID);
     $doneStepPublicId = CRM_Stepw_Utils_Userparams::getUrlQueryParams(CRM_Stepw_Utils_Userparams::QP_DONE_STEP_ID);
     if (!empty($doneStepPublicId)) {
-      $isValid = CRM_Stepw_State::singleton()->validateWorkflowInstanceStep($doneStepPublicId, CRM_Stepw_WorkflowInstance::STEPW_WI_STEP_STATUS_OPEN);
+      $isValid = CRM_Stepw_State::singleton()->validateWorkflowInstanceStep($doneStepPublicId, 'open');
       if (!$isValid) {
 //        CRM_Stepw_Utils_General::redirectToInvalid();
       }
