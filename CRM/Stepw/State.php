@@ -140,34 +140,6 @@ class CRM_Stepw_State {
     $state['workflowInstances'] = $retainedWorkflowInstances;
     return $state;
   }
-  
-  /**
-   * Validate whether a given step is valid, at a given status (open/closed) in the active workflow.
-   * @param String $stepPublicId A step publicId, presumably passed in from the user (_GET in WP, or REFERER in afform)
-   * @param Int $requireStatus Any constant CRM_Stepw_WorkflowInstance::STEPW_WI_STEP_STATUS_*
-   * 
-   * @return bool True on valid; false otherwise.
-   */
-  public function validateWorkflowInstance($workflowPublicId) {
-    $urlParams = CRM_Stepw_Utils_Userparams::getUrlQueryParams();
-    $workflowInstancePublicId = $urlParams[CRM_Stepw_Utils_Userparams::QP_WORKFLOW_INSTANCE_ID];
-
-    $workflowInstance = $this->getWorkflowInstance($workflowInstancePublicId);
-    
-    $isValid = FALSE;
-    
-    if (
-      !empty($workflowInstance) 
-      && is_a($workflowInstance, 'CRM_Stepw_WorkflowInstance')
-      && is_array($workflowInstanceSteps = $workflowInstance->getVar('steps'))
-      && (($workflowInstanceSteps[$stepPublicId]['status'] ?? NULL) === $requireStatus)
-    ) {
-      $isValid = TRUE;
-    }
-    
-    return $isValid;
-    
-  }
 
   /**
    * Validate whether a given step is valid, at a given status (open/closed) in the active workflow.
