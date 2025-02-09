@@ -24,7 +24,7 @@ class CRM_Stepw_Utils_WpShortcode {
 
     $buttonHref = CRM_Utils_System::url('civicrm/stepwise/next', [
       CRM_Stepw_Utils_Userparams::QP_WORKFLOW_INSTANCE_ID=> $workflowPublicId,
-      CRM_Stepw_Utils_Userparams::QP_DONE_STEP_ID => $stepPublicId
+      CRM_Stepw_Utils_Userparams::QP_DONE_STEP_ID => CRM_Stepw_Utils_Userparams::getUrlQueryParams(CRM_Stepw_Utils_Userparams::QP_STEP_ID)
     ]);
     $ret = [
       'percentage' => round(($stepOrdinal / $workflowStepCount * 100)),
