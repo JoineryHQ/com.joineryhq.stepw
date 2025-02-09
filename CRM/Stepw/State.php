@@ -178,7 +178,7 @@ class CRM_Stepw_State {
    * 
    * @return bool True on valid; false otherwise.
    */
-  public function validateWorkflowInstanceStep(string $stepPublicId, string $requireStatusName) {
+  public function validateWorkflowInstanceStep(string $stepPublicId, string $requireStatusName = NULL) {
     switch ($requireStatusName) {
       case 'open':
         $requireStatusValue = CRM_Stepw_WorkflowInstance::STEPW_WI_STEP_STATUS_OPEN;
@@ -201,9 +201,13 @@ class CRM_Stepw_State {
       !empty($workflowInstance) 
       && is_a($workflowInstance, 'CRM_Stepw_WorkflowInstance')
       && is_array($workflowInstanceSteps = $workflowInstance->getVar('steps'))
-      && (($workflowInstanceSteps[$stepPublicId]['status'] ?? NULL) === $requireStatusValue)
     ) {
-      $isValid = TRUE;
+      if (!empty($requireStatusValue)) {
+        $isValid = (($workflowInstanceSteps[$stepPublicId]['status'] ?? NULL) === $requireStatusValue);
+      }
+      else {
+        $isValid = TRUE;
+      }
     }
     
     return $isValid;
