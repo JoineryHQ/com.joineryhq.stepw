@@ -13,11 +13,17 @@ function stepw_foo(phpQueryObject $doc, $path) {
   //  - built with code in: https://github.com/TobiaszCudnik/phpquery)
   //  - Best phpquery documentation I've found so far: https://github.com/electrolinux/phpquery/blob/master/wiki/README.md
 
+  // Fixme: this must only operate while in a stepwise workflow.
+
   // Find the submit button and change its text
   $button = $doc->find('button[ng-click="afform.submit()"]');
   // FIXME: get correct button name from stepwise config.
   $button->html('foobar');
 
+  
+  // fixme: must also add progress bar on these afform steps.
+  
+  $r = CRM_Stepw_Utils_Userparams::getRefererQueryParams();
   if(CRM_Stepw_Utils_Userparams::getRefererQueryParams('stepwisereload')) {
     // Only on stepwise 'reload submission' (i.e. "back-button") afforms, append a submit button.
     // FIXME: only do this if referer params indicate we're in a stepwise workflow (e.g.., not for core 'submission view' forms)
@@ -35,6 +41,7 @@ function stepw_civicrm_alterAngular(\Civi\Angular\Manager $angular) {
     // FIXME: Get these names from stepwise config, and only do this if we know we're in the midst of a stepwise workflow.
 //    'afformQuickAddIndividual',
     'afformTestForm2Activity1',
+    'afformTESTFormStart',
   ];
   $i = 0;
   foreach ($hookedAfformNames as $hookedAfformName) {
@@ -109,7 +116,7 @@ function stepw_civicrm_permission_check($permission, &$granted) {
       $q = CRM_Utils_Request::retrieve('q', 'String', '');
       // Only take action on afform.submission.prefill.
       // fixme: we must also verify that the submission id (available in $param['args']['sid'])
-      // is valid for the current user's workflow instance.
+      // is valid for the current user's workflow instance and current step.
       if ($q == "civicrm/ajax/api4/Afform/prefill") {
         $params = json_decode($r['params'], true);
         $granted = true;

@@ -13,7 +13,7 @@
 class CRM_Stepw_WorkflowInstance {
   
   private static $_singleton = NULL;
-  private $workflowid;
+  private $workflowId;
   private $publicId;
   private $lastModified;
   private $steps = [];
@@ -22,7 +22,7 @@ class CRM_Stepw_WorkflowInstance {
   const STEPW_WI_STEP_STATUS_CLOSED = 1;
   
   private function __construct(Int $workflowId) {
-    $this->workflowid = $workflowId;
+    $this->workflowId = $workflowId;
     $this->updateLastModified();
   }
 
@@ -65,6 +65,13 @@ class CRM_Stepw_WorkflowInstance {
     //    be required to also complete steps 2,3,4... anew, right?
     //
     return $publicId;
+  }
+  
+  public function closeStep($stepPublicId) {
+    $this->steps[$stepPublicId] = [
+      'status' => self::STEPW_WI_STEP_STATUS_CLOSED,
+    ];
+    // fixme: as in ::open(), do we need to obliterate future steps at this point?
   }
 
   public function getVar($name) {

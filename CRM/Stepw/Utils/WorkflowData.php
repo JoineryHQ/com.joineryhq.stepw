@@ -8,9 +8,9 @@ class CRM_Stepw_Utils_WorkflowData {
     return CRM_Stepw_Fixme_Data::getSampleData();
   }
 
-  public static function getWorkflowConfigById(Int $workflowid) {
+  public static function getWorkflowConfigById(Int $workflowId) {
     $data = self::getAllWorkflowConfig();
-    return ($data[$workflowid] ?? NULL);
+    return ($data[$workflowId] ?? NULL);
   }
 
 }
