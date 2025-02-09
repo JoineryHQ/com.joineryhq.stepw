@@ -54,6 +54,8 @@ class CRM_Stepw_WorkflowInstance {
   }
   
   public function openStep($stepId) {
+    // fixme: this method assumes that the step is not already open and that it doesn't
+    // already have a public id. But what if it does? Does that cause problems?
     $publicId = CRM_Stepw_Utils_General::generatePublicId();
     $this->steps[$publicId] = [
       'status' => self::STEPW_WI_STEP_STATUS_OPEN,
@@ -65,9 +67,7 @@ class CRM_Stepw_WorkflowInstance {
   }
   
   public function closeStep($stepPublicId) {
-    $this->steps[$stepPublicId] = [
-      'status' => self::STEPW_WI_STEP_STATUS_CLOSED,
-    ];
+    $this->steps[$stepPublicId]['status'] = self::STEPW_WI_STEP_STATUS_CLOSED;
     // fixme: as in ::open(), we should archive all subsequent steps in this workflowInstance
   }
 
