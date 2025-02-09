@@ -28,8 +28,8 @@ class CRM_Stepw_Page_Start extends CRM_Core_Page {
 
     // Append parameters to step url and redirect thence.
     $params = [
-      's' => $stepPublicId,
       'i' => $workflowInstance->getVar('publicId'),
+      's' => $stepPublicId,
     ];
     $redirect = CRM_Stepw_Utils_Userparams::appendParamsToUrl($params, $workflowInstanceNextStep['url']);
     
