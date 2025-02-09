@@ -57,13 +57,10 @@ class CRM_Stepw_WorkflowInstance {
     $publicId = CRM_Stepw_Utils_General::generatePublicId();
     $this->steps[$publicId] = [
       'status' => self::STEPW_WI_STEP_STATUS_OPEN,
+      'stepId' => $stepId,
     ];
     // Fixme: We can't allow more than one open step at a time. If we open this step,
-    // we must (obliterate? close?) any steps that would come later.
-    //  - obliterate: but what about long-term record that some afform submission was tied to a certain step/workflowInstance?
-    //  - close: seems odd to leave them lying about in a "closed" state. If the user starts step 2 anew, he surely must
-    //    be required to also complete steps 2,3,4... anew, right?
-    //
+    // we must archive any steps that would come later.
     return $publicId;
   }
   
@@ -71,11 +68,37 @@ class CRM_Stepw_WorkflowInstance {
     $this->steps[$stepPublicId] = [
       'status' => self::STEPW_WI_STEP_STATUS_CLOSED,
     ];
-    // fixme: as in ::open(), do we need to obliterate future steps at this point?
+    // fixme: as in ::open(), we should archive all subsequent steps in this workflowInstance
   }
 
   public function getVar($name) {
     return ($this->$name ?? NULL);
+  }
+
+  
+  /**
+   * Determine next un-completed step, per workflow config, in this workflow instance.
+   * @return Array Step configuration.
+   */
+  public function getNextStep() {
+    // Build a list of all closed steps in this instance.
+    $closedWorfklowInstanceStepIds = [];
+    foreach ($this->steps as $workflowInstanceStepPublicId => $workflowInstanceStep) {
+      if ($workflowInstanceStep['status'] == CRM_Stepw_WorkflowInstance::STEPW_WI_STEP_STATUS_CLOSED) {
+        $closedWorfklowInstanceStepIds[] = $workflowInstanceStep['stepId'];
+      }
+    }
+    // Find the first configured step that isn't closed.
+    $workflowConfig = CRM_Stepw_Utils_WorkflowData::getWorkflowConfigById($this->workflowId);
+    foreach ($workflowConfig['steps'] as $workflowConfigStepId => $workflowConfigStep) {
+      if (!in_array($workflowConfigStepId, $closedWorfklowInstanceStepIds)) {
+        $nextStep = $workflowConfigStep;
+        $nextStep['stepId'] = $workflowConfigStepId;
+        break;
+      }
+    }
+    
+    return $nextStep;
   }
 
 }

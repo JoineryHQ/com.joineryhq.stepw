@@ -18,20 +18,21 @@ class CRM_Stepw_Page_Start extends CRM_Core_Page {
     if (empty($workflow)) {
       throw new CRM_Extension_Exception('Unidentified workflow requested.', 'stepw_unknown_workflow_id', ['requested id' => $workflowId]);
     }
-    // At start, always use the first step:
-    // Fixme: step IDs will probably be harder to predict; can't assume the first is '1'.
-    $stepId = 1;
-    $step = $workflow[$stepId];
     
-    // Open step 1 in workflowInstance.
-    $stepPublicId = $workflowInstance->openStep($stepId);
+    // At start, all steps will of course be nonexistent (thus un-closed), so
+    // getting the "next step" is sufficient.
+    $workflowInstanceNextStep = $workflowInstance->getNextStep();
+
+    // Open step in workflowInstance.
+    $stepPublicId = $workflowInstance->openStep($workflowInstanceNextStep['stepId']);
 
     // Append parameters to step url and redirect thence.
     $params = [
       's' => $stepPublicId,
       'i' => $workflowInstance->getVar('publicId'),
     ];
-    $redirect = CRM_Stepw_Utils_Userparams::appendParamsToUrl($params, $step['url']);
+    $redirect = CRM_Stepw_Utils_Userparams::appendParamsToUrl($params, $workflowInstanceNextStep['url']);
+    
     CRM_Utils_System::redirect($redirect);
 
   }
