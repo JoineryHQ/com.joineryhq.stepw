@@ -83,9 +83,12 @@ class CRM_Stepw_Utils_Userparams {
       'i' => self::QP_WORKFLOW_INSTANCE_ID,
       's' => self::QP_STEP_ID,
     ];
-    foreach ($supportedParamKeys as $shortKey => $actualKey) {
-      if (!empty($params[$shortKey])) {
-        $queryParams[$actualKey] = $params[$shortKey];
+    foreach ($params as $paramKey => $paramValue) {
+      if (!empty($supportedParamKeys[$paramKey])) {
+        $queryParams[$supportedParamKeys[$paramKey]] = $paramValue;
+      }
+      else {
+        \Civi::log()->warning(__METHOD__ . ': Unsupported parameter found', [$paramKey => $paramValue]);
       }
     }
     
