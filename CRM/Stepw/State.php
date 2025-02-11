@@ -82,7 +82,7 @@ class CRM_Stepw_State {
   }
 
   public function storeWorkflowInstance(CRM_Stepw_WorkflowInstance $workflowInstance) {
-    $workflowInstances = $this->storage->get('workflowInstances', $this->scopeKey) ?? [];
+    $workflowInstances = $this->get('workflowInstances') ?? [];
     $publicId = $workflowInstance->getVar('publicId');
     $workflowInstances[$publicId] = $workflowInstance;
     $this->set('workflowInstances', $workflowInstances);
@@ -98,6 +98,20 @@ class CRM_Stepw_State {
     return ($stateWorkflows[$workflowInstancePublicId] ?? NULL);
   }
 
+  public function storeInvalidMessage(string $message) {
+    $messages = ($this->get('invlidMessages') ?? []);
+    $messages[] = $message;
+    $this->set('invlidMessages', $messages);
+  }
+
+  public function getInvalidMessages(bool $clear = TRUE) {
+    $messages = ($this->get('invlidMessages') ?? []);
+    if ($clear) {
+      $this->set('invlidMessages', []);      
+    }
+    return $messages;
+  }
+  
   /**
    * For a given array of state data, remove unneeded/outdated data, to prevent session storage abuse.
    *

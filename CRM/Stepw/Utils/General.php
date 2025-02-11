@@ -9,7 +9,10 @@ class CRM_Stepw_Utils_General {
     return bin2hex(random_bytes(18));
   }
 
-  public static function redirectToInvalid() {
+  public static function redirectToInvalid(string $message = '') {
+    if ($message) {
+      CRM_Stepw_State::singleton()->storeInvalidMessage($message);
+    }
     $redirect = CRM_Utils_System::url('civicrm/stepwise/invalid', '', FALSE, NULL, TRUE, TRUE);
     CRM_Utils_System::redirect($redirect);
   }
