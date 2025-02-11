@@ -20,11 +20,11 @@ class CRM_Stepw_Utils_WpShortcode {
       CRM_Stepw_Utils_General::redirectToInvalid();
     }
     
-    $workflowPublicId = CRM_Stepw_Utils_Userparams::getUrlQueryParams(CRM_Stepw_Utils_Userparams::QP_WORKFLOW_INSTANCE_ID);
+    $workflowPublicId = CRM_Stepw_Utils_Userparams::getUserParams('request', CRM_Stepw_Utils_Userparams::QP_WORKFLOW_INSTANCE_ID);
 
     $buttonHref = CRM_Utils_System::url('civicrm/stepwise/next', [
       CRM_Stepw_Utils_Userparams::QP_WORKFLOW_INSTANCE_ID=> $workflowPublicId,
-      CRM_Stepw_Utils_Userparams::QP_DONE_STEP_ID => CRM_Stepw_Utils_Userparams::getUrlQueryParams(CRM_Stepw_Utils_Userparams::QP_STEP_ID)
+      CRM_Stepw_Utils_Userparams::QP_DONE_STEP_ID => CRM_Stepw_Utils_Userparams::getUserParams('request', CRM_Stepw_Utils_Userparams::QP_STEP_ID)
     ]);
     $ret = [
       'percentage' => round(($stepOrdinal / $workflowStepCount * 100)),
@@ -41,13 +41,17 @@ class CRM_Stepw_Utils_WpShortcode {
   static private function validate() {
     $isValid = FALSE;
     
-    $stepPublicId = CRM_Stepw_Utils_Userparams::getUrlQueryParams(CRM_Stepw_Utils_Userparams::QP_STEP_ID);
+    $workflowInstancePublicId = CRM_Stepw_Utils_Userparams::getUserParams('request', CRM_Stepw_Utils_Userparams::QP_WORKFLOW_INSTANCE_ID);
+    $stepPublicId = CRM_Stepw_Utils_Userparams::getUserParams('request', CRM_Stepw_Utils_Userparams::QP_STEP_ID);
+    $workflowInstance = CRM_Stepw_State::singleton()->getWorkflowInstance($workflowInstancePublicId);
     if (
       !empty($stepPublicId)
-      && CRM_Stepw_State::singleton()->validateWorkflowInstanceStep($stepPublicId)
+      && !empty($workflowInstance)
+      && ($workflowInstance->validateStep($stepPublicId))
     ) {
       $isValid = TRUE;
     }
+
     return $isValid;
   }
 }

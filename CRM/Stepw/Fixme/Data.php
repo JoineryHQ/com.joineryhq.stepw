@@ -14,6 +14,7 @@ class CRM_Stepw_Fixme_Data {
           '2' =>  [
             'type' => 'afform',
             'url' => 'http://plana.l/civicrm/test-form-start/',
+            'afform_name' => 'afformTESTFormStart',
           ],
           '3' => [
             'type' => 'post',
@@ -22,6 +23,7 @@ class CRM_Stepw_Fixme_Data {
           '4' =>  [
             'type' => 'afform',
             'url' => 'http://plana.l/civicrm/test-form-2-activity/',
+            'afform_name' => 'afformTestForm2Activity1',
           ],
           '5' => [
             'type' => 'post',

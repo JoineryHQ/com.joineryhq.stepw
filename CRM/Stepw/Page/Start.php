@@ -10,12 +10,11 @@ class CRM_Stepw_Page_Start extends CRM_Core_Page {
     }
     
     // Initialize this workflow instance.
-    $workflowInstance = CRM_Stepw_WorkflowInstance::singleton($workflowId);
-    $workflowInstance->initialize();
+    $workflowInstance = new CRM_Stepw_WorkflowInstance($workflowId);
     
     // Get the data for this workflow.
-    $workflow = CRM_Stepw_Utils_WorkflowData::getWorkflowConfigById($workflowId);
-    if (empty($workflow)) {
+    $workflowConfig = CRM_Stepw_Utils_WorkflowData::getWorkflowConfigById($workflowId);
+    if (empty($workflowConfig)) {
       throw new CRM_Extension_Exception('Unidentified workflow requested.', 'stepw_unknown_workflow_id', ['requested id' => $workflowId]);
     }
     
@@ -31,7 +30,7 @@ class CRM_Stepw_Page_Start extends CRM_Core_Page {
       'i' => $workflowInstance->getVar('publicId'),
       's' => $stepPublicId,
     ];
-    $redirect = CRM_Stepw_Utils_Userparams::appendParamsToUrl($params, $workflowInstanceNextStep['url']);
+    $redirect = CRM_Stepw_Utils_Userparams::appendParamsToUrl($workflowInstanceNextStep['url'], $params);
     
     CRM_Utils_System::redirect($redirect);
 

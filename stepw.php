@@ -4,57 +4,166 @@ require_once 'stepw.civix.php';
 
 use CRM_Stepw_ExtensionUtil as E;
 
-function stepw_civicrm_angularModules(&$angularModules) {
-  //  $angularModules['afGuiEditor']['requires'][] = 'crmDynamicT_hemeSelector';
-}
-
-function stepw_foo(phpQueryObject $doc, $path) {
+function _stepw_alterAfformHtml(phpQueryObject $doc, $path) {
   // $doc is a phpquery object:
   //  - built with code in: https://github.com/TobiaszCudnik/phpquery)
   //  - Best phpquery documentation I've found so far: https://github.com/electrolinux/phpquery/blob/master/wiki/README.md
 
-  // Fixme: this must only operate while in a stepwise workflow.
-
-  // Find the submit button and change its text
-  $button = $doc->find('button[ng-click="afform.submit()"]');
-  // FIXME: get correct button name from stepwise config.
-  $button->html('foobar');
-
-  
-  // fixme: must also add progress bar on these afform steps.
-  
-  $r = CRM_Stepw_Utils_Userparams::getRefererQueryParams();
-  if(CRM_Stepw_Utils_Userparams::getRefererQueryParams('stepwisereload')) {
-    // Only on stepwise 'reload submission' (i.e. "back-button") afforms, append a submit button.
-    // FIXME: only do this if referer params indicate we're in a stepwise workflow (e.g.., not for core 'submission view' forms)
-    $doc->append('<button class="af-button btn btn-primary" crm-icon="fa-check" ng-click="afform.submit()">Submit</button>');
+  if (!CRM_Stepw_Utils_General::isStepwiseWorkflow('referer')) {
+    // If we're not in a stepwise workflow, there's nothing to do here.
+    return;
   }
+
+  $isValid = _stepw_alterAfformHtml_validate('path', $path);
+  if ($isValid) {
+    // Find the submit button and change its text
+    $button = $doc->find('button[ng-click="afform.submit()"]');
+    // FIXME: get correct button name from stepwise config.
+    $button->html('foobar');
+
+    // fixme: must also add progress bar on these afform steps.
+
+    // fixme: we need a way to determine if this is a back-button reload.
+    if(CRM_Stepw_Utils_Userparams::getUserParams('referer', 'fixme-stepwisereload')) {
+      // Only on stepwise 'reload submission' (i.e. "back-button") afforms, append a submit button.
+      $doc->append('<button class="af-button btn btn-primary" crm-icon="fa-check" ng-click="afform.submit()">Submit</button>');
+    }
+  }
+  else {
+    CRM_Stepw_Utils_General::alterAfformInvalid($doc);
+  }
+}
+
+function _stepw_alterAfformHtml_validate($keyType, $key) {
+  $isValid = FALSE;
+  
+  if ($keyType == 'path') {
+    // form names are keyed to $path in this static array variable:
+    $afformName = \Civi::$statics['STEPW_AFFORM_FORM_NAME_BY_PATH'][$key];    
+  }
+  elseif ($keyType == 'name') {
+    $afformName = $key;    
+  }
+  
+  if (!CRM_Stepw_Utils_General::isStepwiseWorkflow('referer')) {
+    // The afform is being included on a page that, for whatever reason,
+    // isn't being viewed within a workflowInstance. This is fine. We have 
+    // no validation problem to complain about.
+    $isValid = TRUE;
+  }
+  else {
+    $stepPublicId = CRM_Stepw_Utils_Userparams::getUserParams('referer', CRM_Stepw_Utils_Userparams::QP_STEP_ID);
+    $workflowInstancePublicId = CRM_Stepw_Utils_Userparams::getUserParams('referer', CRM_Stepw_Utils_Userparams::QP_WORKFLOW_INSTANCE_ID);
+    $workflowInstance = CRM_Stepw_State::singleton()->getWorkflowInstance($workflowInstancePublicId);
+    if (
+      // workflow instance exists? 
+      !empty($workflowInstance)
+      // step exists?
+      && $workflowInstance->validateStep($stepPublicId)  
+    ) {
+      // step is for this afform?
+      $workflowInstanceStep = $workflowInstance->getStepByPublicId($stepPublicId);
+      $workflowConfig = CRM_Stepw_Utils_WorkflowData::getWorkflowConfigById($workflowInstance->getVar('workflowId'));
+      $workflowConfigStep = $workflowConfig['steps'][$workflowInstanceStep['stepId']];
+      if (($workflowConfigStep['afform_name'] ?? NULL) == $afformName) {
+        // fixme: must also validate :step_state_key (if given) is valid?
+        $isValid = TRUE;
+      }
+    }
+  }
+  return $isValid;
 }
 
 function stepw_civicrm_alterAngular(\Civi\Angular\Manager $angular) {
-  /* If I know the $name of the saved form, eg. afformQuickAddIndividual, I can
-   * get the path ("~/afformQuickAddIndividual/afformQuickAddIndividual.aff.html")
-   * by calling _afform_get_partials($name), or perhaps better, \Civi\Angular\Manager::getRawPartials($name).
-   */
-
-  $hookedAfformNames = [
-    // FIXME: Get these names from stepwise config, and only do this if we know we're in the midst of a stepwise workflow.
-//    'afformQuickAddIndividual',
-    'afformTestForm2Activity1',
-    'afformTESTFormStart',
-  ];
-  $i = 0;
+  if (!CRM_Stepw_Utils_General::isStepwiseWorkflow('referer')) {
+    // We're not in a workflowInstance, so there's nothing for us to do here.
+    return;
+  }  
+  
+  $hookedAfformNames = [];
+  // We'll only be acting if there's a given workflowInstance, and then only on
+  // afforms defined in that intance's worfklow config.
+  
+  $workflowInstancePublicId = CRM_Stepw_Utils_Userparams::getUserParams('referer', CRM_Stepw_Utils_Userparams::QP_WORKFLOW_INSTANCE_ID);
+  if (!empty($workflowInstancePublicId)) {
+    $workflowInstance = CRM_Stepw_State::singleton()->getWorkflowInstance($workflowInstancePublicId);
+    if (!empty($workflowInstance)) {
+      $workflowConfig = CRM_Stepw_Utils_WorkflowData::getWorkflowConfigById($workflowInstance->getVar('workflowId'));
+      foreach ($workflowConfig['steps'] as $workflowConfigStep) {
+        if ($workflowConfigStep['type'] == 'afform') {
+          $hookedAfformNames[] = $workflowConfigStep['afform_name'];
+        }
+      }
+    }
+    else {
+      // If we're here, $workflowInstancePublicId is provided, but no such 
+      // workflow is available in state; this implies the user's workflowInstance
+      // has expired. This means we won't even be able to know which webforms 
+      // are part of the workflow, but clearly we need to tell the user that their
+      // workflowInstance is no longer valid. Therefore, we'll hook into ALL
+      // afforms with our stepwise changeset, which will (since workflowInstancePublicId
+      // is not valid) trigger an "invalid" message for the user.
+      $afforms = \Civi\Api4\Afform::get()
+        ->setCheckPermissions(FALSE)
+        ->addWhere('is_public', '=', TRUE)
+        ->execute();
+      $hookedAfformNames = CRM_Utils_Array::collect('name', (array)$afforms);
+    }
+  }
+  
   foreach ($hookedAfformNames as $hookedAfformName) {
+    /* If I know the $name of the saved form, eg. afformQuickAddIndividual, I can
+     * get the path ("~/afformQuickAddIndividual/afformQuickAddIndividual.aff.html")
+     * by calling _afform_get_partials($name), or perhaps better, \Civi\Angular\Manager::getRawPartials($name).
+     */
     $partials = $angular->getRawPartials($hookedAfformName);
     $alterHtmlFile = array_keys($partials)[0];
-    $angular->add(\Civi\Angular\ChangeSet::create('stepw_test_' . $i++)
-      ->alterHtml($alterHtmlFile, 'stepw_foo')
+    \Civi::$statics['STEPW_AFFORM_FORM_NAME_BY_PATH'][$alterHtmlFile] = $hookedAfformName;
+    $angular->add(\Civi\Angular\ChangeSet::create('stepw_changeset_' . $hookedAfformName)
+      ->alterHtml($alterHtmlFile, '_stepw_alterAfformHtml')
     );
+    $a = 1;
   }
 }
 
 
-function stepw_afform_submit(\Civi\Afform\Event\AfformSubmitEvent $event) {
+function _stepw_afform_submit_late(\Civi\Afform\Event\AfformSubmitEvent $event) {
+  if (!CRM_Stepw_Utils_General::isStepwiseWorkflow('referer')) {
+    // We're not in a workflowInstance, so there's nothing for us to do here.
+    return;
+  }  
+    
+  $afform = $event->getAfform();
+  $afformName = ($afform['name'] ?? NULL);
+  if (!empty($afformName)) {
+    $isValid = _stepw_alterAfformHtml_validate('name', $afformName);
+    if ($isValid) {
+      // Determine what step was submitted, and close this step in the workflow.
+      $workflowInstancePublicId = CRM_Stepw_Utils_Userparams::getUserParams('referer', CRM_Stepw_Utils_Userparams::QP_WORKFLOW_INSTANCE_ID);
+      $workflowInstance = CRM_Stepw_State::singleton()->getWorkflowInstance($workflowInstancePublicId);
+      if (!empty($workflowInstance)) {
+        $stepPublicId = CRM_Stepw_Utils_Userparams::getUserParams('referer', CRM_Stepw_Utils_Userparams::QP_STEP_ID);
+        $workflowInstance->closeStep($stepPublicId);
+      }
+      // Determine any created contact ID, and set this as a workflowInstance property.
+      $entityIds = $event->getEntityIds('Individual1');
+      $individualContactId = ($entityIds[0] ?? NULL);
+      if (!empty($individualContactId)) {
+        $workflowInstance->setCreatedEntityId('Individual1', $individualContactId);
+      }
+    }
+  }
+  $referer = CRM_Stepw_Utils_Userparams::getUserParams('referer');
+  $request = CRM_Stepw_Utils_Userparams::getUserParams('request');
+  $a = 1;
+}
+
+function _stepw_afform_submit_early(\Civi\Afform\Event\AfformSubmitEvent $event) {
+  if (!CRM_Stepw_Utils_General::isStepwiseWorkflow('referer')) {
+    // We're not in a workflowInstance, so there's nothing for us to do here.
+    return;
+  }  
+  
   // FIXME: this is POC code that allows us to re-save afform submissions and update
   // the related entity. This code causes an existing activity (the one linked to the submission)
   // to actually be overwritten. We need to improve this so it handles entities
@@ -83,6 +192,7 @@ function stepw_afform_submit(\Civi\Afform\Event\AfformSubmitEvent $event) {
     $event->setRecords($records);
   }
 }
+
 /**
  * Implements hook_civicrm_config().
  *
@@ -94,10 +204,19 @@ function stepw_civicrm_config(&$config): void {
   // Bind our wrapper for API Events
   Civi::dispatcher()->addListener('civi.api.prepare', ['CRM_Stepw_APIWrapper', 'PREPARE'], -100);
   Civi::dispatcher()->addListener('civi.api.respond', ['CRM_Stepw_APIWrapper', 'RESPOND'], -100);
-  Civi::dispatcher()->addListener('civi.afform.submit', 'stepw_afform_submit', 1000);
+  Civi::dispatcher()->addListener('civi.afform.submit', '_stepw_afform_submit_early', 1000);
+  Civi::dispatcher()->addListener('civi.afform.submit', '_stepw_afform_submit_late', -1000);
 }
 
 function stepw_civicrm_permission_check($permission, &$granted) {
+  if (
+    !CRM_Stepw_Utils_General::isStepwiseWorkflow('referer')
+    && !CRM_Stepw_Utils_General::isStepwiseWorkflow('request')
+  ) {
+    // We're not in a workflowInstance (neither per referer NOR per request), so there's nothing for us to do here.
+    return;
+  }  
+  
   // FIXME: Additional permissions are required for loading afform submission data (e.g.
   // stepwise form re-submission during 'back-button' handling), but of course
   // we should only grant it momentarily and only after confirming the (typically anonymous)
@@ -111,6 +230,7 @@ function stepw_civicrm_permission_check($permission, &$granted) {
     case 'administer afform':
     // if missing, afform prefill will be empty (depending on various permissions/ACLs)
     case 'view all contacts':
+      // fixme: it's okay to log this, but use a better prefix.
       \Civi::log()->debug(__FUNCTION__, ['8oom05JEP34HAJOJ0geXoVMvLLgRn1Sq: granting:'. $permission]);
       
       $q = CRM_Utils_Request::retrieve('q', 'String', '');

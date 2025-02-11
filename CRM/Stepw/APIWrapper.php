@@ -9,18 +9,26 @@ class CRM_Stepw_APIWrapper {
   public static function PREPARE (Civi\API\Event\PrepareEvent $event) {
     $requestSignature = $event->getApiRequestSig();
     if ($requestSignature == "4.afform.submit") {
+      if (!CRM_Stepw_Utils_General::isStepwiseWorkflow('referer')) {
+        // We're not in a workflowInstance, so there's nothing for us to do here.
+        return;
+      }  
       // Allow saving of afforms loaded with the ?sid=n query parameter (i.e.,
       // afforms preloaded with a given afform.submission), by stripping the
       // submission id from request args, but only on certain conditions.
       // (Note that this will facilitate OVERWRITING of existing entities
       // that were created by the original submission.)
-      if (CRM_Stepw_Utils_Userparams::getRefererQueryParams('stepwisereload')) {
+      if (CRM_Stepw_Utils_Userparams::getUserParams('referer', 'stepwisereload')) {
         $args = $event->getApiRequest()->getArgs();
         unset($args['sid']);
         $event->getApiRequest()->setArgs($args);
       }
     }
     elseif ($requestSignature == "4.afformsubmission.get") {
+      if (!CRM_Stepw_Utils_General::isStepwiseWorkflow('referer')) {
+        // We're not in a workflowInstance, so there's nothing for us to do here.
+        return;
+      }  
       // fixme: we can display prefilled form submission with a url like 'http://plana.l/civicrm/form-test/#?sid=7'
       // IF WE DO OUR OWN PERMISSION CHECKING AND DISABLE THIS REQUEST'S PERMISSIONS HERE:
       // AND IF WE GRANT (MOMENTARILY) 'AFFORM: EDIT AND DELETE FORMS' PERMISSION (FOR THIS, CONSIDER OUR PR TO SMS API EXTENSION)
@@ -41,37 +49,57 @@ class CRM_Stepw_APIWrapper {
   public static function RESPOND(Civi\API\Event\RespondEvent $event) {
     $requestSignature = $event->getApiRequestSig();
 
-
     if ($requestSignature == "4.afform.get") {
-      // Alter afform 'redirect' property so it goes to our stepwise page handler.
-      // fixme: only act if we're sure we're in a Stepwise workflow (examine $_GET, probably?)
-      // fixme: if we're going to pass state via $_GET, we MUST have some way (a hash maybe) 
-      // to ensure query params like 'sw' as 'ss' are really ours (not coliding with some other extension)
+      if (!CRM_Stepw_Utils_General::isStepwiseWorkflow('referer')) {
+        // We're not in a workflowInstance, so there's nothing for us to do here.
+        return;
+      }  
 
-      // Get stepwise configuration.
-      
-      // Track worfklowid and stepid via referrer, because the xhr request that
-      // gets us to this point is not easily overloaded in order to put sw and ss 
-      // into the post/get values. 
-      // fixme: should add some kind of hashing as well, to make this more trustworty.
-      $queryParams = CRM_Stepw_Utils_Userparams::getRefererQueryParams();
-      $workflowId = $queryParams['sw'];
-      $stepId = $queryParams['ss'];
-      
-      if (!empty($workflowId)) {
-        // determine redirect.
-        // fixme: need a solid way to handle the final page.
-        $workflow = CRM_Stepw_Utils_WorkflowData::getWorkflowConfigById($workflowId);
-        $nextStepId = $stepId + 1;
-        // fixme: refactor this into a util function, once we're decided on using query params to track state.
-        $redirect = CRM_Utils_System::url('civicrm/stepwise', ['sw' => $workflowId, 'ss' => $nextStepId], TRUE, NULL, FALSE);
+      // Alter afform 'redirect' property so it goes to our stepwise page handler,
+      // but only if we're in a stepwise workflowIntance and the current step
+      // is for this afform.
+      $response = $event->getResponse();
+      $responseLength = count($response);
+      if ($responseLength == 1) {
+        $afform = &$response[0];
+        $afformName = ($afform['name'] ?? NULL);
+        $afformHasRedirectProperty = array_key_exists('redirect', $afform);
+        if (
+          // If we don't have a name, we can't do anything
+          !empty($afformName)
+          // Only if this api call would be fetching the 'redirect' property
+          && $afformHasRedirectProperty
+        ) {
+          $isValid = _stepw_alterAfformHtml_validate('name', $afformName);
+          if ($isValid) {
+            $workflowInstancePublicId = CRM_Stepw_Utils_Userparams::getUserParams('referer', CRM_Stepw_Utils_Userparams::QP_WORKFLOW_INSTANCE_ID);
+            $redirectParams = [
+              CRM_Stepw_Utils_Userparams::QP_WORKFLOW_INSTANCE_ID => $workflowInstancePublicId,
+            ];
+            $redirect = CRM_Utils_System::url('civicrm/stepwise/next', $redirectParams, TRUE, NULL, FALSE);
+            $afform['redirect'] = $redirect;
+            $event->setResponse($response);        
+            $a = 1;
 
-        $responseValues = $event->getResponse();
-        foreach ($responseValues as &$responseValue) {
-          $responseValue['redirect'] = urldecode($redirect);
+            // fixme: need a solid way to handle the final page.
+
+          }
         }
-        $event->setResponse($responseValues);
       }
+    }
+    elseif ($requestSignature == "4.afformsubmission.create") {
+      if (!CRM_Stepw_Utils_General::isStepwiseWorkflow('referer')) {
+        // We're not in a workflowInstance, so there's nothing for us to do here.
+        return;
+      }  
+      // trying to capture saved submission id
+      $response = $event->getResponse();
+      $afformSubmissionId = $response[0]['id'];
+      $stepPublicId = CRM_Stepw_Utils_Userparams::getUserParams('referer', CRM_Stepw_Utils_Userparams::QP_STEP_ID);
+      $workflowInstancePublicId = CRM_Stepw_Utils_Userparams::getUserParams('referer', CRM_Stepw_Utils_Userparams::QP_WORKFLOW_INSTANCE_ID);
+      $workflowInstance = CRM_Stepw_State::singleton()->getWorkflowInstance($workflowInstancePublicId);
+      $workflowInstance->setStepSubmissionId($stepPublicId, $afformSubmissionId);
+      
     }
   }
 

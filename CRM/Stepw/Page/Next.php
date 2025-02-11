@@ -9,22 +9,22 @@ class CRM_Stepw_Page_Next extends CRM_Core_Page {
   
   public function run() {
 
-    $this->workflowInstancePublicId = CRM_Stepw_Utils_Userparams::getUrlQueryParams(CRM_Stepw_Utils_Userparams::QP_WORKFLOW_INSTANCE_ID);
+    $this->workflowInstancePublicId = CRM_Stepw_Utils_Userparams::getUserParams('request', CRM_Stepw_Utils_Userparams::QP_WORKFLOW_INSTANCE_ID);
     $this->workflowInstance = CRM_Stepw_State::singleton()->getWorkflowInstance($this->workflowInstancePublicId);
-    $this->doneStepPublicId = CRM_Stepw_Utils_Userparams::getUrlQueryParams(CRM_Stepw_Utils_Userparams::QP_DONE_STEP_ID);    
+    $this->doneStepPublicId = CRM_Stepw_Utils_Userparams::getUserParams('request', CRM_Stepw_Utils_Userparams::QP_DONE_STEP_ID);    
         
     if (!$this->validate()) {
       CRM_Stepw_Utils_General::redirectToInvalid();
     }
 
-    // fixme: if done step is video page, denote 'video watched for this step' in the workflow instance (this property won't be archived even if step is archived);
+    // fixme: if done step is video page, denote 'video watched for this step'
+    // in the workflow instance (this property won't be archived even if step is archived);
 
     if (!empty($this->doneStepPublicId)) {
       // ensure closure of done step (if given);
       $this->workflowInstance->closeStep($this->doneStepPublicId);
     }
     
-    // fixme: determine last completed step (based only on closed steps); 
     // fixme: if last step was afform, apply any configured post-save validation for step;
     // fixme: if any post-save validation fails: redirect to post-save validation failure message;
     
@@ -38,10 +38,18 @@ class CRM_Stepw_Page_Next extends CRM_Core_Page {
     $params = [
       'i' => $this->workflowInstance->getVar('publicId'),
       's' => $stepPublicId,
-      // fixme: we must append afform params for existing contact_id if one was created
-      // earlier in the workflow.
     ];
-    $redirect = CRM_Stepw_Utils_Userparams::appendParamsToUrl($params, $workflowInstanceNextStep['url']);
+    // If next step is afform, and if this workflowInstance has a created contactId, append that in the
+    // afform #? params.
+    // fixme: any time we modify afform #? params, store them in workflowInstance::step_state_key data,
+    // because we may need them later, and we can't get them from 'request' or 'referer'. Therefore,
+    // this is probably better done with a method than here in ad-hoc code.
+    if ($workflowInstanceNextStep['type'] == 'afform' && ($individualCid = $this->workflowInstance->getCreatedEntityId('Individual1'))) {
+      $afformParams = [
+        'Individual1' => $individualCid,
+      ];
+    }
+    $redirect = CRM_Stepw_Utils_Userparams::appendParamsToUrl($workflowInstanceNextStep['url'], $params, $afformParams);
 
     CRM_Utils_System::redirect($redirect);
 
@@ -54,7 +62,7 @@ class CRM_Stepw_Page_Next extends CRM_Core_Page {
     if (!empty($this->workflowInstance)) {
       if (
         empty($this->doneStepPublicId)
-        || CRM_Stepw_State::singleton()->validateWorkflowInstanceStep($this->doneStepPublicId)
+        || $this->workflowInstance->validateStep($this->doneStepPublicId)
       ) {
         $isValid = TRUE;
       }
