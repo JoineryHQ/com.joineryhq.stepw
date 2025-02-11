@@ -2,11 +2,14 @@
 use CRM_Stepw_ExtensionUtil as E;
 
 class CRM_Stepw_Page_Start extends CRM_Core_Page {
-
+  
   public function run() {
+    
+    parent::run();
+    
     $workflowId = CRM_Stepw_Utils_Userparams::getStartWorkflowid();
     if (!$workflowId) {
-      throw new CRM_Extension_Exception('Missing required parameter: '. CRM_Stepw_Utils_Userparams::QP_START_WORKFLOW_ID);
+      CRM_Stepw_Utils_General::redirectToInvalid('Missing required parameter: '. CRM_Stepw_Utils_Userparams::QP_START_WORKFLOW_ID);
     }
     
     // Initialize this workflow instance.
@@ -15,7 +18,7 @@ class CRM_Stepw_Page_Start extends CRM_Core_Page {
     // Get the data for this workflow.
     $workflowConfig = CRM_Stepw_Utils_WorkflowData::getWorkflowConfigById($workflowId);
     if (empty($workflowConfig)) {
-      throw new CRM_Extension_Exception('Unidentified workflow requested.', 'stepw_unknown_workflow_id', ['requested id' => $workflowId]);
+      CRM_Stepw_Utils_General::redirectToInvalid('Unidentified workflow requested.');
     }
     
     // At start, all steps will of course be nonexistent (thus un-closed), so
