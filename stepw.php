@@ -5,15 +5,29 @@ require_once 'stepw.civix.php';
 use CRM_Stepw_ExtensionUtil as E;
 
 function _stepw_alterAfformHtml(phpQueryObject $doc, $path) {
+  // This listener will only fire when the given afform's cache is being rebuilt,
+  // i.e., the first time the afform is displayed after a cache clear.
+
   // $doc is a phpquery object:
   //  - built with code in: https://github.com/TobiaszCudnik/phpquery)
   //  - Best phpquery documentation I've found so far: https://github.com/electrolinux/phpquery/blob/master/wiki/README.md
 
-  if (!CRM_Stepw_Utils_General::isStepwiseWorkflow('referer')) {
-    // If we're not in a stepwise workflow, there's nothing to do here.
-    return;
-  }
-
+  // fixme: we need an angular (module? directive? component?) that will do the following:
+  // - only act if we're in a workflowInstance
+  // - validate workflowinstance id (and stepid, if any), or else make a noisy error and prevent further user action.
+  // - determine if this is a 'reload/back-button' form, and somehow redirect
+  //   to the form with 'sid' in afform args.
+  // - alter the button text per step configuration.
+  // - display a progress bar OUTSIDE OF THE FORM (is this possible here? Should we use hook_civicrm_alterContent()?)
+  // - if this is a 'reload/back-button' submission form (has afform 'sid'), 
+  //   display a submit button (again, with the correct text per step config)
+  //
+  
+  // Resolve the above fixmes above this line. We're quitting here.
+  return;
+  
+  
+  
   $isValid = _stepw_alterAfformHtml_validate('path', $path);
   if ($isValid) {
     // Find the submit button and change its text
@@ -75,41 +89,10 @@ function _stepw_alterAfformHtml_validate($keyType, $key) {
 }
 
 function stepw_civicrm_alterAngular(\Civi\Angular\Manager $angular) {
-  if (!CRM_Stepw_Utils_General::isStepwiseWorkflow('referer')) {
-    // We're not in a workflowInstance, so there's nothing for us to do here.
-    return;
-  }  
+  // This hook fires only when afform cache is rebuilt.
   
-  $hookedAfformNames = [];
-  // We'll only be acting if there's a given workflowInstance, and then only on
-  // afforms defined in that intance's worfklow config.
-  
-  $workflowInstancePublicId = CRM_Stepw_Utils_Userparams::getUserParams('referer', CRM_Stepw_Utils_Userparams::QP_WORKFLOW_INSTANCE_ID);
-  if (!empty($workflowInstancePublicId)) {
-    $workflowInstance = CRM_Stepw_State::singleton()->getWorkflowInstance($workflowInstancePublicId);
-    if (!empty($workflowInstance)) {
-      $workflowConfig = CRM_Stepw_Utils_WorkflowData::getWorkflowConfigById($workflowInstance->getVar('workflowId'));
-      foreach ($workflowConfig['steps'] as $workflowConfigStep) {
-        if ($workflowConfigStep['type'] == 'afform') {
-          $hookedAfformNames[] = $workflowConfigStep['afform_name'];
-        }
-      }
-    }
-    else {
-      // If we're here, $workflowInstancePublicId is provided, but no such 
-      // workflow is available in state; this implies the user's workflowInstance
-      // has expired. This means we won't even be able to know which webforms 
-      // are part of the workflow, but clearly we need to tell the user that their
-      // workflowInstance is no longer valid. Therefore, we'll hook into ALL
-      // afforms with our stepwise changeset, which will (since workflowInstancePublicId
-      // is not valid) trigger an "invalid" message for the user.
-      $afforms = \Civi\Api4\Afform::get()
-        ->setCheckPermissions(FALSE)
-        ->addWhere('is_public', '=', TRUE)
-        ->execute();
-      $hookedAfformNames = CRM_Utils_Array::collect('name', (array)$afforms);
-    }
-  }
+  // For any afform defined in any step of any workflow, add our listener.
+  $hookedAfformNames = CRM_Stepw_Utils_WorkflowData::getAllAfformNames();
   
   foreach ($hookedAfformNames as $hookedAfformName) {
     /* If I know the $name of the saved form, eg. afformQuickAddIndividual, I can
@@ -202,10 +185,10 @@ function stepw_civicrm_config(&$config): void {
   if (CRM_Stepw_Utils_General::isStepwiseWorkflow('referer')
    || CRM_Stepw_Utils_General::isStepwiseWorkflow('request')
   ){
-    // In the current model, everything (well, alterAngular(), at least) depends
-    // on debug being ON for all afform loading operations.
-    if (!CRM_Core_Config::singleton()->debug) {
-      throw new CRM_Extension_Exception('This only works with debugging turned on!');
+    // In the current model, we have to make everything work even when
+    // debug is OFF
+    if (CRM_Core_Config::singleton()->debug) {
+      throw new CRM_Extension_Exception('This branch demands debugging must be turned off!');
     }
   }
   _stepw_civix_civicrm_config($config);
