@@ -198,9 +198,18 @@ function _stepw_afform_submit_early(\Civi\Afform\Event\AfformSubmitEvent $event)
  *
  * @link https://docs.civicrm.org/dev/en/latest/hooks/hook_civicrm_config/
  */
-function stepw_civicrm_config(&$config): void {
+function stepw_civicrm_config(&$config): void {  
+  if (CRM_Stepw_Utils_General::isStepwiseWorkflow('referer')
+   || CRM_Stepw_Utils_General::isStepwiseWorkflow('request')
+  ){
+    // In the current model, everything (well, alterAngular(), at least) depends
+    // on debug being ON for all afform loading operations.
+    if (!CRM_Core_Config::singleton()->debug) {
+      throw new CRM_Extension_Exception('This only works with debugging turned on!');
+    }
+  }
   _stepw_civix_civicrm_config($config);
-
+  
   // Bind our wrapper for API Events
   Civi::dispatcher()->addListener('civi.api.prepare', ['CRM_Stepw_APIWrapper', 'PREPARE'], -100);
   Civi::dispatcher()->addListener('civi.api.respond', ['CRM_Stepw_APIWrapper', 'RESPOND'], -100);
