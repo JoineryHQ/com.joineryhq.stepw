@@ -27,8 +27,12 @@ class CRM_Stepw_Utils_General {
   }
   
   public static function alterAfformInvalid(phpQueryObject $doc) {
-    // fixme: parse invalid.tpl and insert it here.
+    // Clear all afform elements.
     $doc->find('*')->remove();
-    $doc->append('<p>Invalid request.</p>');    
+    
+    // Add 'invalid request' message in body of afform.
+    $tpl = CRM_Core_Smarty::singleton();
+    $invalidMessage = $tpl->fetch('CRM/Stepw/Page/Invalid.tpl');
+    $doc->append($invalidMessage);    
   }
 }
