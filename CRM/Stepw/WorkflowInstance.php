@@ -17,6 +17,19 @@ class CRM_Stepw_WorkflowInstance {
   private $lastModified;
   private $steps = [];
   private $createdEntityIds = [];
+  
+  // fixme: should each workflow instance store its own original config, as it was at the
+  // time of instance creation? if not, any configuration changes could have very
+  // surprising consequences for workflowInstances in-progress at that time.
+  // 
+  // fixme: probably good to track certain properties per configStep (not publicStepId,
+  // which may change in the back-button flow direction), such as:
+  // - submission id
+  // - has ever been closed (this could be redundant to submisssion_id for afforms, 
+  //   but not for wp pages; for wp pages, this could also apply to video-page steps,
+  //   so that we'll know "video was fully watched" even on back-button flow)
+  // 
+  //
 
   const STEPW_WI_STEP_STATUS_OPEN = 0;
   const STEPW_WI_STEP_STATUS_CLOSED = 1;
@@ -56,6 +69,11 @@ class CRM_Stepw_WorkflowInstance {
     $this->updateLastModified();
     $this->steps[$stepPublicId]['status'] = self::STEPW_WI_STEP_STATUS_CLOSED;
     // fixme: as in ::open(), we should archive all subsequent steps in this workflowInstance
+
+    // fixme: create a top-level array property in this class to record a list 
+    // of steps (per config Id at least, and perhaps public id if that seems useful)
+    // which have ever been closed. this will help with back-button detection.
+    //
   }
   
   public function setStepSubmissionId(string $stepPublicId, int $afformSubmissionId) {
