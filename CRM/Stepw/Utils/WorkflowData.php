@@ -12,5 +12,20 @@ class CRM_Stepw_Utils_WorkflowData {
     $data = self::getAllWorkflowConfig();
     return ($data[$workflowId] ?? NULL);
   }
+  
+  public static function getAllAfformNames() {
+    $afformNames = [];
+    $data = self::getAllWorkflowConfig();
+    foreach ($data as $workflowId => $workflow) {
+      foreach (($workflow['steps'] ?? []) as $step) {
+        if (($step['type'] ?? '') == 'afform') {
+          if ($afformName = ($step['afform_name'] ?? FALSE)) {
+            $afformNames[] = $afformName;
+          }
+        }
+      }
+    }
+    return $afformNames;
+  }
 
 }
