@@ -9,10 +9,22 @@ class CRM_Stepw_APIWrapper {
   public static function PREPARE (Civi\API\Event\PrepareEvent $event) {
     $requestSignature = $event->getApiRequestSig();
     if ($requestSignature == "4.afform.submit") {
-      if (!CRM_Stepw_Utils_General::isStepwiseWorkflow('referer')) {
-        // We're not in a workflowInstance, so there's nothing for us to do here.
+      if (!CRM_Stepw_Utils_Userparams::validateWorkflowInstanceStep('referer', FALSE)) {
+        // Workflow params are invalid. Just return.
         return;
-      }  
+      }
+      
+      $request = $event->getApiRequest();
+      $afform = $request->getParams();
+      $afformName = ($afform['name'] ?? NULL);
+      if (
+        empty($afformName)
+        // If this afform is not for the current workflow step, we'll take no action here.
+        || !CRM_Stepw_Utils_Userparams::currentWorkflowStepIsForAfform('referer', $afformName)
+      ) {
+        return;
+      }
+      
       // Allow saving of afforms loaded with the ?sid=n query parameter (i.e.,
       // afforms preloaded with a given afform.submission), by stripping the
       // submission id from request args, but only on certain conditions.
@@ -25,10 +37,13 @@ class CRM_Stepw_APIWrapper {
       }
     }
     elseif ($requestSignature == "4.afformsubmission.get") {
-      if (!CRM_Stepw_Utils_General::isStepwiseWorkflow('referer')) {
-        // We're not in a workflowInstance, so there's nothing for us to do here.
+      if (!CRM_Stepw_Utils_Userparams::validateWorkflowInstanceStep('referer', FALSE)) {
+        // Workflow params are invalid. Just return.
         return;
-      }  
+      }
+      
+      // fixme: what validation can we do here to check this submission is for an afform that matches the current workflow step?
+
       // fixme: we can display prefilled form submission with a url like 'http://plana.l/civicrm/form-test/#?sid=7'
       // IF WE DO OUR OWN PERMISSION CHECKING AND DISABLE THIS REQUEST'S PERMISSIONS HERE:
       // AND IF WE GRANT (MOMENTARILY) 'AFFORM: EDIT AND DELETE FORMS' PERMISSION (FOR THIS, CONSIDER OUR PR TO SMS API EXTENSION)
@@ -50,10 +65,22 @@ class CRM_Stepw_APIWrapper {
     $requestSignature = $event->getApiRequestSig();
 
     if ($requestSignature == "4.afformsubmission.create") {
-      if (!CRM_Stepw_Utils_General::isStepwiseWorkflow('referer')) {
-        // We're not in a workflowInstance, so there's nothing for us to do here.
+      if (!CRM_Stepw_Utils_Userparams::validateWorkflowInstanceStep('referer', FALSE)) {
+        // Workflow params are invalid. Just return.
         return;
-      }  
+      }
+      
+      $request = $event->getApiRequest();
+      $requestParams = $request->getParams();
+      $afformName = ($requestParams['values']['afform_name'] ?? NULL);
+      if (
+        empty($afformName)
+        // If this afform is not for the current workflow step, we'll take no action here.
+        || !CRM_Stepw_Utils_Userparams::currentWorkflowStepIsForAfform('referer', $afformName)
+      ) {
+        return;
+      }
+
       // trying to capture saved submission id
       $response = $event->getResponse();
       $afformSubmissionId = $response[0]['id'];

@@ -5,7 +5,11 @@
   angular.module('stepwAfform').controller('stepwAfform', function($scope, crmApi4) {
 
       $scope.init = function() {
+        // Set button label text.
         $scope.submitButtonLabel = CRM.vars.stepw.submitButtonLabel;
+        // Set redirect property per workflow step config.
+        $scope.$parent.meta.redirect = CRM.vars.stepw.redirect;
+        
         // fixme: the button should only show under these conditions
         // - we're not in a stepwise workflow; AND
         // - $scope.$parent.afform.showSubmitButton is true
@@ -13,8 +17,6 @@
         // - we are in a stepwise workflow; AND
         // - stepwise workflow is valid; AND
         $scope.stepwiseShowSubmitButton = true;
-        // Set redirect property per workflow step config.
-        $scope.$parent.meta.redirect = CRM.vars.stepw.redirect;
         var parentShowSubmitButton = $scope.$parent.afform.showSubmitButton;
       }
       $scope.init();

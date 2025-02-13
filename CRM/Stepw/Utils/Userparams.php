@@ -120,5 +120,75 @@ class CRM_Stepw_Utils_Userparams {
     $u->addFragmentQuery($fragmentQuery);
     return (string)$u;
   }
+
+  public static function isStepwiseWorkflow($source = 'any') {
+    static $cache;
+    
+    if (empty($cache[$source])) {
+      if ($source == 'any') {
+        $cache[$source] = (self::isStepwiseWorkflow('referer') || self::isStepwiseWorkflow('request'));
+      }
+      else {
+        $workflowInstancePublicId = CRM_Stepw_Utils_Userparams::getUserParams($source, CRM_Stepw_Utils_Userparams::QP_WORKFLOW_INSTANCE_ID);
+        $cache[$source] = (!empty($workflowInstancePublicId));
+      }
+    }
+    
+    return $cache[$source];
+  }
   
+  public static function validateWorkflowInstanceStep($source, $isFatal) {
+    
+    /////////////////////////////////// fixme: stub.
+    return true;
+    ///////////////////////////////////
+
+    if (!self::isStepwiseWorkflow($source)) {
+      // This is not a stepwise workflow, so it can't be invalid.
+      return TRUE;
+    }
+    
+    static $cache;
+    
+    $workflowinstancePublicId = self::getUserParams($source, self::QP_WORKFLOW_INSTANCE_ID);
+    $stepPublicId = self::getUserParams($source, self::QP_STEP_ID);
+
+    $cacheKey = "{$workflowinstancePublicId}|{$stepPublicId}";
+    if (empty($cache[$cacheKey])) {
+      $isValid = FALSE;
+      
+      // fixme: check if workflow and step exist in state.
+//            // workflow instance exists? 
+//        !empty($workflowInstance)
+//        // step exists?
+//        && $workflowInstance->validateStep($stepPublicId)
+
+    }
+    
+    if (!$cache[$cacheKey] && $isFatal) {
+      CRM_Stepw_Utils_General::redirectToInvalid();
+    }
+    return $cache[$cacheKey];
+  }
+  
+  public static function currentWorkflowStepIsForAfform($source, $afformName) {
+
+    $ret = FALSE;
+
+    // If we're not in a stepwise workflow, there's no matching form, so ensure we're in a workflow.
+    if (self::isStepwiseWorkflow($source)) {
+      $stepPublicId = CRM_Stepw_Utils_Userparams::getUserParams($source, CRM_Stepw_Utils_Userparams::QP_STEP_ID);
+      $workflowInstancePublicId = CRM_Stepw_Utils_Userparams::getUserParams($source, CRM_Stepw_Utils_Userparams::QP_WORKFLOW_INSTANCE_ID);
+      $workflowInstance = CRM_Stepw_State::singleton()->getWorkflowInstance($workflowInstancePublicId);
+      
+      // step is for this afform?
+      $workflowConfigStep = CRM_Stepw_Utils_WorkflowData::getCurrentWorkflowConfigStep($source);
+      if (($workflowConfigStep['afform_name'] ?? NULL) == $afformName) {
+        // fixme: must also validate :step_state_key (if given) is valid?
+        $ret = TRUE;
+      }
+    }
+    return $ret;
+    
+  }
 }

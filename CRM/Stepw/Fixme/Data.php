@@ -7,6 +7,7 @@ class CRM_Stepw_Fixme_Data {
       '1' => [
         'steps' => [
           // TODO: when loading real data, ensure these are sorted in step order.
+          // fixme: we need a data structure that can handle sub-step options, e.g. vidoe pages in 3 languages.
           [
             'type' => 'post',
             'url' => 'http://plana.l/example-intro-page/',

@@ -17,19 +17,16 @@ class CRM_Stepw_Utils_WorkflowData {
     $ret = [];
 
     $userParams = CRM_Stepw_Utils_Userparams::getUserParams($source);
-
-    $isValid = 1; //CRM_Stepw_Utils_General::validateUserWorkflowStep($userParams);
     
-    if ($isValid) {
-      $workflowInstancePublicId = $userParams[CRM_Stepw_Utils_Userparams::QP_WORKFLOW_INSTANCE_ID];
-      $workflowStepPublicId = $userParams[CRM_Stepw_Utils_Userparams::QP_STEP_ID];
-      
-      $workflowInstance = CRM_Stepw_State::singleton()->getWorkflowInstance($workflowInstancePublicId);
-      $workflowConfig = self::getWorkflowConfigById($workflowInstance->getVar('workflowId'));
-      $workflowStep = $workflowInstance->getStepByPublicId($workflowStepPublicId);
-      $workflowConfigStep = $workflowConfig['steps'][$workflowStep['stepId']];
-      $ret = $workflowConfigStep;
-    }
+    $workflowInstancePublicId = $userParams[CRM_Stepw_Utils_Userparams::QP_WORKFLOW_INSTANCE_ID];
+    $workflowStepPublicId = $userParams[CRM_Stepw_Utils_Userparams::QP_STEP_ID];
+
+    $workflowInstance = CRM_Stepw_State::singleton()->getWorkflowInstance($workflowInstancePublicId);
+    $workflowConfig = self::getWorkflowConfigById($workflowInstance->getVar('workflowId'));
+    $workflowStep = $workflowInstance->getStepByPublicId($workflowStepPublicId);
+    $workflowConfigStep = $workflowConfig['steps'][$workflowStep['stepId']];
+    $ret = $workflowConfigStep;
+    
     return $ret;
   }
   
