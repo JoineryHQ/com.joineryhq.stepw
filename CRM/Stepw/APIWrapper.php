@@ -49,45 +49,7 @@ class CRM_Stepw_APIWrapper {
   public static function RESPOND(Civi\API\Event\RespondEvent $event) {
     $requestSignature = $event->getApiRequestSig();
 
-    if ($requestSignature == "4.afform.get") {
-      if (!CRM_Stepw_Utils_General::isStepwiseWorkflow('referer')) {
-        // We're not in a workflowInstance, so there's nothing for us to do here.
-        return;
-      }  
-
-      // Alter afform 'redirect' property so it goes to our stepwise page handler,
-      // but only if we're in a stepwise workflowIntance and the current step
-      // is for this afform.
-      $response = $event->getResponse();
-      $responseLength = count($response);
-      if ($responseLength == 1) {
-        $afform = &$response[0];
-        $afformName = ($afform['name'] ?? NULL);
-        $afformHasRedirectProperty = array_key_exists('redirect', $afform);
-        if (
-          // If we don't have a name, we can't do anything
-          !empty($afformName)
-          // Only if this api call would be fetching the 'redirect' property
-          && $afformHasRedirectProperty
-        ) {
-          $isValid = _stepw_alterAfformHtml_validate('name', $afformName);
-          if ($isValid) {
-            $workflowInstancePublicId = CRM_Stepw_Utils_Userparams::getUserParams('referer', CRM_Stepw_Utils_Userparams::QP_WORKFLOW_INSTANCE_ID);
-            $redirectParams = [
-              CRM_Stepw_Utils_Userparams::QP_WORKFLOW_INSTANCE_ID => $workflowInstancePublicId,
-            ];
-            $redirect = CRM_Utils_System::url('civicrm/stepwise/next', $redirectParams, TRUE, NULL, FALSE);
-            $afform['redirect'] = $redirect;
-            $event->setResponse($response);        
-            $a = 1;
-
-            // fixme: need a solid way to handle the final page.
-
-          }
-        }
-      }
-    }
-    elseif ($requestSignature == "4.afformsubmission.create") {
+    if ($requestSignature == "4.afformsubmission.create") {
       if (!CRM_Stepw_Utils_General::isStepwiseWorkflow('referer')) {
         // We're not in a workflowInstance, so there's nothing for us to do here.
         return;

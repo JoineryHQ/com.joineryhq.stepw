@@ -26,6 +26,7 @@ class CRM_Stepw_Utils_General {
     return $ret;
   }
   
+  // fixme: is this still used anywhere?
   public static function alterAfformInvalid(phpQueryObject $doc) {
     // Clear all afform elements.
     $doc->find('*')->remove();

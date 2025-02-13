@@ -31,7 +31,7 @@
   <civix>
     <namespace>CRM/Stepw</namespace>
     <format>24.09.1</format>
-    <angularModule>crmStepw</angularModule>
+    <angularModule>stepwAfform</angularModule>
   </civix>
   <mixins>
     <mixin>mgd-php@1.0.0</mixin>
