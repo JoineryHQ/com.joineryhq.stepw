@@ -139,7 +139,7 @@ class CRM_Stepw_Utils_Userparams {
   
   public static function validateWorkflowInstanceStep($source, $isFatal) {
     
-    /////////////////////////////////// fixme: stub.
+    /////////////////////////////////// fixme: stub. ALL VALIDATION PASSES!
     return true;
     ///////////////////////////////////
 

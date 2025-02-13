@@ -35,6 +35,10 @@ function stepw_civicrm_pageRun(CRM_Core_Page $page) {
         'redirect' => $redirect,
       ];
       CRM_Core_Resources::singleton()->addVars('stepw', $vars);
+      
+      // fixme: this js file is not needed, because apparently back-button causes
+      // a full page reload on afform pages, which is what we want.
+      // CRM_Core_Resources::singleton()->addScriptFile('com.joineryhq.stepw', 'js/CRM_Afform_Page_AfformBase.js');
 
       // fixme: determine if this is a 'reload/back-button' form, and redirect to the form with 'sid' in afform args.
       // (see for example how we add Individual1 in apiwrappers.)
@@ -177,8 +181,6 @@ function stepw_civicrm_permission_check($permission, &$granted) {
   }
 
   // Only take action on afform.submission.prefill.
-  // fixme: we must also verify that the submission id (available in $param['args']['sid'])
-  // is valid for the current user's workflow instance and current step.
   static $q;
   if (!isset($q)) {
     $q = CRM_Utils_Request::retrieve('q', 'String', '');
@@ -187,6 +189,9 @@ function stepw_civicrm_permission_check($permission, &$granted) {
     return;
   }
 
+  // fixme: we must also verify that the submission id (available in $param['args']['sid'])
+  // is valid for the current user's workflow instance and current step.
+  
   // FIXME: Additional permissions are required for loading afform submission data (e.g.
   // stepwise form re-submission during 'back-button' handling), but of course
   // we should only grant it momentarily and only after confirming the (typically anonymous)
@@ -201,6 +206,7 @@ function stepw_civicrm_permission_check($permission, &$granted) {
 //    // if missing, afform prefill will be empty (depending on various permissions/ACLs)
 //    case 'view all contacts':
     case 'this does nothing':
+      // FIXME: which perms are really required here?
       $granted = true;
       break;
   }
