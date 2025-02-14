@@ -138,11 +138,6 @@ class CRM_Stepw_Utils_Userparams {
   }
   
   public static function validateWorkflowInstanceStep($source, $isFatal) {
-    
-    /////////////////////////////////// fixme: stub. ALL VALIDATION PASSES!
-    return true;
-    ///////////////////////////////////
-
     if (!self::isStepwiseWorkflow($source)) {
       // This is not a stepwise workflow, so it can't be invalid.
       return TRUE;
@@ -150,19 +145,25 @@ class CRM_Stepw_Utils_Userparams {
     
     static $cache;
     
-    $workflowinstancePublicId = self::getUserParams($source, self::QP_WORKFLOW_INSTANCE_ID);
+    $workflowInstancePublicId = self::getUserParams($source, self::QP_WORKFLOW_INSTANCE_ID);
     $stepPublicId = self::getUserParams($source, self::QP_STEP_ID);
 
-    $cacheKey = "{$workflowinstancePublicId}|{$stepPublicId}";
+    $cacheKey = "{$workflowInstancePublicId}|{$stepPublicId}";
     if (empty($cache[$cacheKey])) {
       $isValid = FALSE;
       
       // fixme: check if workflow and step exist in state.
-//            // workflow instance exists? 
-//        !empty($workflowInstance)
-//        // step exists?
-//        && $workflowInstance->validateStep($stepPublicId)
-
+      $workflowInstance = CRM_Stepw_State::singleton()->getWorkflowInstance($workflowInstancePublicId);
+      $state = CRM_Stepw_State::singleton();
+      if (
+        // workflow instance exists? 
+        !empty($workflowInstance)
+        // step exists?
+        && $workflowInstance->validateStep($stepPublicId)
+      ) {
+        $isValid = TRUE;
+      }
+      $cache[$cacheKey] = $isValid;
     }
     
     if (!$cache[$cacheKey] && $isFatal) {

@@ -17,7 +17,15 @@ class CRM_Stepw_Fixme_Data {
             'type' => 'afform',
             'url' => 'http://plana.l/civicrm/test-form-start/',
             'afform_name' => 'afformTESTFormStart',
+            'afform_prefill_individual' => FALSE,
             'button_label' => 'Submit and continue',
+          ],
+          [
+            'type' => 'afform',
+            'url' => 'http://plana.l/civicrm/test-form-2-activity/',
+            'afform_name' => 'afformTestForm2Activity1',
+            'afform_prefill_individual' => FALSE,
+            'button_label' => 'Submit and Next',
           ],
           [
             'type' => 'post',
@@ -26,8 +34,9 @@ class CRM_Stepw_Fixme_Data {
           ],
           [
             'type' => 'afform',
-            'url' => 'http://plana.l/civicrm/test-form-2-activity/',
-            'afform_name' => 'afformTestForm2Activity1',
+            'url' => 'http://plana.l/civicrm/test-form-3-activity-2/',
+            'afform_name' => 'afformTestForm3Activity2',
+            'afform_prefill_individual' => FALSE,
             'button_label' => 'Submit and Next',
           ],
           [

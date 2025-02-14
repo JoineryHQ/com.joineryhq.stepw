@@ -53,22 +53,7 @@ function stepw_civicrm_angularModules(&$angularModules) {
 }
 
 function _stepw_alterAfformHtml(phpQueryObject $doc, $path) {
-  // $doc is a phpquery object:
-  //  - built with code in: https://github.com/TobiaszCudnik/phpquery)
-  //  - Best phpquery documentation I've found so far: https://github.com/electrolinux/phpquery/blob/master/wiki/README.md
-
-  // Change the button properties and relocate it into a new <div> that uses our controller.
-  $button = $doc->find('button[ng-click="afform.submit()"]');
-  $button->attr('ng-if', 'stepwiseShowSubmitButton');
-  $button->html('{{ submitButtonLabel }}');
-  $buttonHtml = $button->htmlOuter();
-  $button->remove();
-  $appendToDoc = <<< "END"
-    <div ng-controller="stepwAfform">
-    $buttonHtml
-    </div>
-  END;
-  $doc->append($appendToDoc);
+  CRM_Stepw_Utils_Afform::alterForm($doc);
 }
 
 
@@ -200,12 +185,11 @@ function stepw_civicrm_permission_check($permission, &$granted) {
   switch ($permission) {
     // If missing, anon will probably generate an IDS check failure.
 //    case 'skip IDS check':
-//    // If missing, anon will get API4 access denied on AfformSubmission::get,
-//    // and user-visible error on afform load
+    // If missing, anon will get API4 access denied on AfformSubmission::get,
+    // and user-visible error on afform load
 //    case 'administer afform':
-//    // if missing, afform prefill will be empty (depending on various permissions/ACLs)
-//    case 'view all contacts':
-    case 'this does nothing':
+    // if missing, afform prefill will be empty (depending on various permissions/ACLs)
+    case 'view all contacts':
       // FIXME: which perms are really required here?
       $granted = true;
       break;
