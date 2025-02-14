@@ -13,10 +13,15 @@
 class CRM_Stepw_WorkflowInstance {
   
   private $workflowId;
+  private $workflowConfig;
   private $publicId;
   private $lastModified;
-  private $steps = [];
   private $createdEntityIds = [];
+  
+  private $stepIdsByPublicId = [];
+  private $activeSteps = [];
+  private $archivedSteps = [];
+  private $stepsEverClosed = [];
   
   // fixme: should each workflow instance store its own original config, as it was at the
   // time of instance creation? if not, any configuration changes could have very
@@ -45,43 +50,76 @@ class CRM_Stepw_WorkflowInstance {
 
   private function initialize() {
     $this->publicId = CRM_Stepw_Utils_General::generatePublicId();
+    $workflowConfig = CRM_Stepw_Utils_WorkflowData::getWorkflowConfigById($this->workflowId);
+    foreach ($workflowConfig['steps'] as $configStepNumber => &$configStep) {
+      $configStep['stepNumber'] = $configStepNumber;
+    }
+    $this->workflowConfig = $workflowConfig;
     $this->updateLastModified();
 
     $state = CRM_Stepw_State::singleton();
     $state->storeWorkflowInstance($this);
   }
   
-  public function openStep($stepId) {
+  public function openStep(string $stepPublicId) {
     $this->updateLastModified();
     // fixme: this method assumes that the step is not already open and that it doesn't
     // already have a public id. But what if it does? Does that cause problems?
     $publicId = CRM_Stepw_Utils_General::generatePublicId();
-    $this->steps[$publicId] = [
+    $this->stepIdsByPublicId[$publicId] = $stepPublicId;
+    
+    $this->activeSteps[$stepPublicId] = [
+      // fixme: stepId is deprecated.
+      // 'stepId' => $stepId,
+      'id' => $stepPublicId,
+      'publicId' => $publicId,
       'status' => self::STEPW_WI_STEP_STATUS_OPEN,
-      'stepId' => $stepId,
     ];
-    // Fixme: We can't allow more than one open step at a time. If we open this step,
+    // We can't allow more than one open step at a time. If we open this step,
     // we must archive any steps that would come later.
+    $this->archiveStepsAfter($stepPublicId);
     return $publicId;
   }
   
-  public function closeStep($stepPublicId) {
+  public function closeStep(string $stepPublicId) {
     $this->updateLastModified();
-    $this->steps[$stepPublicId]['status'] = self::STEPW_WI_STEP_STATUS_CLOSED;
-    // fixme: as in ::open(), we should archive all subsequent steps in this workflowInstance
+    $stepId = $this->stepIdsByPublicId[$stepPublicId];
+    // Record this step is closed.
+    $this->activeSteps[$stepId]['status'] = self::STEPW_WI_STEP_STATUS_CLOSED;
+    // Record this step has ever been closed.
+    $this->stepsEverClosed[] = $stepId;
 
-    // fixme: create a top-level array property in this class to record a list 
-    // of steps (per config Id at least, and perhaps public id if that seems useful)
-    // which have ever been closed. this will help with back-button detection.
-    //
+    // We're restarting from this step, so
+    // we must archive any steps that would come later.
+    $this->archiveStepsAfter($stepId);
+
+  }
+  
+  private function archiveStepsAfter(int $stepId) {
+    $this->updateLastModified();
+    // for any active steps with id > $stepId, move them to $archivedSteps[$publicId]
+    // (steps in $this->activeSteps are, like steps in $this->workflowConfig['steps']
+    // keyed sequentially starting from 0.)
+    foreach ($this->activeSteps as $activeStepId => $activeStep) {
+      if ($activeStepId > $stepId) {
+        $activeStepPublicId = $activeStep['publicId'];
+        $this->archivedSteps[$activeStepPublicId] = $activeStep;
+        unset($this->activeSteps[$activeStepId]);
+      }
+    }
+    $a = 1;
   }
   
   public function setStepSubmissionId(string $stepPublicId, int $afformSubmissionId) {
     $this->updateLastModified();
-    $this->steps[$stepPublicId]['afform_submission_id'] = $afformSubmissionId;
+    $stepId = $this->stepIdsByPublicId[$stepPublicId];
+    $this->activeSteps[$stepId]['afform_submission_id'] = $afformSubmissionId;
   }
 
   public function getVar($name) {
+    if (!property_exists($this, $name)) {
+      throw new CRM_Extension_Exception("Invalid variable name requested in ". __METHOD__, 'CRM_Stepw_WorkflowInstance_getVar_invalid', ['requested var name' => $name]);
+    }
     return ($this->$name ?? NULL);
   }
   
@@ -93,34 +131,18 @@ class CRM_Stepw_WorkflowInstance {
   public function getCreatedEntityId(string $entityName) {
     return ($this->createdEntityIds[$entityName] ?? NULL);
   }
-
-  public function getStepByPublicId($publicId) {
-    return ($this->steps[$publicId] ?? NULL);
-  }
   
   /**
    * Determine next un-completed step, per workflow config, in this workflow instance.
-   * @return Array Step configuration.
+   * @return Array|Boolean Step configuration if any remain; otherwise FALSE.
    */
   public function getNextStep() {
-    // Build a list of all closed steps in this instance.
-    $closedWorfklowInstanceStepIds = [];
-    foreach ($this->steps as $workflowInstanceStepPublicId => $workflowInstanceStep) {
-      if ($workflowInstanceStep['status'] == CRM_Stepw_WorkflowInstance::STEPW_WI_STEP_STATUS_CLOSED) {
-        $closedWorfklowInstanceStepIds[] = $workflowInstanceStep['stepId'];
+    foreach ($this->workflowConfig['steps'] as $stepId => $stepConfig) {
+      if (($this->activeSteps[$stepId]['status'] ?? '') != self::STEPW_WI_STEP_STATUS_CLOSED) {
+        return $stepConfig;
       }
     }
-    // Find the first configured step that isn't closed.
-    $workflowConfig = CRM_Stepw_Utils_WorkflowData::getWorkflowConfigById($this->workflowId);
-    foreach ($workflowConfig['steps'] as $workflowConfigStepId => $workflowConfigStep) {
-      if (!in_array($workflowConfigStepId, $closedWorfklowInstanceStepIds)) {
-        $nextStep = $workflowConfigStep;
-        $nextStep['stepId'] = $workflowConfigStepId;
-        break;
-      }
-    }
-    
-    return $nextStep;
+    return FALSE;
   }
   
   /**
@@ -130,7 +152,7 @@ class CRM_Stepw_WorkflowInstance {
    *  open
    *  closed
    * 
-   * @return bool True on valid; false otherwise.
+   * @return bool True on valid; False otherwise.
    */
   public function validateStep(string $stepPublicId, string $requireStatusName = NULL) {
     switch ($requireStatusName) {
@@ -147,7 +169,8 @@ class CRM_Stepw_WorkflowInstance {
 
     $isValid = FALSE;
     
-    $step = ($this->steps[$stepPublicId] ?? NULL);
+    $stepId = $this->stepIdsByPublicId[$stepPublicId];
+    $step = ($this->activeSteps[$stepId] ?? NULL);
     
     if (!empty($requireStatusValue)) {
       $isValid = (($step['status'] ?? NULL) === $requireStatusValue);

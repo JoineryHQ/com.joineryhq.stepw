@@ -21,4 +21,11 @@
     <access_callback>1</access_callback>
     <is_public>1</is_public>
   </item>
+  <item>
+    <path>civicrm/stepwise/final</path>
+    <page_callback>CRM_Stepw_Page_Final</page_callback>
+    <title>Thank You!</title>
+    <access_callback>1</access_callback>
+    <is_public>1</is_public>
+  </item>
 </menu>

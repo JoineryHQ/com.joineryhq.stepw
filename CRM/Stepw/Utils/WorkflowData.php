@@ -17,14 +17,14 @@ class CRM_Stepw_Utils_WorkflowData {
     $ret = [];
 
     $userParams = CRM_Stepw_Utils_Userparams::getUserParams($source);
-    
     $workflowInstancePublicId = $userParams[CRM_Stepw_Utils_Userparams::QP_WORKFLOW_INSTANCE_ID];
     $workflowStepPublicId = $userParams[CRM_Stepw_Utils_Userparams::QP_STEP_ID];
 
     $workflowInstance = CRM_Stepw_State::singleton()->getWorkflowInstance($workflowInstancePublicId);
-    $workflowConfig = self::getWorkflowConfigById($workflowInstance->getVar('workflowId'));
-    $workflowStep = $workflowInstance->getStepByPublicId($workflowStepPublicId);
-    $workflowConfigStep = $workflowConfig['steps'][$workflowStep['stepId']];
+    $workflowConfig = $workflowInstance->getVar('workflowConfig');
+    $stepIdsByPublicId = $workflowInstance->getVar('stepIdsByPublicId');
+    $stepId = $stepIdsByPublicId[$workflowStepPublicId];
+    $workflowConfigStep = $workflowConfig['steps'][$stepId];
     $ret = $workflowConfigStep;
     
     return $ret;

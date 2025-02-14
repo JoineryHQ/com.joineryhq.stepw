@@ -30,9 +30,12 @@ class CRM_Stepw_Page_Next extends CRM_Core_Page {
     
     // determine next step (based only on closed steps);
     $workflowInstanceNextStep = $this->workflowInstance->getNextStep();
+    if (!$workflowInstanceNextStep) {
+      CRM_Stepw_Utils_General::redirectToFinal();
+    }
 
     // Open next step in workflowInstance.
-    $stepPublicId = $this->workflowInstance->openStep($workflowInstanceNextStep['stepId']);
+    $stepPublicId = $this->workflowInstance->openStep($workflowInstanceNextStep['stepNumber']);
 
     // Append parameters to step url and redirect thence.
     $params = [

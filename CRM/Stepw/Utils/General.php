@@ -19,6 +19,11 @@ class CRM_Stepw_Utils_General {
     $redirect = CRM_Utils_System::url('civicrm/stepwise/invalid', '', TRUE, NULL, FALSE);
     CRM_Utils_System::redirect($redirect);
   }
+
+  public static function redirectToFinal() {
+    $redirect = CRM_Utils_System::url('civicrm/stepwise/final', '', TRUE, NULL, FALSE);
+    CRM_Utils_System::redirect($redirect);
+  }
   
   public static function buildNextUrl($queryParams) {
     $url = CRM_Utils_System::url('civicrm/stepwise/next', $queryParams, TRUE, NULL, FALSE);    
