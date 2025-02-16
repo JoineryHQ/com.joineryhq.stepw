@@ -22,9 +22,8 @@ class CRM_Stepw_Utils_WorkflowData {
 
     $workflowInstance = CRM_Stepw_State::singleton()->getWorkflowInstance($workflowInstancePublicId);
     $workflowConfig = $workflowInstance->getVar('workflowConfig');
-    $stepIdsByPublicId = $workflowInstance->getVar('stepIdsByPublicId');
-    $stepId = $stepIdsByPublicId[$workflowStepPublicId];
-    $workflowConfigStep = $workflowConfig['steps'][$stepId];
+    $stepNumber = $workflowInstance->getStepNumberByPublicId($workflowStepPublicId);
+    $workflowConfigStep = $workflowConfig['steps'][$stepNumber];
     $ret = $workflowConfigStep;
     
     return $ret;

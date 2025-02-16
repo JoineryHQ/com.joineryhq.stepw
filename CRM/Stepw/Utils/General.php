@@ -29,5 +29,10 @@ class CRM_Stepw_Utils_General {
     $url = CRM_Utils_System::url('civicrm/stepwise/next', $queryParams, TRUE, NULL, FALSE);    
     return $url;
   }
+  
+  public static function buildReloadUrl($queryParams) {
+    $url = CRM_Utils_System::url('civicrm/stepwise/reload', $queryParams, TRUE, NULL, FALSE);    
+    return $url;
+  }
     
 }

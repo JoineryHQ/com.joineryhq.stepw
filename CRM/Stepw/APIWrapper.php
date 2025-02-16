@@ -9,23 +9,31 @@ class CRM_Stepw_APIWrapper {
   public static function PREPARE (Civi\API\Event\PrepareEvent $event) {
     $requestSignature = $event->getApiRequestSig();
     
-    // fixme: this if block is for testing/debugging. remove.
-    if (
-      0
-//      || $requestSignature == "4.afform.checkaccess"
-//      || $requestSignature == "4.afform.get"
-      || $requestSignature == "4.afform.prefill"
-    ) {
-      $g = $_GET;
-      $p = $_POST;
-      $r = $_REQUEST;
-      $q = CRM_Utils_Request::retrieve('q', 'String', '');
-      $request = $event->getApiRequest();      
-      $requestParams = $request->getParams();
-      $a = 1;
-      
-    }
+//    // fixme: this if block is for testing/debugging. remove.
+//    if (
+//      0
+////      || $requestSignature == "4.afform.checkaccess"
+////      || $requestSignature == "4.afform.get"
+//      || $requestSignature == "4.afform.prefill"
+//    ) {
+//      $g = $_GET;
+//      $p = $_POST;
+//      $r = $_REQUEST;
+//      $q = CRM_Utils_Request::retrieve('q', 'String', '');
+//      $request = $event->getApiRequest();      
+//      $requestParams = $request->getParams();
+//      $a = 1;
+//      
+//    }
     if ($requestSignature == "4.afform.submit") {
+      // fixmeval: validate afform.submit prepare (referer):
+      //  - Given WI exists in state
+      //  - Given Step is open in WI (should it be open already? Who opened it?)
+      //  - Given Step has 'ever been closed' in WI (i.e., this is a re-submission)
+      //  - Given Step has already been associated with the given submission id.
+      //  - Given Step is for this afform
+      //  -- WHAT ACTION TO TAKE ON VALIDATION FAILURE?
+      //
       if (!CRM_Stepw_Utils_Userparams::validateWorkflowInstanceStep('referer', FALSE)) {
         // Workflow params are invalid. Just return.
         return;
@@ -54,6 +62,14 @@ class CRM_Stepw_APIWrapper {
       }
     }
     elseif ($requestSignature == "4.afformsubmission.get") {
+      // fixmeval: validate afformsubmission.get prepare (referer):
+      //  - Given WI exists in state
+      //  - Given Step is open in WI (should it be open already? Who opened it?)
+      //  - Given Step has 'ever been closed' in WI (i.e., this is a re-submission)
+      //  - Given Step has already been associated with the given submission id.
+      //  - Given Step is for this afform
+      //  -- WHAT ACTION TO TAKE ON VALIDATION FAILURE?
+      //
       if (!CRM_Stepw_Utils_Userparams::validateWorkflowInstanceStep('referer', FALSE)) {
         // Workflow params are invalid. Just return.
         return;
@@ -92,13 +108,16 @@ class CRM_Stepw_APIWrapper {
       $setpwReferer = CRM_Stepw_Utils_Userparams::getUserParams('referer');
       $setpwRequest = CRM_Stepw_Utils_Userparams::getUserParams('request');
       
-      // fixme: validation:
-      //  - only operate on the afform that is for the current workflow step 
-      //  - workflow instance and step public ids must be valid in state.
-      //  - this afform must have 'afform_prefill_individual' = TRUE in workflow step config.
-      $workflowStepAfformName = 'afformTestForm3Activity2';
+      // fixmeval: validate afform.get respond (referer):
+      //  - Given WI exists in state
+      //  - Given Step is open in WI (should it be open already? Who opened it? what about on re-load/back-button?)
+      //  - Given Step is for this afform
+      //  -- WHAT ACTION TO TAKE ON VALIDATION FAILURE?
+      //
+      
+      $fixmeWorkflowStepAfformName = 'afformTestForm3Activity2';
       foreach ($response as &$afform) {
-        if ($afform['name'] == $workflowStepAfformName) {
+        if ($afform['name'] == $fixmeWorkflowStepAfformName) {
           if (is_array($afform['layout'])) {
             // layout is now a deeply nested array, which is very hard to search and 
             // alter manually. So convert it to html and then to a phpQueryObject,
@@ -146,6 +165,14 @@ class CRM_Stepw_APIWrapper {
         return;
       }
 
+      // fixmeval: validate afformsubmission.create respond (referer):
+      //  - Given WI exists in state
+      //  - Given Step is open in WI (should it be open already? Who opened it? what about on re-load/back-button?)
+      //  - Given Step is for this afform
+      //  -- WHAT ACTION TO TAKE ON VALIDATION FAILURE?
+      //
+      
+      
       // Capture saved submission id in the step.
       $response = $event->getResponse();
       $afformSubmissionId = $response[0]['id'];

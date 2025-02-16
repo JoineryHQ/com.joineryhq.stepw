@@ -29,7 +29,7 @@ class CRM_Stepw_Page_Start extends CRM_Core_Page {
     }
 
     // Open step in workflowInstance.
-    $stepPublicId = $workflowInstance->openStep($workflowInstanceNextStep['stepNumber']);
+    $stepPublicId = $workflowInstance->openStepNumber($workflowInstanceNextStep['stepNumber']);
 
     // Append parameters to step url and redirect thence.
     $params = [

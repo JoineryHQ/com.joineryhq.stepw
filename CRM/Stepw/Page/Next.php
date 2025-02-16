@@ -22,7 +22,7 @@ class CRM_Stepw_Page_Next extends CRM_Core_Page {
 
     if (!empty($this->doneStepPublicId)) {
       // ensure closure of done step (if given);
-      $this->workflowInstance->closeStep($this->doneStepPublicId);
+      $this->workflowInstance->closeStepPublicId($this->doneStepPublicId);
     }
     
     // fixme: if last step was afform, apply any configured post-save validation for step;
@@ -35,7 +35,7 @@ class CRM_Stepw_Page_Next extends CRM_Core_Page {
     }
 
     // Open next step in workflowInstance.
-    $stepPublicId = $this->workflowInstance->openStep($workflowInstanceNextStep['stepNumber']);
+    $stepPublicId = $this->workflowInstance->openStepNumber($workflowInstanceNextStep['stepNumber']);
 
     // Append parameters to step url and redirect thence.
     $params = [

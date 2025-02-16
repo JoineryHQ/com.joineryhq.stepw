@@ -28,4 +28,11 @@
     <access_callback>1</access_callback>
     <is_public>1</is_public>
   </item>
+  <item>
+    <path>civicrm/stepwise/reload</path>
+    <page_callback>CRM_Stepw_Page_Reload</page_callback>
+    <title>Reload</title>
+    <access_callback>1</access_callback>
+    <is_public>1</is_public>
+  </item>
 </menu>

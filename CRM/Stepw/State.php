@@ -37,7 +37,7 @@ class CRM_Stepw_State {
 
   }
 
-  function __destruct() {
+  public function __destruct() {
     // Serialize state and store it in session storage;
     // Without this, we'll have problems because our state includes objects of
     // classes which are defined (code files are loaded) AFTER session_start()

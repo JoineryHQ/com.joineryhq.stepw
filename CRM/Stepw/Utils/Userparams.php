@@ -15,7 +15,7 @@ class CRM_Stepw_Utils_Userparams {
   const QP_STEP_ID = 'stepw_sid';
   const QP_DONE_STEP_ID = 'stepw_dsid';
 
-  static function getStartWorkflowid() {
+  public static function getStartWorkflowid() {
     return CRM_Utils_Request::retrieve(self::QP_START_WORKFLOW_ID, 'Int', NULL, FALSE, NULL, 'GET');
   }
   

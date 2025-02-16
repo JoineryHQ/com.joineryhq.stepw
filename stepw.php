@@ -5,7 +5,7 @@ require_once 'stepw.civix.php';
 use CRM_Stepw_ExtensionUtil as E;
 
 function stepw_civicrm_alterContent(&$content, $context, $tplName, &$object) {
-  // fixme: if this is an afform and we're in a workflowInstance, display a progress bar OUTSIDE OF THE FORM
+  // fixme: if this is an afform and we're in a workflowInstance, display a progress bar OUTSIDE OF THE FORM  
 }
 
 function stepw_civicrm_pageRun(CRM_Core_Page $page) {
@@ -89,7 +89,7 @@ function _stepw_afform_submit_late(\Civi\Afform\Event\AfformSubmitEvent $event) 
     $workflowInstance = CRM_Stepw_State::singleton()->getWorkflowInstance($workflowInstancePublicId);
     if (!empty($workflowInstance)) {
       $stepPublicId = CRM_Stepw_Utils_Userparams::getUserParams('referer', CRM_Stepw_Utils_Userparams::QP_STEP_ID);
-      $workflowInstance->closeStep($stepPublicId);
+      $workflowInstance->closeStepPublicId($stepPublicId);
     }
     // Determine any created contact ID, and set this as a workflowInstance property.
     $entityIds = $event->getEntityIds('Individual1');

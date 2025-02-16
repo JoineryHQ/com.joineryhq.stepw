@@ -38,20 +38,4 @@ class CRM_Stepw_Utils_WpShortcode {
     return $ret;
   }
 
-  static private function validate() {
-    $isValid = FALSE;
-    
-    $workflowInstancePublicId = CRM_Stepw_Utils_Userparams::getUserParams('request', CRM_Stepw_Utils_Userparams::QP_WORKFLOW_INSTANCE_ID);
-    $stepPublicId = CRM_Stepw_Utils_Userparams::getUserParams('request', CRM_Stepw_Utils_Userparams::QP_STEP_ID);
-    $workflowInstance = CRM_Stepw_State::singleton()->getWorkflowInstance($workflowInstancePublicId);
-    if (
-      !empty($stepPublicId)
-      && !empty($workflowInstance)
-      && ($workflowInstance->validateStep($stepPublicId))
-    ) {
-      $isValid = TRUE;
-    }
-
-    return $isValid;
-  }
 }
