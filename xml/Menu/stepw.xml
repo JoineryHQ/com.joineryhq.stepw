@@ -35,4 +35,10 @@
     <access_callback>1</access_callback>
     <is_public>1</is_public>
   </item>
+  <item>
+    <path>civicrm/stepwise/step</path>
+    <page_callback>CRM_Stepw_Page_Step</page_callback>
+    <title>Step</title>
+    <access_arguments>access CiviCRM</access_arguments>
+  </item>
 </menu>
