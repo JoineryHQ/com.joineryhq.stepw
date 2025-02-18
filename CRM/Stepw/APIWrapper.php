@@ -83,20 +83,33 @@ class CRM_Stepw_APIWrapper {
 //      $event->getApiRequest()->setCheckPermissions(false);
       
 //      parse_str(parse_url($_SERVER['HTTP_REFERER'], PHP_URL_QUERY), $queryParams);
-//      $r = \Civi\Api4\AfformSubmission::get(FALSE);
-//      $apiParams = $event->getApiRequest()->getParams();
-//      foreach($apiParams['where'] as $where) {
-//        call_user_func([$r, 'addWhere'], $where);
-//      }
-//      $event->setApiRequest($r);
-      
-//      $a = 1;
+  //      $r = \Civi\Api4\AfformSubmission::get(FALSE);
+  //      $apiParams = $event->getApiRequest()->getParams();
+  //      foreach($apiParams['where'] as $where) {
+  //        call_user_func_array([$r, 'addWhere'], $where);
+  //      }
+  //      $event->setApiRequest($r);
+  //      
+  //      $a = 1;
     }
   }
   
   public static function RESPOND(Civi\API\Event\RespondEvent $event) {
     $requestSignature = $event->getApiRequestSig();
     if ($requestSignature == "4.afform.get") {
+      // fixme3 note: here we will:
+      // - modify the afform html as we would in alterAngular(), so that the afform
+      //   supports auto-fill of Individual1, even if it is not so configured.
+      // 
+      // fixme3: If is not stepwise workflow: return.
+      // 
+      // fixme3val: validate afform.get respond (referer):
+      //  - Given WI exists in state
+      //  - Given Step exists in WI 
+      //  - Given Step is for this afform
+      //  -- ON VALIDATION FAILURE: do nothing and return (this is an api call, possibly by ajax)
+      //
+      
       $g = $_GET;
       $p = $_POST;
       $r = $_REQUEST;
@@ -108,12 +121,6 @@ class CRM_Stepw_APIWrapper {
       $setpwReferer = CRM_Stepw_Utils_Userparams::getUserParams('referer');
       $setpwRequest = CRM_Stepw_Utils_Userparams::getUserParams('request');
       
-      // fixmeval: validate afform.get respond (referer):
-      //  - Given WI exists in state
-      //  - Given Step is open in WI (should it be open already? Who opened it? what about on re-load/back-button?)
-      //  - Given Step is for this afform
-      //  -- WHAT ACTION TO TAKE ON VALIDATION FAILURE?
-      //
       
       $fixmeWorkflowStepAfformName = 'afformTestForm3Activity2';
       foreach ($response as &$afform) {
@@ -149,6 +156,18 @@ class CRM_Stepw_APIWrapper {
 //    }
     
     if ($requestSignature == "4.afformsubmission.create") {
+      // fixme3 note: here we will:
+      // - Capture saved submission id in the step in workflowInstance.
+      // 
+      // fixme3: If is not stepwise workflow: return.
+      // 
+      // fixme3val: validate afform.get respond (referer):
+      //  - Given WI exists in state
+      //  - Given Step exists in WI 
+      //  - Given Step is for this afform
+      //  -- ON VALIDATION FAILURE: do nothing and return (this is an api call, possibly by ajax)
+      //
+
       if (!CRM_Stepw_Utils_Userparams::validateWorkflowInstanceStep('referer', FALSE)) {
         // Workflow params are invalid. Just return.
         return;
@@ -164,14 +183,6 @@ class CRM_Stepw_APIWrapper {
       ) {
         return;
       }
-
-      // fixmeval: validate afformsubmission.create respond (referer):
-      //  - Given WI exists in state
-      //  - Given Step is open in WI (should it be open already? Who opened it? what about on re-load/back-button?)
-      //  - Given Step is for this afform
-      //  -- WHAT ACTION TO TAKE ON VALIDATION FAILURE?
-      //
-      
       
       // Capture saved submission id in the step.
       $response = $event->getResponse();
