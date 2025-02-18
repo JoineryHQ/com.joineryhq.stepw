@@ -5,13 +5,51 @@ require_once 'stepw.civix.php';
 use CRM_Stepw_ExtensionUtil as E;
 
 function stepw_civicrm_alterContent(&$content, $context, $tplName, &$object) {
-  // fixme: if this is an afform and we're in a workflowInstance, display a progress bar OUTSIDE OF THE FORM  
+  // fixme: if this is an afform and we're in a workflowInstance, display a progress bar OUTSIDE OF THE FORM
+  if (!CRM_Stepw_Utils_Userparams::isStepwiseWorkflow('request')) {
+    // If we're not in a stepwise workflow, there's nothing for us to do here.
+    return;
+  }
+  // if this is a back-button reload of an already-submitted step, replace the form with a prompt to reload the form.
+  $workflowInstancePublicId = CRM_Stepw_Utils_Userparams::getUserParams('request', CRM_Stepw_Utils_Userparams::QP_WORKFLOW_INSTANCE_ID);
+  $stepPublicId = CRM_Stepw_Utils_Userparams::getUserParams('request', CRM_Stepw_Utils_Userparams::QP_STEP_ID);
+  $workflowInstance = CRM_Stepw_State::singleton()->getWorkflowInstance($workflowInstancePublicId);
+  $stepNumber = $workflowInstance->getStepNumberByPublicId($stepPublicId);
+  $stepIsClosed = $workflowInstance->validateStep($stepPublicId, 'closed');
+  if ($workflowInstance->isStepNumberEverClosed($stepNumber) && $stepIsClosed) {
+    // Build a redirect url for 'reload' page.
+    $buttonHrefQueryParams = [
+      CRM_Stepw_Utils_Userparams::QP_WORKFLOW_INSTANCE_ID => $workflowInstancePublicId,
+      CRM_Stepw_Utils_Userparams::QP_STEP_ID => $stepPublicId,
+    ];
+    $buttonHref = CRM_Stepw_Utils_General::buildReloadUrl($buttonHrefQueryParams);
+    
+    // Parse our 'ReloadedFormReplacement' template into a var.
+    $tpl = CRM_Core_Smarty::singleton();
+    $tpl->assign('buttonHref', $buttonHref);
+    $tpl->assign('buttonText', E::ts('Re-open form'));
+    CRM_Utils_System::setTitle(E::ts('Edit your answers?'));
+    $replacement = $tpl->fetch('CRM/Stepw/snippet/ReloadedFormReplacement.tpl');
+    
+    // Replace page content with our 'ReloadedFormReplacement' template output.
+    $docLayout = \phpQuery::newDocument($content, 'text/html');
+    $main = $docLayout->find('div#crm-main-content-wrapper');
+    $main->html($replacement);
+    $coder = new \Civi\Angular\Coder();
+    $content = $coder->encode($docLayout);    
+  }
+  
 }
 
 function stepw_civicrm_pageRun(CRM_Core_Page $page) {
   
   $pageName = $page->getVar('_name');
   if ($pageName == 'CRM_Afform_Page_AfformBase') {
+    if (CRM_Stepw_Utils_Userparams::isStepwiseWorkflow('request')) {
+      // This script is only needed for 'back-button reloaded' forms; the button
+      // itself is content defined in hook_civicrm_alterContent().
+      CRM_Core_Resources::singleton()->addScriptFile(E::LONG_NAME, '/js/reload-button-hijack.js');
+    }
     // Validate workflow uwer params, or exit.
     CRM_Stepw_Utils_Userparams::validateWorkflowInstanceStep('request', TRUE);
     

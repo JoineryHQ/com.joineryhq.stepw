@@ -19,7 +19,7 @@ class CRM_Stepw_Fixme_Data {
             'url' => 'http://plana.l/civicrm/test-form-start/',
             'afform_name' => 'afformTESTFormStart',
             'afform_prefill_individual' => FALSE,
-            'afform_allow_resubmit' => FALSE,
+            'afform_allow_resubmit' => TRUE,
             'button_label' => 'Submit and continue',
           ],
           [

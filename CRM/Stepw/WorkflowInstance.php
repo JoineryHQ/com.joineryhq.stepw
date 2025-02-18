@@ -172,6 +172,10 @@ class CRM_Stepw_WorkflowInstance {
     return ($this->stepNumbersByPublicId[$stepPublicId] ?? NULL);
   }
   
+  public function isStepNumberEverClosed(int $stepNumber) {
+    return (in_array($stepNumber, $this->stepsEverClosed));
+  }
+  
   /**
    * Validate whether a given step is valid, at a given status (open/closed) in this workflowInstance
    * @param String $stepPublicId A step publicId, presumably passed in from the user (_GET in WP, or REFERER in afform)
