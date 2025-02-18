@@ -7,6 +7,9 @@
 class CRM_Stepw_Utils_WpShortcode {
   public static function getStepwiseProperties() {
     // fixme: this  shortcode could crete mutiple buttons, depending on workflow config (e.g. video pages in 3 languages).
+    // Therefore, template the button html with a smarty template in snippet/,
+    // and generate as many buttons as we need. Return HTML, not properties.
+    //
     
     $ret = [];
     
