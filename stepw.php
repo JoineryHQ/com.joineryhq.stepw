@@ -40,8 +40,6 @@ function stepw_civicrm_pageRun(CRM_Core_Page $page) {
       // itself is content defined in hook_civicrm_alterContent().
       CRM_Core_Resources::singleton()->addScriptFile(E::LONG_NAME, '/js/reload-button-hijack.js');
     }
-    // Validate workflow uwer params, or exit.
-    CRM_Stepw_Utils_Userparams::validateWorkflowInstanceStep('request', TRUE);
     
     $isStepwiseWorkflow = CRM_Stepw_Utils_Userparams::isStepwiseWorkflow('request');
     if ($isStepwiseWorkflow) {
@@ -52,18 +50,20 @@ function stepw_civicrm_pageRun(CRM_Core_Page $page) {
       // for the step subsequent to this one.
       //
       $workflowInstancePublicId = CRM_Stepw_Utils_Userparams::getUserParams('request', CRM_Stepw_Utils_Userparams::QP_WORKFLOW_INSTANCE_ID);
+      $stepPublicId = CRM_Stepw_Utils_Userparams::getUserParams('request', CRM_Stepw_Utils_Userparams::QP_STEP_ID);
       $redirectQueryParams = [
         CRM_Stepw_Utils_Userparams::QP_WORKFLOW_INSTANCE_ID => $workflowInstancePublicId,
       ];
-      $redirect = CRM_Stepw_Utils_General::buildNextUrl($redirectQueryParams);
+      $redirect = CRM_Stepw_Utils_General::buildStepUrl($redirectQueryParams);
 
       // Get the config for this step so we can know the button label.
-      $workflowConfigStep = CRM_Stepw_Utils_WorkflowData::getCurrentWorkflowConfigStep('request');
+      $workflowInstance = CRM_Stepw_State::singleton()->getWorkflowInstance($workflowInstancePublicId);
+      $buttonLabel = $workflowInstance->getButtonLabel($stepPublicId);
 
       $vars = [
         // fixme3: is isStepwiseWorkflow actually used in the JS (check stepwAfform module)
         'isStepwiseWorkflow' => $isStepwiseWorkflow,
-        'submitButtonLabel' => $workflowConfigStep['button_label'],
+        'submitButtonLabel' => $buttonLabel,
         'redirect' => $redirect,
       ];
       CRM_Core_Resources::singleton()->addVars('stepw', $vars);
@@ -150,24 +150,19 @@ function _stepw_afform_submit_late(\Civi\Afform\Event\AfformSubmitEvent $event) 
   
   $afform = $event->getAfform();
   $afformName = ($afform['name'] ?? NULL);
-  if (
-    !empty($afformName)
-    // If this afform is not for the current workflow step, we'll take no action here.
-    && CRM_Stepw_Utils_Userparams::currentWorkflowStepIsForAfform('referer', $afformName)
-  ) {
-    // Determine what step was submitted, and close this step in the workflow.
-    $workflowInstancePublicId = CRM_Stepw_Utils_Userparams::getUserParams('referer', CRM_Stepw_Utils_Userparams::QP_WORKFLOW_INSTANCE_ID);
-    $workflowInstance = CRM_Stepw_State::singleton()->getWorkflowInstance($workflowInstancePublicId);
-    if (!empty($workflowInstance)) {
-      $stepPublicId = CRM_Stepw_Utils_Userparams::getUserParams('referer', CRM_Stepw_Utils_Userparams::QP_STEP_ID);
-      $workflowInstance->closeStepPublicId($stepPublicId);
-    }
-    // Determine any created contact ID, and set this as a workflowInstance property.
-    $entityIds = $event->getEntityIds('Individual1');
-    $individualContactId = ($entityIds[0] ?? NULL);
-    if (!empty($individualContactId)) {
-      $workflowInstance->setCreatedEntityId('Individual1', $individualContactId);
-    }
+  
+  // Determine what step was submitted, and close this step in the workflow.
+  $workflowInstancePublicId = CRM_Stepw_Utils_Userparams::getUserParams('referer', CRM_Stepw_Utils_Userparams::QP_WORKFLOW_INSTANCE_ID);
+  $workflowInstance = CRM_Stepw_State::singleton()->getWorkflowInstance($workflowInstancePublicId);
+  if (!empty($workflowInstance)) {
+    $stepPublicId = CRM_Stepw_Utils_Userparams::getUserParams('referer', CRM_Stepw_Utils_Userparams::QP_STEP_ID);
+    $workflowInstance->completeStep($stepPublicId);
+  }
+  // Determine any created contact ID, and set this as a workflowInstance property.
+  $entityIds = $event->getEntityIds('Individual1');
+  $individualContactId = ($entityIds[0] ?? NULL);
+  if (!empty($individualContactId)) {
+    $workflowInstance->setCreatedIndividualCid($individualContactId);
   }
 }
 
@@ -197,39 +192,33 @@ function _stepw_afform_submit_early(\Civi\Afform\Event\AfformSubmitEvent $event)
 
   $afform = $event->getAfform();
   $afformName = ($afform['name'] ?? NULL);
-  if (
-    !empty($afformName)
-    // If this afform is not for the current workflow step, we'll take no action here.
-    && CRM_Stepw_Utils_Userparams::currentWorkflowStepIsForAfform('referer', $afformName)
-  ) {
 
-    // FIXME: this is POC code that allows us to re-save afform submissions and update
-    // the related entity. This code causes an existing activity (the one linked to the submission)
-    // to actually be overwritten. We need to improve this so it handles entities
-    // other than activities.
-    // FIXME: this should only be done on 'submission view' forms in the midst of
-    // a stepwise workflow (i.e., "back-button" handling for form resubmission)
-    if ($event->getEntityType() == 'Activity') {
-      $records = $event->getRecords();
-      foreach ($records as &$record) {
-        if (!empty($record['id'])) {
-          // If the record has 'id', copy that into record['fields'] so that the
-          // 'save' api will actually update the activity.
-          $record['fields']['id'] = $record['id'];
-          // Unset any null values in 'fields'. For activities, this might include,
-          // e.g. 'source_contact_id', which could have been auto-populated by the
-          // original afform, but which will be unknown in the submission.
-          // In any case, we onlY want to update values given in the re-submitted
-          // form data.
-          foreach ($record['fields'] as $fieldName => $fieldValue) {
-            if (is_null($fieldValue)) {
-              unset($record['fields'][$fieldName]);
-            }
+  // FIXME: this is POC code that allows us to re-save afform submissions and update
+  // the related entity. This code causes an existing activity (the one linked to the submission)
+  // to actually be overwritten. We need to improve this so it handles entities
+  // other than activities.
+  // FIXME: this should only be done on 'submission view' forms in the midst of
+  // a stepwise workflow (i.e., "back-button" handling for form resubmission)
+  if ($event->getEntityType() == 'Activity') {
+    $records = $event->getRecords();
+    foreach ($records as &$record) {
+      if (!empty($record['id'])) {
+        // If the record has 'id', copy that into record['fields'] so that the
+        // 'save' api will actually update the activity.
+        $record['fields']['id'] = $record['id'];
+        // Unset any null values in 'fields'. For activities, this might include,
+        // e.g. 'source_contact_id', which could have been auto-populated by the
+        // original afform, but which will be unknown in the submission.
+        // In any case, we onlY want to update values given in the re-submitted
+        // form data.
+        foreach ($record['fields'] as $fieldName => $fieldValue) {
+          if (is_null($fieldValue)) {
+            unset($record['fields'][$fieldName]);
           }
         }
       }
-      $event->setRecords($records);
     }
+    $event->setRecords($records);
   }
 }
 

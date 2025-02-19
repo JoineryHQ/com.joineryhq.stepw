@@ -9,15 +9,40 @@
 
 class CRM_Stepw_Utils_Userparams {
   
-
+  /**
+   * A workflow ID matching a confgiured workflow. Presence of this parameter
+   * implies we're biginning a new worfkflowInstance.
+   */
   const QP_START_WORKFLOW_ID = 'stepw_wid';
+  
+  /**
+   * PublicId for an existing workflowInstance.
+   */
   const QP_WORKFLOW_INSTANCE_ID = 'stepw_wiid';
+  
+  /**
+   * PublicId for a given step within the current workflowInstance; indicates the
+   * step currently being loaded/viewed.
+   */
   const QP_STEP_ID = 'stepw_sid';
+  
+  /**
+   * PublicId for a given step within the current workflowInstance; indicates that
+   * this step has been completed. (Designed to support completion of wp-page steps
+   * by inclusion of this parameter in the href of the button link created by the
+   * [stepwise-button] shortcode.)
+   */
   const QP_DONE_STEP_ID = 'stepw_dsid';
-
-  public static function getStartWorkflowid() {
-    return CRM_Utils_Request::retrieve(self::QP_START_WORKFLOW_ID, 'Int', NULL, FALSE, NULL, 'GET');
-  }
+  
+  /**
+   * PublicId-type string, intended as an indicator that an afform step was
+   * loaded/viewed with an afform submission 'sid' (Designed to allow our APIWrappers
+   * and other event listeners, called during the prefill of such forms and during 
+   * the processing of such form submissions, to recognize that this is a valid
+   * re-load/re-submission, and therefore to alter api parameters or permissions
+   * in order to allow the prefill/re-submission.)
+   */
+  const QP_STEP_RELOAD_PUBLIC_ID = 'stepw_rid';
   
   private static function getValidParams() {
     $validParams = [];
@@ -104,7 +129,6 @@ class CRM_Stepw_Utils_Userparams {
     $supportedParamKeys = [
       'i' => self::QP_WORKFLOW_INSTANCE_ID,
       's' => self::QP_STEP_ID,
-      'rr' => 'rr',
     ];
     foreach ($params as $paramKey => $paramValue) {
       if (!empty($supportedParamKeys[$paramKey])) {
@@ -136,60 +160,6 @@ class CRM_Stepw_Utils_Userparams {
     
     return $cache[$source];
   }
+
   
-  public static function validateWorkflowInstanceStep($source, $isFatal) {
-    if (!self::isStepwiseWorkflow($source)) {
-      // This is not a stepwise workflow, so it can't be invalid.
-      return TRUE;
-    }
-    
-    static $cache;
-    
-    $workflowInstancePublicId = self::getUserParams($source, self::QP_WORKFLOW_INSTANCE_ID);
-    $stepPublicId = self::getUserParams($source, self::QP_STEP_ID);
-
-    $cacheKey = "{$workflowInstancePublicId}|{$stepPublicId}";
-    if (empty($cache[$cacheKey])) {
-      $isValid = FALSE;
-      
-      // fixme: check if workflow and step exist in state.
-      $workflowInstance = CRM_Stepw_State::singleton()->getWorkflowInstance($workflowInstancePublicId);
-      $state = CRM_Stepw_State::singleton();
-      if (
-        // workflow instance exists? 
-        !empty($workflowInstance)
-        // step exists?
-        && $workflowInstance->validateStep($stepPublicId)
-      ) {
-        $isValid = TRUE;
-      }
-      $cache[$cacheKey] = $isValid;
-    }
-    
-    if (!$cache[$cacheKey] && $isFatal) {
-      CRM_Stepw_Utils_General::redirectToInvalid();
-    }
-    return $cache[$cacheKey];
-  }
-  
-  public static function currentWorkflowStepIsForAfform($source, $afformName) {
-
-    $ret = FALSE;
-
-    // If we're not in a stepwise workflow, there's no matching form, so ensure we're in a workflow.
-    if (self::isStepwiseWorkflow($source)) {
-      $stepPublicId = CRM_Stepw_Utils_Userparams::getUserParams($source, CRM_Stepw_Utils_Userparams::QP_STEP_ID);
-      $workflowInstancePublicId = CRM_Stepw_Utils_Userparams::getUserParams($source, CRM_Stepw_Utils_Userparams::QP_WORKFLOW_INSTANCE_ID);
-      $workflowInstance = CRM_Stepw_State::singleton()->getWorkflowInstance($workflowInstancePublicId);
-      
-      // step is for this afform?
-      $workflowConfigStep = CRM_Stepw_Utils_WorkflowData::getCurrentWorkflowConfigStep($source);
-      if (($workflowConfigStep['afform_name'] ?? NULL) == $afformName) {
-        // fixme: must also validate :step_state_key (if given) is valid?
-        $ret = TRUE;
-      }
-    }
-    return $ret;
-    
-  }
 }

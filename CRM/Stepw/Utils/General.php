@@ -8,6 +8,7 @@ use CRM_Stepw_ExtensionUtil as E;
  */
 class CRM_Stepw_Utils_General {
   public static function generatePublicId() {
+    // fixme3: append a (random?) letter to the string so it's guaranteed to never be numeric.
     return bin2hex(random_bytes(18));
   }
 
@@ -25,8 +26,8 @@ class CRM_Stepw_Utils_General {
     CRM_Utils_System::redirect($redirect);
   }
   
-  public static function buildNextUrl($queryParams) {
-    $url = CRM_Utils_System::url('civicrm/stepwise/next', $queryParams, TRUE, NULL, FALSE);    
+  public static function buildStepUrl($queryParams) {
+    $url = CRM_Utils_System::url('civicrm/stepwise/step', $queryParams, TRUE, NULL, FALSE);    
     return $url;
   }
   

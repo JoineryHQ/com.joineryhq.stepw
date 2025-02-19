@@ -12,22 +12,6 @@ class CRM_Stepw_Utils_WorkflowData {
     $data = self::getAllWorkflowConfig();
     return ($data[$workflowId] ?? NULL);
   }
-
-  public static function getCurrentWorkflowConfigStep($source) {
-    $ret = [];
-
-    $userParams = CRM_Stepw_Utils_Userparams::getUserParams($source);
-    $workflowInstancePublicId = $userParams[CRM_Stepw_Utils_Userparams::QP_WORKFLOW_INSTANCE_ID];
-    $workflowStepPublicId = $userParams[CRM_Stepw_Utils_Userparams::QP_STEP_ID];
-
-    $workflowInstance = CRM_Stepw_State::singleton()->getWorkflowInstance($workflowInstancePublicId);
-    $workflowConfig = $workflowInstance->getVar('workflowConfig');
-    $stepNumber = $workflowInstance->getStepNumberByPublicId($workflowStepPublicId);
-    $workflowConfigStep = $workflowConfig['steps'][$stepNumber];
-    $ret = $workflowConfigStep;
-    
-    return $ret;
-  }
   
   public static function getAllAfformNames() {
     $afformNames = [];
@@ -44,4 +28,11 @@ class CRM_Stepw_Utils_WorkflowData {
     return $afformNames;
   }
 
+  public static function getPseudoFinalStepConfig() {
+    return [
+      'type' => 'url',
+      'url' => CRM_Utils_System::url('civicrm/stepwise/final', '', TRUE, NULL, FALSE, TRUE),
+      'button_label' => 'Continue',
+    ];
+  }
 }

@@ -1,66 +1,41 @@
 <?php
 
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Scripting/PHPClass.php to edit this template
- */
 
 /**
- * Description of WorkflowInstance
- *
- * @author as
+ * WorkflowInstance class
  */
 class CRM_Stepw_WorkflowInstance {
   
   private $workflowId;
   private $publicId;
   private $lastModified;
-  private $createdEntityIds = [];
+  
+  private $createdIndividualCid;
 
   /* Workflow configuration for the workflow used by this WorkflowInstance.
    * @var Array
    */
   private $workflowConfig;
-
-  /**
-   * Map of stepNumbers by publicId
-   * @var Array
-   */
-  private $stepNumbersByPublicId = [];
   
   /**
-   * Array of active steps, keyed by stepNumber
+   * Array of steps in this workflowInstance, keyed by stepNumber. Each step has
+   * is a WorkflowInstanceStep object.
    * @var Array
    */
-  private $activeSteps = [];
+  private $steps = [];
 
   /**
-   * Array of archived steps, keyed by publicId
-   * @var Array
+   * A WorkflowInstanceStep object representing the fallback 'final' step url
+   * provided by this extension.
+   * @var WorkflowInstanceStep
    */
-  private $archivedSteps = [];
+  private $pseudoFinalStep;
   
   /**
-   * List of stepNumber values for all steps which have ever been closed.
+   * Same as 'steps', but keyed to step publicId.
    * @var Array
    */
-  private $stepsEverClosed = [];
-  
-  // fixme: should each workflow instance store its own original config, as it was at the
-  // time of instance creation? if not, any configuration changes could have very
-  // surprising consequences for workflowInstances in-progress at that time.
-  // 
-  // fixme: probably good to track certain properties per configStep (not publicStepId,
-  // which may change in the back-button flow direction), such as:
-  // - submission id
-  // - has ever been closed (this could be redundant to submisssion_id for afforms, 
-  //   but not for wp pages; for wp pages, this could also apply to video-page steps,
-  //   so that we'll know "video was fully watched" even on back-button flow)
-  // 
-  //
-
-  const STEPW_WI_STEP_STATUS_OPEN = 0;
-  const STEPW_WI_STEP_STATUS_CLOSED = 1;
+  private $stepsByPublicId = [];
   
   public function __construct(Int $workflowId) {
     $this->updateLastModified();
@@ -68,10 +43,23 @@ class CRM_Stepw_WorkflowInstance {
     $this->publicId = CRM_Stepw_Utils_General::generatePublicId();
     $workflowConfig = CRM_Stepw_Utils_WorkflowData::getWorkflowConfigById($workflowId);
     foreach ($workflowConfig['steps'] as $configStepNumber => &$configStep) {
+      // Create a new Step object and store it both in ->steps and in ->stepsByPublicId
+      $step = new CRM_Stepw_WorkflowInstanceStep($this, $configStepNumber, $configStep);
+      $stepPublicId = $step->getVar('publicId');
+      $this->steps[$configStepNumber] = $step;
+      $this->stepsByPublicId[$stepPublicId] = $step;
+
+      // Add 'stepNumber' to configStep for future reference.
       $configStep['stepNumber'] = $configStepNumber;
     }
+    
+    // Define the fallback 'final' step object.
+    $this->pseudoFinalStep = new CRM_Stepw_WorkflowInstanceStep($this, -1, CRM_Stepw_Utils_WorkflowData::getPseudoFinalStepConfig());
+    
+    // Store the workflow config for easy reference.
     $this->workflowConfig = $workflowConfig;
 
+    // Store this workflowInstance in state.
     $state = CRM_Stepw_State::singleton();
     $state->storeWorkflowInstance($this);
   }
@@ -80,136 +68,156 @@ class CRM_Stepw_WorkflowInstance {
     $this->lastModified = time();
   }
   
+  public function getLastModified() {
+    return $this->lastModified;
+  }
+  
+  
+  public function getPublicId() {
+    return $this->publicId;
+  }
+  
   /**
-   * Open an active step (and give it a publicId) in the workflow instance for
-   * the given stepNumber,
-   * 
-   * @param int $stepNumber
-   * @return string The public id for the created active step.
+   * Given a contactId, store it as the cid of the Individual created in this 
+   * workflowInstance (we assume there will be only one).
+   *
+   * @param int $contactId
    */
-  public function openStepNumber(int $stepNumber) {
+  public function setCreatedIndividualCid(int $contactId) {
+    if (
+      !empty($this->createdIndividualCid)
+      && ($this->createdIndividualCid != $contactId)
+    ) {
+      $exceptionExtra = [
+        'given cid' => $contactId,
+        'existing_cid' => $this->createdIndividualCid,
+      ];
+      throw new CRM_Extension_Exception("Invalid attempt to alter workflowInstance:createdIndividualCid". __METHOD__, 'CRM_Stepw_WorkflowInstance_setCreatedIndividualCid_invalid', $exceptionExtra);      
+    }
+    $this->createdIndividualCid = $contactId;
     $this->updateLastModified();
-    // fixme: this method assumes that the step is not already open and that it doesn't
-    // already have a public id. But what if it does? Does that cause problems?
-    $stepPublicId = CRM_Stepw_Utils_General::generatePublicId();
-    $this->stepNumbersByPublicId[$stepPublicId] = $stepNumber;
-    
-    $this->activeSteps[$stepNumber] = [
-      'stepNumber' => $stepNumber,
-      'publicId' => $stepPublicId,
-      'status' => self::STEPW_WI_STEP_STATUS_OPEN,
-    ];
-    // We can't allow more than one open step at a time. If we open this step,
-    // we must archive any steps that would come later.
-    $this->archiveStepsAfter($stepNumber);
-    return $stepPublicId;
   }
   
-  public function closeStepPublicId(string $stepPublicId) {
-    $this->updateLastModified();
-    $stepNumber = $this->getStepNumberByPublicId($stepPublicId);
-    // Record this step is closed.
-    $this->activeSteps[$stepNumber]['status'] = self::STEPW_WI_STEP_STATUS_CLOSED;
-    // Record this step has ever been closed.
-    $this->stepsEverClosed[] = $stepNumber;
-
-    // We're restarting from this step, so
-    // we must archive any steps that would come later.
-    $this->archiveStepsAfter($stepNumber);
-
+  /**
+   * Return the cid of the Individual created in this workflowInstance, if any
+   * (we assume there will be only one).
+   *
+   * @return Int|NULL
+   */
+  public function getCreatedIndividualCid() {
+    return $this->createdIndividualCid;
   }
-  
-  private function archiveStepsAfter(int $stepNumber) {
-    $this->updateLastModified();
-    // for any active steps with number > $stepNumber, move them to $archivedSteps[$publicId]
-    // (steps in $this->activeSteps are, like steps in $this->workflowConfig['steps']
-    // keyed sequentially starting from 0.)
-    foreach ($this->activeSteps as $activeStepNumber => $activeStep) {
-      if ($activeStepNumber > $stepNumber) {
-        $activeStepPublicId = $activeStep['publicId'];
-        $this->archivedSteps[$activeStepPublicId] = $activeStep;
-        unset($this->activeSteps[$activeStepNumber]);
+
+  /**
+   * Determine most-recently completed step (if any), and return the subsequent
+   * step to that one, if any.
+   * @return CRM_Stepw_WorkflowInstanceStep
+   */
+  private function getNextStep() : CRM_Stepw_WorkflowInstanceStep {
+    $stepsLastCompleted = [];
+    $stepsToSort = [];
+    foreach ($this->steps as $stepNumber => $step) {
+      if ($lastCompleted = $step->getVar('lastCompleted')) {
+        $stepsLastCompleted[] = $lastCompleted;
+        $stepsToSort[] = $step;
       }
     }
-  }
-  
-  public function setStepSubmissionId(string $stepPublicId, int $afformSubmissionId) {
-    $this->updateLastModified();
-    $stepNumber = $this->getStepNumberByPublicId($stepPublicId);
-    $this->activeSteps[$stepNumber]['afformSubmissionId'] = $afformSubmissionId;
-  }
-
-  public function getVar($name) {
-    if (!property_exists($this, $name)) {
-      throw new CRM_Extension_Exception("Invalid variable name requested in ". __METHOD__, 'CRM_Stepw_WorkflowInstance_getVar_invalid', ['requested var name' => $name]);
-    }
-    return ($this->$name ?? NULL);
-  }
-  
-  public function setCreatedEntityId(string $entityName, int $entityId) {
-    $this->createdEntityIds[$entityName] = $entityId;
-    $this->updateLastModified();
-  }
-  
-  public function getCreatedEntityId(string $entityName) {
-    return ($this->createdEntityIds[$entityName] ?? NULL);
-  }
-  
-  /**
-   * Determine next un-completed step, per workflow config, in this workflow instance.
-   * @return Array|Boolean Step configuration if any remain; otherwise FALSE.
-   */
-  public function getNextStep() {
-    foreach ($this->workflowConfig['steps'] as $stepNumber => $stepConfig) {
-      if (($this->activeSteps[$stepNumber]['status'] ?? '') != self::STEPW_WI_STEP_STATUS_CLOSED) {
-        return $stepConfig;
-      }
-    }
-    return FALSE;
-  }
-  
-  public function getStepNumberByPublicId ($stepPublicId) {
-    return ($this->stepNumbersByPublicId[$stepPublicId] ?? NULL);
-  }
-  
-  public function isStepNumberEverClosed(int $stepNumber) {
-    return (in_array($stepNumber, $this->stepsEverClosed));
-  }
-  
-  /**
-   * Validate whether a given step is valid, at a given status (open/closed) in this workflowInstance
-   * @param String $stepPublicId A step publicId, presumably passed in from the user (_GET in WP, or REFERER in afform)
-   * @param String $requireStatusName One of:
-   *  open
-   *  closed
-   * 
-   * @return bool True on valid; False otherwise.
-   */
-  public function validateStep(string $stepPublicId, string $requireStatusName = NULL) {
-    switch ($requireStatusName) {
-      case 'open':
-        $requireStatusValue = CRM_Stepw_WorkflowInstance::STEPW_WI_STEP_STATUS_OPEN;
-        break;
-      case 'closed':
-        $requireStatusValue = CRM_Stepw_WorkflowInstance::STEPW_WI_STEP_STATUS_CLOSED;
-        break;
-      default:
-        $requireStatusValue = NULL;
-        break;
-    }
-
-    $isValid = FALSE;
-    
-    $stepNumber = $this->getStepNumberByPublicId($stepPublicId);
-    $step = ($this->activeSteps[$stepNumber] ?? NULL);
-    
-    if (!empty($requireStatusValue)) {
-      $isValid = (($step['status'] ?? NULL) === $requireStatusValue);
+    if(empty($stepsToSort)) {
+      // If we're here, it means no steps have been completed, so nextStep 
+      // is step 0.
+      $nextStep = $this->steps[0];
     }
     else {
-      $isValid = !empty($step);
+      array_multisort($stepsLastCompleted, $stepsToSort);
+      $lastCompletedStep = array_pop($stepsToSort);
+      $lastCompletedStepNumber = $lastCompletedStep->getVar('stepNumber');
+      $nextStepNumber = ($lastCompletedStepNumber + 1);
+      // Note that if $lastCompletedStep was really the last step in the workflow,
+      // $nextStep will be NULL.
+      $nextStep = ($this->steps[$nextStepNumber] ?? NULL);
+    }    
+    if (!$nextStep) {
+      $nextStep = $this->pseudoFinalStep;
     }
-    return $isValid;
+    return $nextStep;
   }
-
+  
+  /**
+   * Given an identifier, return the matching workflowInstancance step.
+   * 
+   * @param String $stepKey Either a stepNumber (which is an integer), or a publicId
+   * @return CRM_Stepw_WorkflowInstanceStep The matching step
+   */
+  private function getStepByKey(String $stepKey) : CRM_Stepw_WorkflowInstanceStep {
+    if (is_numeric(($stepKey))) {
+      $step = $this->steps[$stepKey];
+    }
+    else {
+      $step = $this->stepsByPublicId[$stepKey];
+    }
+    return $step;
+  }
+    
+  /**
+   * Given an identifier, mark the matching workflowInstancance step as completed.
+   * 
+   * @param String $stepKey Either a stepNumber (which is an integer), or a publicId
+   * @return void
+   */  
+  public function completeStep($stepKey) {
+    $step = $this->getStepByKey($stepKey);
+    $step->complete();
+  }
+  
+  public function getNextStepUrl() {
+    $step = $this->getNextStep();
+    $url = $step->getStepUrl();
+    return $url;
+  }
+  
+  public function setStepAfformSubmissionId(int $afformSubmissionId, string $stepKey) {
+    $step = $this->getStepByKey($stepKey);
+    $step->setAfformSubmissionId($afformSubmissionId);
+  }
+  
+  public function getProgress($stepKey) {
+    $step = $this->getStepByKey($stepKey);
+    $stepNumber = $step->getVar('stepNumber');
+    $stepTotalCount = count($this->steps);
+    
+    $ret = [
+      'stepOrdinal' => ($stepNumber + 1),
+      'stepTotalCount' => $stepTotalCount,
+    ];
+    
+    return $ret;
+  }
+  
+  public function getButtonLabel($stepKey) {
+    $step = $this->getStepByKey($stepKey);
+    $stepConfig = $step->getVar('config');
+    return ($stepConfig['button_label'] ?? '');
+  }
+  
+  public function getButtonDisabled($stepKey) {
+    // button is disabled by default; it is only enabled if:
+    //   - step has ever been completed, OR
+    //   - step is NOT a video page.
+    //
+    $disabled = TRUE;
+    
+    $step = $this->getStepByKey($stepKey);
+    if ($step->getVar('lastCompleted')) {
+      $disabled = FALSE;
+    }
+    else {
+      $config = $step->getVar('config');
+      $isVideoPage = ($config['is_video_page'] ?? FALSE);
+      if (!$isVideoPage) {
+        $disabled = FALSE;
+      }
+    }
+    
+    return $disabled;
+  }
 }

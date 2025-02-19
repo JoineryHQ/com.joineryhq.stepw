@@ -26,29 +26,23 @@ class CRM_Stepw_APIWrapper {
 //      
 //    }
     if ($requestSignature == "4.afform.submit") {
-      // fixmeval: validate afform.submit prepare (referer):
+      // fixme3 note: here we will:
+      //  - alter api request parameters to allow re-saving of an existing afform submission.
+      //  
+      // fixme3val: validate afform.submit prepare (referer):
       //  - Given WI exists in state
-      //  - Given Step is open in WI (should it be open already? Who opened it?)
-      //  - Given Step has 'ever been closed' in WI (i.e., this is a re-submission)
+      //  - Given Step exists in WI
+      //  - QP_STEP_RELOAD_PUBLIC_ID is given (i.e., this is a re-submission)
+      //  - QP_STEP_RELOAD_PUBLIC_ID matches the given Step 
+      //  - Given step has 'ever been closed'
       //  - Given Step has already been associated with the given submission id.
       //  - Given Step is for this afform
-      //  -- WHAT ACTION TO TAKE ON VALIDATION FAILURE?
+      //  -- ON VALIDATION FAILURE: take no action; form submission will fail, and we don't care.
       //
-      if (!CRM_Stepw_Utils_Userparams::validateWorkflowInstanceStep('referer', FALSE)) {
-        // Workflow params are invalid. Just return.
-        return;
-      }
       
       $request = $event->getApiRequest();
       $afform = $request->getParams();
       $afformName = ($afform['name'] ?? NULL);
-      if (
-        empty($afformName)
-        // If this afform is not for the current workflow step, we'll take no action here.
-        || !CRM_Stepw_Utils_Userparams::currentWorkflowStepIsForAfform('referer', $afformName)
-      ) {
-        return;
-      }
       
       // Allow saving of afforms loaded with the ?sid=n query parameter (i.e.,
       // afforms preloaded with a given afform.submission), by stripping the
@@ -62,18 +56,12 @@ class CRM_Stepw_APIWrapper {
       }
     }
     elseif ($requestSignature == "4.afformsubmission.get") {
-      // fixmeval: validate afformsubmission.get prepare (referer):
-      //  - Given WI exists in state
-      //  - Given Step is open in WI (should it be open already? Who opened it?)
-      //  - Given Step has 'ever been closed' in WI (i.e., this is a re-submission)
-      //  - Given Step has already been associated with the given submission id.
-      //  - Given Step is for this afform
-      //  -- WHAT ACTION TO TAKE ON VALIDATION FAILURE?
+      // fixme3 note: here we will:
+      //  - do nothing.
+      //  
+      // fixme3val: validate afformsubmission.get prepare (referer):
+      //  - Nothing. This code does nothing and should be removed.
       //
-      if (!CRM_Stepw_Utils_Userparams::validateWorkflowInstanceStep('referer', FALSE)) {
-        // Workflow params are invalid. Just return.
-        return;
-      }
       
       // fixme: what validation can we do here to check this submission is for an afform that matches the current workflow step?
 
@@ -167,22 +155,10 @@ class CRM_Stepw_APIWrapper {
       //  - Given Step is for this afform
       //  -- ON VALIDATION FAILURE: do nothing and return (this is an api call, possibly by ajax)
       //
-
-      if (!CRM_Stepw_Utils_Userparams::validateWorkflowInstanceStep('referer', FALSE)) {
-        // Workflow params are invalid. Just return.
-        return;
-      }
       
       $request = $event->getApiRequest();
       $requestParams = $request->getParams();
       $afformName = ($requestParams['values']['afform_name'] ?? NULL);
-      if (
-        empty($afformName)
-        // If this afform is not for the current workflow step, we'll take no action here.
-        || !CRM_Stepw_Utils_Userparams::currentWorkflowStepIsForAfform('referer', $afformName)
-      ) {
-        return;
-      }
       
       // Capture saved submission id in the step.
       $response = $event->getResponse();
@@ -190,7 +166,7 @@ class CRM_Stepw_APIWrapper {
       $stepPublicId = CRM_Stepw_Utils_Userparams::getUserParams('referer', CRM_Stepw_Utils_Userparams::QP_STEP_ID);
       $workflowInstancePublicId = CRM_Stepw_Utils_Userparams::getUserParams('referer', CRM_Stepw_Utils_Userparams::QP_WORKFLOW_INSTANCE_ID);
       $workflowInstance = CRM_Stepw_State::singleton()->getWorkflowInstance($workflowInstancePublicId);
-      $workflowInstance->setStepSubmissionId($stepPublicId, $afformSubmissionId);
+      $workflowInstance->setStepAfformSubmissionId($afformSubmissionId, $stepPublicId);
       
     }
   }
