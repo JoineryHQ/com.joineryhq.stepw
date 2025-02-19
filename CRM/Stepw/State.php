@@ -83,7 +83,7 @@ class CRM_Stepw_State {
 
   public function storeWorkflowInstance(CRM_Stepw_WorkflowInstance $workflowInstance) {
     $workflowInstances = $this->get('workflowInstances') ?? [];
-    $publicId = $workflowInstance->getVar('publicId');
+    $publicId = $workflowInstance->getPublicId();
     $workflowInstances[$publicId] = $workflowInstance;
     $this->set('workflowInstances', $workflowInstances);
   }
@@ -130,13 +130,13 @@ class CRM_Stepw_State {
         // not a valid instance.
         $retain = false;
       }
-      elseif ((time() - ($workflowInstance->getVar('lastModified') ?? 0)) > self::maxWorkflowAgeSeconds) {
+      elseif ((time() - ($workflowInstance->getPublicId() ?? 0)) > self::maxWorkflowAgeSeconds) {
         // instance is too old.
         $retain = false;
       }
 
       if ($retain) {
-        $multisortLastModified[$key] = $workflowInstance->getVar('lastModified');
+        $multisortLastModified[$key] = $workflowInstance->getLastModified();
         $retainedWorkflowInstances[$key] = $workflowInstance;
       }
     }
