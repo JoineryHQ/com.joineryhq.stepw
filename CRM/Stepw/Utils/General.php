@@ -8,8 +8,15 @@ use CRM_Stepw_ExtensionUtil as E;
  */
 class CRM_Stepw_Utils_General {
   public static function generatePublicId() {
-    // fixme3: append a (random?) letter to the string so it's guaranteed to never be numeric.
-    return bin2hex(random_bytes(18));
+    $ret = bin2hex(random_bytes(18));
+    
+    // append a pseudo-random letter to the string so it's guaranteed to never be numeric.
+    $chars = 'abcdefghijklmnopqrstuvwxyz';
+    $alpha = substr(str_shuffle($chars), 0, 1);
+    
+    $ret .= $alpha;
+    
+    return $ret;
   }
 
   public static function redirectToInvalid(string $message = '') {
