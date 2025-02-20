@@ -23,7 +23,7 @@ class CRM_Stepw_Utils_Afform {
 
     // Change the button properties and relocate it into a new <div> that uses our controller.
     $button = $doc->find('button[ng-click="afform.submit()"]');
-    $button->attr('ng-if', 'stepwiseShowSubmitButton');
+    $button->attr('ng-if', 'stepwiseShowSubmitButton()');
     $buttonOriginalHtml = $button->html();
     $button->html('{{ submitButtonLabel ? submitButtonLabel : "' . $buttonOriginalHtml . '" }}');
     $buttonHtml = $button->htmlOuter();
@@ -31,8 +31,9 @@ class CRM_Stepw_Utils_Afform {
     $appendToDoc = <<< "END"
       <div ng-controller="stepwAfform">
       $buttonHtml
+      {{ hideIfInvalid() }}
       </div>
-    END;
+    END;   
     $doc->find('af-form')->append($appendToDoc);
     
   }

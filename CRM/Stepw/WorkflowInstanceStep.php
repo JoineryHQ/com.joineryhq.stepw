@@ -68,7 +68,7 @@ class CRM_Stepw_WorkflowInstanceStep {
    * 
    * @return String URL for this step with all appropriate params.
    */  
-  public function getStepUrl() {
+  public function getUrl() {
     $baseUrl = $this->config['url'];
 
     // Define stepw instance and step parameters to append to url.
@@ -79,17 +79,14 @@ class CRM_Stepw_WorkflowInstanceStep {
     
     if($this->config['type'] == 'afform') {
         $afformParams = [];
-      // If next step is afform, and if ->workflowInstance has a created contactId, append that in the
+      // If this step is afform, and if ->workflowInstance has a created contactId, append that in the
       // afform #? params.
       if ($individualCid = $this->workflowInstance->getCreatedIndividualCid()) {
         $afformParams['Individual1'] = $individualCid;
       }
       if ($this->afformSid) {
-        $afformParams['sid'] = $this->afformSid;      
-        // fixme3: add to (query parameters $params): QP_STEP_RELOAD_PUBLIC_ID
-        // (which should probably be created as a property of $step upon step creation,
-        // and then used as needed here and in prefill/re-submit processing.)
-        //
+        $afformParams['sid'] = $this->afformSid;
+        $params['r'] = $this->afformSid;
       }
     }
     $ret = CRM_Stepw_Utils_Userparams::appendParamsToUrl($baseUrl, $params, $afformParams);

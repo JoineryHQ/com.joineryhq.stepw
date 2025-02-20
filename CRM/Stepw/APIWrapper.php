@@ -32,8 +32,8 @@ class CRM_Stepw_APIWrapper {
       // fixme3val: validate afform.submit prepare (referer):
       //  - Given WI exists in state
       //  - Given Step exists in WI
-      //  - QP_STEP_RELOAD_PUBLIC_ID is given (i.e., this is a re-submission)
-      //  - QP_STEP_RELOAD_PUBLIC_ID matches the given Step 
+      //  - QP_AFFORM_RELOAD_SID is given (i.e., this is a re-submission)
+      //  - QP_AFFORM_RELOAD_SID matches the sid of the given Step 
       //  - Given step has 'ever been closed'
       //  - Given Step has already been associated with the given submission id.
       //  - Given Step is for this afform
@@ -49,7 +49,7 @@ class CRM_Stepw_APIWrapper {
       // submission id from request args, but only on certain conditions.
       // (Note that this will facilitate OVERWRITING of existing entities
       // that were created by the original submission.)
-      if (CRM_Stepw_Utils_Userparams::getUserParams('referer', 'stepwisereload')) {
+      if (CRM_Stepw_Utils_Userparams::getUserParams('referer', CRM_Stepw_Utils_Userparams::QP_AFFORM_RELOAD_SID)) {
         $args = $event->getApiRequest()->getArgs();
         unset($args['sid']);
         $event->getApiRequest()->setArgs($args);
@@ -71,12 +71,14 @@ class CRM_Stepw_APIWrapper {
 //      $event->getApiRequest()->setCheckPermissions(false);
       
 //      parse_str(parse_url($_SERVER['HTTP_REFERER'], PHP_URL_QUERY), $queryParams);
-  //      $r = \Civi\Api4\AfformSubmission::get(FALSE);
-  //      $apiParams = $event->getApiRequest()->getParams();
-  //      foreach($apiParams['where'] as $where) {
-  //        call_user_func_array([$r, 'addWhere'], $where);
-  //      }
-  //      $event->setApiRequest($r);
+//        $r = \Civi\Api4\AfformSubmission::get(FALSE);
+//        $apiParams = $event->getApiRequest()->getParams();
+//        foreach($apiParams['where'] as $where) {
+//          if ($where[0] != 'id') {
+//            call_user_func_array([$r, 'addWhere'], $where);
+//          }
+//        }
+//        $event->setApiRequest($r);
   //      
   //      $a = 1;
     }
@@ -159,7 +161,7 @@ class CRM_Stepw_APIWrapper {
       $request = $event->getApiRequest();
       $requestParams = $request->getParams();
       $afformName = ($requestParams['values']['afform_name'] ?? NULL);
-      
+
       // Capture saved submission id in the step.
       $response = $event->getResponse();
       $afformSubmissionId = $response[0]['id'];

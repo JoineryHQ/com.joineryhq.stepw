@@ -39,8 +39,8 @@ class CRM_Stepw_Utils_WpShortcode {
       $stepPublicId = CRM_Stepw_Utils_Userparams::getUserParams('request', CRM_Stepw_Utils_Userparams::QP_STEP_ID);
       $state = CRM_Stepw_State::singleton();
       $workflowInstance = $state->getWorkflowInstance($workflowInstancePublicId);
-      $buttonText = $workflowInstance->getButtonLabel($stepPublicId);
-      $buttonDisabled = $workflowInstance->getButtonDisabled($stepPublicId);
+      $buttonText = $workflowInstance->getStepButtonLabel($stepPublicId);
+      $buttonDisabled = $workflowInstance->getStepButtonDisabled($stepPublicId);
 
       $hrefQueryParams = [
         CRM_Stepw_Utils_Userparams::QP_WORKFLOW_INSTANCE_ID=> $workflowInstancePublicId,

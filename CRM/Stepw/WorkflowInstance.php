@@ -32,10 +32,10 @@ class CRM_Stepw_WorkflowInstance {
   private $pseudoFinalStep;
   
   /**
-   * Same as 'steps', but keyed to step publicId.
+   * Map of step numbers per public id, for easier reference to steps.
    * @var Array
    */
-  private $stepsByPublicId = [];
+  private $stepNumbersByPublicId = [];
   
   public function __construct(Int $workflowId) {
     $this->updateLastModified();
@@ -43,11 +43,11 @@ class CRM_Stepw_WorkflowInstance {
     $this->publicId = CRM_Stepw_Utils_General::generatePublicId();
     $workflowConfig = CRM_Stepw_Utils_WorkflowData::getWorkflowConfigById($workflowId);
     foreach ($workflowConfig['steps'] as $configStepNumber => &$configStep) {
-      // Create a new Step object and store it both in ->steps and in ->stepsByPublicId
+      // Create a new Step object, store ->steps and map the ids in ->stepNumbersByPublicId
       $step = new CRM_Stepw_WorkflowInstanceStep($this, $configStepNumber, $configStep);
       $stepPublicId = $step->getVar('publicId');
       $this->steps[$configStepNumber] = $step;
-      $this->stepsByPublicId[$stepPublicId] = $step;
+      $this->stepNumbersByPublicId[$stepPublicId] = $configStepNumber;
 
       // Add 'stepNumber' to configStep for future reference.
       $configStep['stepNumber'] = $configStepNumber;
@@ -67,7 +67,58 @@ class CRM_Stepw_WorkflowInstance {
   private function updateLastModified() {
     $this->lastModified = time();
   }
-  
+
+  /**
+   * Determine most-recently completed step (if any), and return the subsequent
+   * step to that one, if any.
+   * @return CRM_Stepw_WorkflowInstanceStep
+   */
+  private function getNextStep() : CRM_Stepw_WorkflowInstanceStep {
+    $stepsLastCompleted = [];
+    $stepsToSort = [];
+    foreach ($this->steps as $stepNumber => $step) {
+      if ($lastCompleted = $step->getVar('lastCompleted')) {
+        $stepsLastCompleted[] = $lastCompleted;
+        $stepsToSort[] = $step;
+      }
+    }
+    if(empty($stepsToSort)) {
+      // If we're here, it means no steps have been completed, so nextStep 
+      // is step 0.
+      $nextStep = $this->steps[0];
+    }
+    else {
+      array_multisort($stepsLastCompleted, $stepsToSort);
+      $lastCompletedStep = array_pop($stepsToSort);
+      $lastCompletedStepNumber = $lastCompletedStep->getVar('stepNumber');
+      $nextStepNumber = ($lastCompletedStepNumber + 1);
+      // Note that if $lastCompletedStep was really the last step in the workflow,
+      // $nextStep will be NULL.
+      $nextStep = ($this->steps[$nextStepNumber] ?? NULL);
+    }    
+    if (!$nextStep) {
+      $nextStep = $this->pseudoFinalStep;
+    }
+    return $nextStep;
+  }
+    
+  /**
+   * Given an identifier, return the matching workflowInstancance step.
+   * 
+   * @param String $stepKey Either a stepNumber (which is an integer), or a publicId
+   * @return CRM_Stepw_WorkflowInstanceStep The matching step
+   */
+  private function getStepByKey(String $stepKey) : CRM_Stepw_WorkflowInstanceStep {
+    if (is_numeric(($stepKey))) {
+      $step = $this->steps[$stepKey];
+    }
+    else {
+      $stepNumber = $this->stepNumbersByPublicId[$stepKey];
+      $step = $this->steps[$stepNumber];
+    }
+    return $step;
+  }
+    
   public function getLastModified() {
     return $this->lastModified;
   }
@@ -109,56 +160,6 @@ class CRM_Stepw_WorkflowInstance {
   }
 
   /**
-   * Determine most-recently completed step (if any), and return the subsequent
-   * step to that one, if any.
-   * @return CRM_Stepw_WorkflowInstanceStep
-   */
-  private function getNextStep() : CRM_Stepw_WorkflowInstanceStep {
-    $stepsLastCompleted = [];
-    $stepsToSort = [];
-    foreach ($this->steps as $stepNumber => $step) {
-      if ($lastCompleted = $step->getVar('lastCompleted')) {
-        $stepsLastCompleted[] = $lastCompleted;
-        $stepsToSort[] = $step;
-      }
-    }
-    if(empty($stepsToSort)) {
-      // If we're here, it means no steps have been completed, so nextStep 
-      // is step 0.
-      $nextStep = $this->steps[0];
-    }
-    else {
-      array_multisort($stepsLastCompleted, $stepsToSort);
-      $lastCompletedStep = array_pop($stepsToSort);
-      $lastCompletedStepNumber = $lastCompletedStep->getVar('stepNumber');
-      $nextStepNumber = ($lastCompletedStepNumber + 1);
-      // Note that if $lastCompletedStep was really the last step in the workflow,
-      // $nextStep will be NULL.
-      $nextStep = ($this->steps[$nextStepNumber] ?? NULL);
-    }    
-    if (!$nextStep) {
-      $nextStep = $this->pseudoFinalStep;
-    }
-    return $nextStep;
-  }
-  
-  /**
-   * Given an identifier, return the matching workflowInstancance step.
-   * 
-   * @param String $stepKey Either a stepNumber (which is an integer), or a publicId
-   * @return CRM_Stepw_WorkflowInstanceStep The matching step
-   */
-  private function getStepByKey(String $stepKey) : CRM_Stepw_WorkflowInstanceStep {
-    if (is_numeric(($stepKey))) {
-      $step = $this->steps[$stepKey];
-    }
-    else {
-      $step = $this->stepsByPublicId[$stepKey];
-    }
-    return $step;
-  }
-    
-  /**
    * Given an identifier, mark the matching workflowInstancance step as completed.
    * 
    * @param String $stepKey Either a stepNumber (which is an integer), or a publicId
@@ -171,10 +172,16 @@ class CRM_Stepw_WorkflowInstance {
   
   public function getNextStepUrl() {
     $step = $this->getNextStep();
-    $url = $step->getStepUrl();
+    $url = $step->getUrl();
     return $url;
   }
-  
+    
+  public function getStepUrl($stepKey) {
+    $step = $this->getStepByKey($stepKey);
+    $url = $step->getUrl();
+    return $url;
+  }
+
   public function setStepAfformSubmissionId(int $afformSubmissionId, string $stepKey) {
     $step = $this->getStepByKey($stepKey);
     $step->setAfformSubmissionId($afformSubmissionId);
@@ -193,13 +200,18 @@ class CRM_Stepw_WorkflowInstance {
     return $ret;
   }
   
-  public function getButtonLabel($stepKey) {
+  public function getStepAfformSubmissionId ($stepKey) {
+    $step = $this->getStepByKey($stepKey);
+    return $step->getVar('afformSid');
+  }
+  
+  public function getStepButtonLabel($stepKey) {
     $step = $this->getStepByKey($stepKey);
     $stepConfig = $step->getVar('config');
     return ($stepConfig['button_label'] ?? '');
   }
   
-  public function getButtonDisabled($stepKey) {
+  public function getStepButtonDisabled($stepKey) {
     // button is disabled by default; it is only enabled if:
     //   - step has ever been completed, OR
     //   - step is NOT a video page.

@@ -9,15 +9,19 @@ function stepw_civicrm_pageRun(CRM_Core_Page $page) {
   $pageName = $page->getVar('_name');
   if ($pageName == 'CRM_Afform_Page_AfformBase') {
     // fixme3 note: here we will:
-    //  - If the given step has already been submitted, and this is NOT an afform with sid,
+    //  - If the given step has already been submitted, and we were NOT given an afform sid,
     //    redirect to $workflowInstance->getStepUrl(stepPublicId) (which should return
     //    a url with afform sid and some "reload" query parameter to indicate that fact (since afform
     //    only knows it from #fragment, which is not visible here.)
     //  - Set crm.vars for stepwAfform module.
     //
-    //
-    // fixme3: If is not stepwise workflow: return.
-    // 
+
+    // If is not stepwise workflow: return.
+    if (!CRM_Stepw_Utils_Userparams::isStepwiseWorkflow('request')) {
+      // We're not in a stepwise workflow. Nothing for us to do here.
+      return;
+    }
+
     // fixme3val: validate hook_pageRun.
     //  - Given WI exists in state
     //  - Given Step public id exists in WI
@@ -35,40 +39,51 @@ function stepw_civicrm_pageRun(CRM_Core_Page $page) {
       $a = 1;
       $state = CRM_Stepw_State::singleton();
 
-    if (CRM_Stepw_Utils_Userparams::isStepwiseWorkflow('request')) {
-      // This script is only needed for 'back-button reloaded' forms; the button
-      // itself is content defined in hook_civicrm_alterContent().
-      CRM_Core_Resources::singleton()->addScriptFile(E::LONG_NAME, '/js/reload-button-hijack.js');
+    $workflowInstancePublicId = CRM_Stepw_Utils_Userparams::getUserParams('request', CRM_Stepw_Utils_Userparams::QP_WORKFLOW_INSTANCE_ID);
+    $workflowInstance = CRM_Stepw_State::singleton()->getWorkflowInstance($workflowInstancePublicId);
+    $stepPublicId = CRM_Stepw_Utils_Userparams::getUserParams('request', CRM_Stepw_Utils_Userparams::QP_STEP_ID);
+    
+
+    // If the given step has already been submitted, and we were NOT given QP_AFFORM_RELOAD_SID (with the current sid of the step),
+    // redirect to $workflowInstance->getStepUrl(stepPublicId)
+    $reloadSubmissionId = CRM_Stepw_Utils_Userparams::getUserParams('request', CRM_Stepw_Utils_Userparams::QP_AFFORM_RELOAD_SID);
+    $stepSubmissionId = $workflowInstance->getStepAfformSubmissionId($stepPublicId);
+    if (
+      $stepSubmissionId
+      && ($reloadSubmissionId != $stepSubmissionId)
+    ) {
+      $stepReloadUrl = $workflowInstance->getStepUrl($stepPublicId);
+      CRM_Utils_System::redirect($stepReloadUrl);
+      
+      $a = 1;
     }
     
-    $isStepwiseWorkflow = CRM_Stepw_Utils_Userparams::isStepwiseWorkflow('request');
-    if ($isStepwiseWorkflow) {
 
-      // Build redirect url to our step handler for this workflowInstance
-      // fixme3 note: our step handler will, by the time it runs, know that this
-      // form was the most recently submitted step, so it will redirect to the url
-      // for the step subsequent to this one.
-      //
-      $workflowInstancePublicId = CRM_Stepw_Utils_Userparams::getUserParams('request', CRM_Stepw_Utils_Userparams::QP_WORKFLOW_INSTANCE_ID);
-      $stepPublicId = CRM_Stepw_Utils_Userparams::getUserParams('request', CRM_Stepw_Utils_Userparams::QP_STEP_ID);
-      $redirectQueryParams = [
-        CRM_Stepw_Utils_Userparams::QP_WORKFLOW_INSTANCE_ID => $workflowInstancePublicId,
-      ];
-      $redirect = CRM_Stepw_Utils_General::buildStepUrl($redirectQueryParams);
-
-      // Get the config for this step so we can know the button label.
-      $workflowInstance = CRM_Stepw_State::singleton()->getWorkflowInstance($workflowInstancePublicId);
-      $buttonLabel = $workflowInstance->getButtonLabel($stepPublicId);
-
-      $vars = [
-        // fixme3: is isStepwiseWorkflow actually used in the JS (check stepwAfform module)
-        'isStepwiseWorkflow' => $isStepwiseWorkflow,
-        'submitButtonLabel' => $buttonLabel,
-        'redirect' => $redirect,
-      ];
-      CRM_Core_Resources::singleton()->addVars('stepw', $vars);
       
-    }
+    // Build redirect url to our step handler for this workflowInstance
+    // fixme3 note: our step handler will, by the time it runs, know that this
+    // form was the most recently submitted step, so it will redirect to the url
+    // for the step subsequent to this one.
+    //
+    $redirectQueryParams = [
+      CRM_Stepw_Utils_Userparams::QP_WORKFLOW_INSTANCE_ID => $workflowInstancePublicId,
+    ];
+    
+    $redirectUrl = CRM_Stepw_Utils_General::buildStepUrl($redirectQueryParams);
+
+    // Get the config for this step so we can know the button label.
+    $buttonLabel = $workflowInstance->getStepButtonLabel($stepPublicId);
+    // Get the submissionId (if any) so we can pass it to stepwAfform.js for
+    // on-page validation.
+    $buttonAfformSubmissionId = $workflowInstance->getStepAfformSubmissionId($stepPublicId);
+    
+    $jsVars = [
+      'submitButtonLabel' => $buttonLabel,
+      'redirectUrl' => $redirectUrl,
+      'stepAfformSid' => ($buttonAfformSubmissionId ?? NULL),
+    ];
+    CRM_Core_Resources::singleton()->addVars('stepw', $jsVars);
+
   }
 }
 
@@ -257,8 +272,12 @@ function stepw_civicrm_permission_check($permission, &$granted) {
   static $uri;
   if (!isset($uri) && $_SERVER['REQUEST_METHOD'] == 'POST') {
     $uri = $_SERVER['REQUEST_URI'];
+    $a = 1;
   }
-  if ($uri != "/civicrm/ajax/api4/Afform/prefill/") {
+  if (
+    $uri != "/civicrm/ajax/api4/Afform/prefill/"
+    && $uri != "/civicrm/ajax/api4/Afform/submit/"
+  ) {
     return;
   }
 

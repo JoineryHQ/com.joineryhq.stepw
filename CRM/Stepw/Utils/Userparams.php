@@ -35,14 +35,15 @@ class CRM_Stepw_Utils_Userparams {
   const QP_DONE_STEP_ID = 'stepw_dsid';
   
   /**
-   * PublicId-type string, intended as an indicator that an afform step was
-   * loaded/viewed with an afform submission 'sid' (Designed to allow our APIWrappers
+   * Indicates this is an afform step being loaded/viewed with an afform 
+   * submission 'sid' (Designed to allow our APIWrappers
    * and other event listeners, called during the prefill of such forms and during 
-   * the processing of such form submissions, to recognize that this is a valid
-   * re-load/re-submission, and therefore to alter api parameters or permissions
-   * in order to allow the prefill/re-submission.)
+   * the processing of such form submissions, to recognize that this is a
+   * re-load/re-submission, and therefore to alter (after proper validation)
+   * api parameters or permissions in order to allow the prefill/re-submission.)
+   * This is treated as a boolean: any value will amount to TRUE.
    */
-  const QP_STEP_RELOAD_PUBLIC_ID = 'stepw_rid';
+  const QP_AFFORM_RELOAD_SID = 'stepw_r';
   
   private static function getValidParams() {
     $validParams = [];
@@ -121,6 +122,7 @@ class CRM_Stepw_Utils_Userparams {
    *   supported keys in the $params array:
    *     s: step id
    *     i: workflow instance public identifier
+   *     r: afform submission reload indicator
    * @param array $fragmentQuery Query parameters to append in url fragment, e.g. for afform #?...
    * @return string
    */
@@ -129,6 +131,7 @@ class CRM_Stepw_Utils_Userparams {
     $supportedParamKeys = [
       'i' => self::QP_WORKFLOW_INSTANCE_ID,
       's' => self::QP_STEP_ID,
+      'r' => self::QP_AFFORM_RELOAD_SID,
     ];
     foreach ($params as $paramKey => $paramValue) {
       if (!empty($supportedParamKeys[$paramKey])) {
