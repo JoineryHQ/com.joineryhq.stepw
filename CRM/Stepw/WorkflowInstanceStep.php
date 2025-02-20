@@ -32,7 +32,10 @@ class CRM_Stepw_WorkflowInstanceStep {
    
    /**
     * Afform submission id (if any). Populated when the step is afform and the form
-    * has been submitted
+    * has been submitted. 
+    * Note: When a form step is submitted more than once in a workflowInstance (e.g.
+    * by use of the back button), a new afformsubmission is created, with a new id,
+    * and the most recent id is written to this property.
     * @var Int
     */
    private $afformSid;

@@ -45,7 +45,8 @@ function stepw_civicrm_pageRun(CRM_Core_Page $page) {
     
 
     // If the given step has already been submitted, and we were NOT given QP_AFFORM_RELOAD_SID (with the current sid of the step),
-    // redirect to $workflowInstance->getStepUrl(stepPublicId)
+    // redirect to $workflowInstance->getStepUrl(stepPublicId). See notes on
+    // $step->afformSid.
     $reloadSubmissionId = CRM_Stepw_Utils_Userparams::getUserParams('request', CRM_Stepw_Utils_Userparams::QP_AFFORM_RELOAD_SID);
     $stepSubmissionId = $workflowInstance->getStepAfformSubmissionId($stepPublicId);
     if (
@@ -57,30 +58,22 @@ function stepw_civicrm_pageRun(CRM_Core_Page $page) {
       
       $a = 1;
     }
-    
-
       
     // Build redirect url to our step handler for this workflowInstance
-    // fixme3 note: our step handler will, by the time it runs, know that this
+    // Note: our step handler will, by the time it runs, know that this
     // form was the most recently submitted step, so it will redirect to the url
     // for the step subsequent to this one.
     //
     $redirectQueryParams = [
       CRM_Stepw_Utils_Userparams::QP_WORKFLOW_INSTANCE_ID => $workflowInstancePublicId,
     ];
-    
     $redirectUrl = CRM_Stepw_Utils_General::buildStepUrl($redirectQueryParams);
-
-    // Get the config for this step so we can know the button label.
+    // Also send the button label to js.
     $buttonLabel = $workflowInstance->getStepButtonLabel($stepPublicId);
-    // Get the submissionId (if any) so we can pass it to stepwAfform.js for
-    // on-page validation.
-    $buttonAfformSubmissionId = $workflowInstance->getStepAfformSubmissionId($stepPublicId);
-    
     $jsVars = [
       'submitButtonLabel' => $buttonLabel,
       'redirectUrl' => $redirectUrl,
-      'stepAfformSid' => ($buttonAfformSubmissionId ?? NULL),
+      'stepAfformSid' => ($stepSubmissionId ?? NULL),
     ];
     CRM_Core_Resources::singleton()->addVars('stepw', $jsVars);
 
@@ -96,7 +89,7 @@ function stepw_civicrm_alterContent(&$content, $context, $tplName, &$object) {
   // fixme3val: None. Validation was alrady done in hook_pageRun().
   //
   
-  // fixme: if this is an afform and we're in a workflowInstance, display a progress bar OUTSIDE OF THE FORM
+  // fixme3: if this is an afform and we're in a workflowInstance, display a progress bar OUTSIDE OF THE FORM
   if (!CRM_Stepw_Utils_Userparams::isStepwiseWorkflow('request')) {
     // If we're not in a stepwise workflow, there's nothing for us to do here.
     return;
@@ -263,7 +256,7 @@ function stepw_civicrm_permission_check($permission, &$granted) {
   //  - Given WI(referer) exists in state
   //  - Given Step public id(referer) exists in WI
   //  - Given Step is for this afform ($afformName matches step['afform_name']), where afform name is in json_decode($_POST['params'])
-  //  - afform sid is associated with this step (sid is in json_decode($_POST['params'])['args']
+  //  - afform sid is associated with this step (sid is in json_decode($_POST['params'])['args'], and in QP_AFFORM_RELOAD_SID)
   //  -- VALIDATION FAILURE: take no action and return.
   //
 
@@ -276,7 +269,7 @@ function stepw_civicrm_permission_check($permission, &$granted) {
   }
   if (
     $uri != "/civicrm/ajax/api4/Afform/prefill/"
-    && $uri != "/civicrm/ajax/api4/Afform/submit/"
+//    fixme3: seems like we don't need to support this path: && $uri != "/civicrm/ajax/api4/Afform/submit/"
   ) {
     return;
   }
@@ -286,14 +279,9 @@ function stepw_civicrm_permission_check($permission, &$granted) {
     return;
   }
   
-  // fixme: we must also verify that the submission id (available in $param['args']['sid'])
-  // is valid for the current user's workflow instance and current step.
+  // fixme: we must also verify that the submission id (available in QP_AFFORM_RELOAD_SID)
+  // is valid for the given step.
   
-  // FIXME: Additional permissions are required for loading afform submission data (e.g.
-  // stepwise form re-submission during 'back-button' handling), but of course
-  // we should only grant it momentarily and only after confirming the (typically anonymous)
-  // user is actual allowed to edit this submission as part of his current
-  // workflow instance.
   switch ($permission) {
     // If missing, anon will probably generate an IDS check failure.
     // fixme3: is 'skip ids check' actually required?
@@ -303,15 +291,7 @@ function stepw_civicrm_permission_check($permission, &$granted) {
     case 'administer afform':
     // if missing, afform prefill will be empty (depending on various permissions/ACLs)
     case 'view all contacts':
-      $g = $_GET;
-      $p = $_POST;
-      $r = $_REQUEST;
-      $afformParams = json_decode($_POST['params'], TRUE);
-      $request = CRM_Stepw_Utils_Userparams::getUserParams('request');
-      $referer = CRM_Stepw_Utils_Userparams::getUserParams('referer');
-      $state = CRM_Stepw_State::singleton();      
-      
-      // FIXME: which perms are really required here?
+    // If missing, user (probably anon) won't be able to prefill contact data.
       $granted = true;
       break;
   }

@@ -9,22 +9,6 @@ class CRM_Stepw_APIWrapper {
   public static function PREPARE (Civi\API\Event\PrepareEvent $event) {
     $requestSignature = $event->getApiRequestSig();
     
-//    // fixme: this if block is for testing/debugging. remove.
-//    if (
-//      0
-////      || $requestSignature == "4.afform.checkaccess"
-////      || $requestSignature == "4.afform.get"
-//      || $requestSignature == "4.afform.prefill"
-//    ) {
-//      $g = $_GET;
-//      $p = $_POST;
-//      $r = $_REQUEST;
-//      $q = CRM_Utils_Request::retrieve('q', 'String', '');
-//      $request = $event->getApiRequest();      
-//      $requestParams = $request->getParams();
-//      $a = 1;
-//      
-//    }
     if ($requestSignature == "4.afform.submit") {
       // fixme3 note: here we will:
       //  - alter api request parameters to allow re-saving of an existing afform submission.
@@ -54,33 +38,6 @@ class CRM_Stepw_APIWrapper {
         unset($args['sid']);
         $event->getApiRequest()->setArgs($args);
       }
-    }
-    elseif ($requestSignature == "4.afformsubmission.get") {
-      // fixme3 note: here we will:
-      //  - do nothing.
-      //  
-      // fixme3val: validate afformsubmission.get prepare (referer):
-      //  - Nothing. This code does nothing and should be removed.
-      //
-      
-      // fixme: what validation can we do here to check this submission is for an afform that matches the current workflow step?
-
-      // fixme: we can display prefilled form submission with a url like 'http://plana.l/civicrm/form-test/#?sid=7'
-      // IF WE DO OUR OWN PERMISSION CHECKING AND DISABLE THIS REQUEST'S PERMISSIONS HERE:
-      // AND IF WE GRANT (MOMENTARILY) 'AFFORM: EDIT AND DELETE FORMS' PERMISSION (FOR THIS, CONSIDER OUR PR TO SMS API EXTENSION)
-//      $event->getApiRequest()->setCheckPermissions(false);
-      
-//      parse_str(parse_url($_SERVER['HTTP_REFERER'], PHP_URL_QUERY), $queryParams);
-//        $r = \Civi\Api4\AfformSubmission::get(FALSE);
-//        $apiParams = $event->getApiRequest()->getParams();
-//        foreach($apiParams['where'] as $where) {
-//          if ($where[0] != 'id') {
-//            call_user_func_array([$r, 'addWhere'], $where);
-//          }
-//        }
-//        $event->setApiRequest($r);
-  //      
-  //      $a = 1;
     }
   }
   
@@ -134,18 +91,8 @@ class CRM_Stepw_APIWrapper {
       }
       // Update the api response with our modified values.
       $event->setResponse($response);
-    }
-
-    // fixme: is this necessary, e.g. for prefill?
-//    if ($requestSignature == "4.afform.checkaccess") {
-//      $response = $event->getResponse();
-//      if ($response->rowCount == 1) {
-//        $response[0]['access'] = TRUE;
-//        $event->setResponse($response);
-//      }
-//    }
-    
-    if ($requestSignature == "4.afformsubmission.create") {
+    }    
+    elseif ($requestSignature == "4.afformsubmission.create") {
       // fixme3 note: here we will:
       // - Capture saved submission id in the step in workflowInstance.
       // 

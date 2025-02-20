@@ -35,13 +35,16 @@ class CRM_Stepw_Utils_Userparams {
   const QP_DONE_STEP_ID = 'stepw_dsid';
   
   /**
-   * Indicates this is an afform step being loaded/viewed with an afform 
-   * submission 'sid' (Designed to allow our APIWrappers
-   * and other event listeners, called during the prefill of such forms and during 
-   * the processing of such form submissions, to recognize that this is a
-   * re-load/re-submission, and therefore to alter (after proper validation)
-   * api parameters or permissions in order to allow the prefill/re-submission.)
-   * This is treated as a boolean: any value will amount to TRUE.
+   * Afform submission id for a the step represented by QP_STEP_ID, as it was 
+   * most recently saved in the step's afformSid property. (Note
+   * that this extension supports prefilling of afforms with submission data,
+   * and the saving of those forms; such saving creates a new afformsubmission,
+   * which id is then stored (ovewritten) in the step's afformSid property).
+   * Designed to allow our APIWrappers and other event listeners, called during
+   * the prefill of such forms and during the processing of such form submissions,
+   * to recognize that this is a valid re-load/re-submission, and therefore to 
+   * alter (after proper validation) api parameters or permissions in order to
+   * allow the prefill/re-submission.)
    */
   const QP_AFFORM_RELOAD_SID = 'stepw_r';
   
