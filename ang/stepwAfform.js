@@ -25,11 +25,22 @@
         };
         
         $scope.hideIfInvalid = function() {
+          // Note: We'll hide the form if either afform.sid or CRM.vars.stepw.stepAfformSid
+          // are provided, AND they don't match each other. HOWEVER, this form
+          // hiding is merely a convenience, to prevent a confusing user experience
+          // in the event that someone is mucking about with the parameters
+          // (which is the only way such a mismatch should happen).
+          // This form hiding is NOT a security measure. Validation of the sid
+          // is happening on server-side. If this were a security measure,
+          // we'd need to be doing something more secure than comparing the value 
+          // of globally editable values in CRM.vars against the value of afform.sid,
+          // which comes from the URL #fragment.
+          
           var sid = Number($scope.$parent.routeParams.sid);
           
           if (
-            // we don't do anything if there's no crm.vars.stepw (because it means
-            // we'er not in a stepwise workflow.
+            // We don't do anything if there's no crm.vars.stepw (because it means
+            // we'er not in a stepwise workflow.)
             typeof CRM.vars.stepw != 'undefined'
             // If we have either of: afform 'sid' or the sid given in crm.vars, then:
             // they must be equal to each other, or this is some kind of url 

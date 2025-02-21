@@ -75,7 +75,7 @@ class CRM_Stepw_Utils_WpShortcode {
     // fixme3 note: here we will:
     //  - Build and return html for a progress bar to appear at the top of the page.
     // 
-    // fixme3val: validate getStepwiseButtonHtml.
+    // fixme3val: validate getProgressBarHtml.
     //  - Given WI exists in state
     //  - Given Step public id exists in WI
     //  -- VALIDATION FAILURE: return empty string
