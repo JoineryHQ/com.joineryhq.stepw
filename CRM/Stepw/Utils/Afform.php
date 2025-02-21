@@ -16,9 +16,14 @@ class CRM_Stepw_Utils_Afform {
     //  - built with code in: https://github.com/TobiaszCudnik/phpquery)
     //  - Best phpquery documentation I've found so far: https://github.com/electrolinux/phpquery/blob/master/wiki/README.md
 
-    // Change any RBAC security to FBAC
-    // fixme: this MUST be done only after we verify the workflowInstance, step, and contactId
-  //  $doc->find('af-entity')->attr('security', 'FBAC');
+    // fixme3: Change any RBAC (role-based) security to FBAC (form-based), because
+    //   we want this to work for anon users; we are going to handle
+    //   validation/permissions via stepw_* query params.
+    //  $doc->find('af-entity')->attr('security', 'FBAC');
+    
+    // Force 'url-autofill' to true for Individual1, so that we're sure to support
+    // continued tracking of the contact Id (created from the first form submission)
+    // in subsequent forms in the workflowInstance.
     $doc->find('af-entity[type="Individual"]')->attr('url-autofill', '1');
 
     // Change the button properties and relocate it into a new <div> that uses our controller.

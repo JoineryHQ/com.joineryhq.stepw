@@ -168,6 +168,7 @@ class CRM_Stepw_WorkflowInstance {
   public function completeStep($stepKey) {
     $step = $this->getStepByKey($stepKey);
     $step->complete();
+    $this->updateLastModified();    
   }
   
   public function getNextStepUrl() {
@@ -185,6 +186,7 @@ class CRM_Stepw_WorkflowInstance {
   public function setStepAfformSubmissionId(int $afformSubmissionId, string $stepKey) {
     $step = $this->getStepByKey($stepKey);
     $step->setAfformSubmissionId($afformSubmissionId);
+    $this->updateLastModified();
   }
   
   public function getProgress($stepKey) {
@@ -212,6 +214,12 @@ class CRM_Stepw_WorkflowInstance {
   }
   
   public function getStepButtonDisabled($stepKey) {
+    // fixme3: we're returning FALSE here because we don't yet have the video-enforcer
+    //   javascript in place, which means our "real" logic for this method will
+    //   always return TRUE. Once the video-enforcer is working, we should remove
+    //   this comment and the hard-coded FALSE return.
+    return false;
+
     // button is disabled by default; it is only enabled if:
     //   - step has ever been completed, OR
     //   - step is NOT a video page.

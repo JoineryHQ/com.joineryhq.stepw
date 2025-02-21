@@ -47,6 +47,10 @@ function stepw_civicrm_pageRun(CRM_Core_Page $page) {
     // If the given step has already been submitted, and we were NOT given QP_AFFORM_RELOAD_SID (with the current sid of the step),
     // redirect to $workflowInstance->getStepUrl(stepPublicId). See notes on
     // $step->afformSid.
+    // This redirection is part of our security/validation protocol, because it 
+    // ensures that the value of QP_AFFORM_RELOAD_SID is corret, which is important
+    // because that value is later checked by our validation process.
+    //
     $reloadSubmissionId = CRM_Stepw_Utils_Userparams::getUserParams('request', CRM_Stepw_Utils_Userparams::QP_AFFORM_RELOAD_SID);
     $stepSubmissionId = $workflowInstance->getStepAfformSubmissionId($stepPublicId);
     if (
@@ -177,6 +181,8 @@ function _stepw_afform_submit_late(\Civi\Afform\Event\AfformSubmitEvent $event) 
 /**
  * Early (high-priority) listener on 'civi.afform.submit' event (bound in stepw_civicrm_config()).
  * 
+ * FLAG_STEPW_AFFORM_BRITTLE
+ * 
  * @param \Civi\Afform\Event\AfformSubmitEvent $event
  * @return void
  */
@@ -184,12 +190,13 @@ function _stepw_afform_submit_early(\Civi\Afform\Event\AfformSubmitEvent $event)
     // fixme3 note: here we will:
     // - Alter submission parameters to allow the afform submission to be re-saved.
     //
-    // fixme3: If is not stepwise workflow: return.
-    // 
     // fixme3val: validate _stepw_afform_submit_early.
     //  - Given WI exists in state
     //  - Given Step public id exists in WI
     //  - Given Step is for this afform ($afformName matches step['afform_name'])
+    //  - afformsubmission.sid is provided (in referer QP_AFFORM_RELOAD_SID ?)
+    //  - $event is for an activity (we don't currently support any other entities here.)
+    //  
     //  -- VALIDATION FAILURE: take no action and return.
     //
 
@@ -200,17 +207,21 @@ function _stepw_afform_submit_early(\Civi\Afform\Event\AfformSubmitEvent $event)
 
   $afform = $event->getAfform();
   $afformName = ($afform['name'] ?? NULL);
+  $reloadSubmissionId = CRM_Stepw_Utils_Userparams::getUserParams('referer', CRM_Stepw_Utils_Userparams::QP_AFFORM_RELOAD_SID);
+  
 
-  // FIXME: this is POC code that allows us to re-save afform submissions and update
-  // the related entity. This code causes an existing activity (the one linked to the submission)
-  // to actually be overwritten. We need to improve this so it handles entities
-  // other than activities.
-  // FIXME: this should only be done on 'submission view' forms in the midst of
-  // a stepwise workflow (i.e., "back-button" handling for form resubmission)
+  // This code allows us to re-save afforms that are prefilled
+  // with an existing submission Id, and to allow that re-submission to update
+  // the related entity. This code:
+  // - causes an existing activity (the one linked to the submission) to actually be overwritten. 
+  // - causes the creation of a new submission on the afform.
+  // We may want to improve this so it handles entities other than activities.
   if ($event->getEntityType() == 'Activity') {
     $records = $event->getRecords();
     foreach ($records as &$record) {
       if (!empty($record['id'])) {
+        // FLAG_STEPW_AFFORM_BRITTLE : afform may decide to add more checks that
+        //   would prevent re-saving of entities via already-processed submissions.
         // If the record has 'id', copy that into record['fields'] so that the
         // 'save' api will actually update the activity.
         $record['fields']['id'] = $record['id'];
@@ -245,6 +256,14 @@ function stepw_civicrm_config(&$config): void {
   Civi::dispatcher()->addListener('civi.afform.submit', '_stepw_afform_submit_late', -1000);
 }
 
+/**
+ * Implements hook_civicrm_permission-check().
+ * 
+ * FLAG_STEPW_AFFORM_BRITTLE
+ * 
+ * @link https://docs.civicrm.org/dev/en/latest/hooks/hook_civicrm_permission_check/
+ * 
+ */
 function stepw_civicrm_permission_check($permission, &$granted) {
   
   // fixme3 note: here we will:
@@ -288,6 +307,7 @@ function stepw_civicrm_permission_check($permission, &$granted) {
 //    case 'skip IDS check':
     // If missing, anon will get API4 access denied on AfformSubmission::get,
     // and user-visible error on afform load
+    // FLAG_STEPW_AFFORM_BRITTLE : Afform could change its required permissions for prefill operation.
     case 'administer afform':
     // if missing, afform prefill will be empty (depending on various permissions/ACLs)
     case 'view all contacts':
