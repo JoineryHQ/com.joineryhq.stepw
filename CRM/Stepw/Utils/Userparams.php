@@ -151,6 +151,19 @@ class CRM_Stepw_Utils_Userparams {
     return (string)$u;
   }
 
+  /**
+   * Determine whether the current context purports to be a workflowInstance, without
+   * validating anything else in particular (such as the existing of the purported
+   * workflowInstance in current state)
+   * 
+   * @staticvar Array $cache
+   * @param String $source The source of information from which we should make our 
+   *   determination of context. One of: 
+   *     - request (context is $_REQUEST); 
+   *     - referer (context is $_SERVER['HTTP_REFERER']); 
+   *     - any (context is either of the other two options); 
+   * @return Boolean
+   */
   public static function isStepwiseWorkflow($source = 'any') {
     static $cache;
     

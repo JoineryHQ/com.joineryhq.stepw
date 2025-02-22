@@ -106,15 +106,15 @@ class CRM_Stepw_WorkflowInstance {
    * Given an identifier, return the matching workflowInstancance step.
    * 
    * @param String $stepKey Either a stepNumber (which is an integer), or a publicId
-   * @return CRM_Stepw_WorkflowInstanceStep The matching step
+   * @return CRM_Stepw_WorkflowInstanceStep|NULL The matching step (or null if no such step)
    */
-  private function getStepByKey(String $stepKey) : CRM_Stepw_WorkflowInstanceStep {
+  private function getStepByKey(String $stepKey) {
     if (is_numeric(($stepKey))) {
-      $step = $this->steps[$stepKey];
+      $step = ($this->steps[$stepKey] ?? NULL);
     }
     else {
       $stepNumber = $this->stepNumbersByPublicId[$stepKey];
-      $step = $this->steps[$stepNumber];
+      $step = ($this->steps[$stepNumber] ?? NULL);
     }
     return $step;
   }
@@ -207,6 +207,16 @@ class CRM_Stepw_WorkflowInstance {
     return $step->getVar('afformSid');
   }
   
+  public function getStepAfformName ($stepKey) {
+    $ret = NULL;
+    $step = $this->getStepByKey($stepKey);
+    $stepConfig = $step->getVar('config');
+    if (($stepConfig['type'] ?? NULL) == 'afform') {
+      $ret = ($stepConfig['afform_name'] ?? NULL);
+    }
+    return $ret;
+  }
+  
   public function getStepButtonLabel($stepKey) {
     $step = $this->getStepByKey($stepKey);
     $stepConfig = $step->getVar('config');
@@ -240,4 +250,14 @@ class CRM_Stepw_WorkflowInstance {
     
     return $disabled;
   }
+  
+  /**
+   * Determin if stepKey represents an existing step in this workflowInstance.
+   * @param String $stepKey Either a stepNumber (which is an integer), or a publicId
+   * @return Boolean True if step exists, otherwise false.
+   */
+  public function hasStep ($stepKey) {
+    $step = $this->getStepByKey($stepKey);
+    return (!empty($step));
+  }  
 }
