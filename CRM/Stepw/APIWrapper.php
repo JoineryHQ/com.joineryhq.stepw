@@ -18,7 +18,7 @@ class CRM_Stepw_APIWrapper {
     $requestSignature = $event->getApiRequestSig();
     
     if ($requestSignature == "4.afform.submit") {      
-      // fixme3 note: here we will:
+      // Note: here we will:
       //  - alter api request parameters to allow re-saving of an existing afform submission.
       //  
       // fixme3val: validate afform.submit prepare (referer):
@@ -100,7 +100,7 @@ class CRM_Stepw_APIWrapper {
       $setpwRequest = CRM_Stepw_Utils_Userparams::getUserParams('request');
       
       foreach ($response as &$afform) {
-        if (is_array($afform['layout'])) {
+        if (is_array($afform['layout'] ?? NULL)) {
           // layout is now a deeply nested array, which is very hard to search and 
           // alter manually. So convert it to html and then to a phpQueryObject,
           // so we can easily search and modify elements therein.
