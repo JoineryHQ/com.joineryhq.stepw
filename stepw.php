@@ -28,7 +28,7 @@ function stepw_civicrm_pageRun(CRM_Core_Page $page) {
     $workflowInstance = CRM_Stepw_State::singleton()->getWorkflowInstance($workflowInstancePublicId);
     $stepAfformName = $workflowInstance->getStepAfformName($stepPublicId);
     if ($pageAfformName != $stepAfformName) {
-      CRM_Stepw_Utils_General::redirectToInvalid("Step, per publicId, is not for this afform: $afformName");
+      CRM_Stepw_Utils_General::redirectToInvalid("Step, per publicId, is not for this afform: $pageAfformName");
     }
     // validate: fail if: the 'reload' param is given and step has no sid. (i.e., 
     // reload is only valid on steps that have already been submitted at least once.)
@@ -78,19 +78,16 @@ function stepw_civicrm_pageRun(CRM_Core_Page $page) {
 }
 
 function stepw_civicrm_alterContent(&$content, $context, $tplName, &$object) {
-  // fixme3 note: here we will:
+  // Note: here we will:
   // - display a progress bar above the afform
   //
-  // fixme3: If is not stepwise workflow: return.
-  // 
-  // fixme3val: None. Validation was alrady done in hook_pageRun().
-  //
   
-  // fixme3: if this is an afform and we're in a workflowInstance, display a progress bar OUTSIDE OF THE FORM
   if (!CRM_Stepw_Utils_Userparams::isStepwiseWorkflow('request')) {
     // If we're not in a stepwise workflow, there's nothing for us to do here.
     return;
   }  
+  
+  // fixme3: if this is an afform and we're in a workflowInstance, display a progress bar OUTSIDE OF THE FORM
 }
 
 function stepw_civicrm_angularModules(&$angularModules) {
@@ -139,30 +136,35 @@ function stepw_civicrm_alterAngular(\Civi\Angular\Manager $angular) {
  * @return void
  */
 function _stepw_afform_submit_late(\Civi\Afform\Event\AfformSubmitEvent $event) {
-    // fixme3 note: here we will:
-    // - Determine what step was submitted, and timestamp this step submission in the workflow intance.
-    // - Determine any created contact ID, and set this as a workflowInstance property.
-    //
-    // fixme3: If is not stepwise workflow: return.
-    // 
-    // fixme3val: validate _stepw_afform_submit_late.
-    //  - Given WI exists in state
-    //  - Given Step public id exists in WI
-    //  - Given Step is for this afform ($afformName matches step['afform_name'])
-    //  -- VALIDATION FAILURE: take no action and return.
-    //
+  // Note: here we will:
+  // - Determine what step was submitted, and timestamp this step submission in the workflow intance.
+  // - Determine any created contact ID, and set this as a workflowInstance property.
 
-  
+  // If is not stepwise workflow: return.
+  if (!CRM_Stepw_Utils_Userparams::isStepwiseWorkflow('referer')) {
+    // If we're not in a stepwise workflow, there's nothing for us to do here.
+    return;
+  }  
+
+  // Validation: on failure we will: return and do nothing.
+  // validate: fail if: Given WI or step don't exist in state.
+  $workflowInstancePublicId = CRM_Stepw_Utils_Userparams::getUserParams('referer', CRM_Stepw_Utils_Userparams::QP_WORKFLOW_INSTANCE_ID);
+  $stepPublicId = CRM_Stepw_Utils_Userparams::getUserParams('referer', CRM_Stepw_Utils_Userparams::QP_STEP_ID);
+  if (!CRM_Stepw_Utils_Validation::isWorkflowInstanceAndStepValid($workflowInstancePublicId, $stepPublicId)) {
+    return;
+  }
+
+  // validate: fail if: Given Step is not for this afform.
   $afform = $event->getAfform();
   $afformName = ($afform['name'] ?? NULL);
-  
-  // Determine what step was submitted, and close this step in the workflow.
-  $workflowInstancePublicId = CRM_Stepw_Utils_Userparams::getUserParams('referer', CRM_Stepw_Utils_Userparams::QP_WORKFLOW_INSTANCE_ID);
   $workflowInstance = CRM_Stepw_State::singleton()->getWorkflowInstance($workflowInstancePublicId);
-  if (!empty($workflowInstance)) {
-    $stepPublicId = CRM_Stepw_Utils_Userparams::getUserParams('referer', CRM_Stepw_Utils_Userparams::QP_STEP_ID);
-    $workflowInstance->completeStep($stepPublicId);
+  $stepAfformName = $workflowInstance->getStepAfformName($stepPublicId);
+  if ($afformName != $stepAfformName) {
+    return;
   }
+  
+  // Complete this step in the workflowInstance.
+  $workflowInstance->completeStep($stepPublicId);
   // Determine any created contact ID, and set this as a workflowInstance property.
   $entityIds = $event->getEntityIds('Individual1');
   $individualContactId = ($entityIds[0] ?? NULL);
@@ -180,58 +182,69 @@ function _stepw_afform_submit_late(\Civi\Afform\Event\AfformSubmitEvent $event) 
  * @return void
  */
 function _stepw_afform_submit_early(\Civi\Afform\Event\AfformSubmitEvent $event) {
-    // fixme3 note: here we will:
-    // - Alter submission parameters to allow the afform submission to be re-saved.
-    //
-    // fixme3val: validate _stepw_afform_submit_early.
-    //  - Given WI exists in state
-    //  - Given Step public id exists in WI
-    //  - Given Step is for this afform ($afformName matches step['afform_name'])
-    //  - afformsubmission.sid is provided (in referer QP_AFFORM_RELOAD_SID ?)
-    //  - $event is for an activity (we don't currently support any other entities here.)
-    //  
-    //  -- VALIDATION FAILURE: take no action and return.
-    //
+  // fixme3 note: here we will:
+  // - Alter submission parameters to allow the afform submission to be re-saved.
+  //
 
   if (!CRM_Stepw_Utils_Userparams::isStepwiseWorkflow('referer')) {
     // We're not in a workflowInstance, so there's nothing for us to do here.
     return;
   }
 
+  // Validation: on failure we will: return and do nothing.
+  // validate: fail if: Given WI or step don't exist in state.
+  $workflowInstancePublicId = CRM_Stepw_Utils_Userparams::getUserParams('referer', CRM_Stepw_Utils_Userparams::QP_WORKFLOW_INSTANCE_ID);
+  $stepPublicId = CRM_Stepw_Utils_Userparams::getUserParams('referer', CRM_Stepw_Utils_Userparams::QP_STEP_ID);
+  if (!CRM_Stepw_Utils_Validation::isWorkflowInstanceAndStepValid($workflowInstancePublicId, $stepPublicId)) {
+    return;
+  }
+
+  // validate: fail if: Given Step is not for this afform.
   $afform = $event->getAfform();
   $afformName = ($afform['name'] ?? NULL);
+  $workflowInstance = CRM_Stepw_State::singleton()->getWorkflowInstance($workflowInstancePublicId);
+  $stepAfformName = $workflowInstance->getStepAfformName($stepPublicId);
+  if ($afformName != $stepAfformName) {
+    return;
+  }
+
+  // validate: fail if: afformsubmission.sid is not provided (in referer QP_AFFORM_RELOAD_SID)
   $reloadSubmissionId = CRM_Stepw_Utils_Userparams::getUserParams('referer', CRM_Stepw_Utils_Userparams::QP_AFFORM_RELOAD_SID);
-  
+  if (empty($reloadSubmissionId)) {
+    return;
+  }
+
+  // validate: fail if: $event is not for an activity (we don't currently support any other entities here.)
+  if ($event->getEntityType() != 'Activity') {
+    return;
+  }
 
   // This code allows us to re-save afforms that are prefilled
   // with an existing submission Id, and to allow that re-submission to update
   // the related entity. This code:
   // - causes an existing activity (the one linked to the submission) to actually be overwritten. 
   // - causes the creation of a new submission on the afform.
-  // We may want to improve this so it handles entities other than activities.
-  if ($event->getEntityType() == 'Activity') {
-    $records = $event->getRecords();
-    foreach ($records as &$record) {
-      if (!empty($record['id'])) {
-        // FLAG_STEPW_AFFORM_BRITTLE : afform may decide to add more checks that
-        //   would prevent re-saving of entities via already-processed submissions.
-        // If the record has 'id', copy that into record['fields'] so that the
-        // 'save' api will actually update the activity.
-        $record['fields']['id'] = $record['id'];
-        // Unset any null values in 'fields'. For activities, this might include,
-        // e.g. 'source_contact_id', which could have been auto-populated by the
-        // original afform, but which will be unknown in the submission.
-        // In any case, we onlY want to update values given in the re-submitted
-        // form data.
-        foreach ($record['fields'] as $fieldName => $fieldValue) {
-          if (is_null($fieldValue)) {
-            unset($record['fields'][$fieldName]);
-          }
+  $records = $event->getRecords();
+  foreach ($records as &$record) {
+    if (!empty($record['id'])) {
+      // If the record has 'id', copy that into record['fields'] so that the
+      // 'save' api will actually update the activity.
+      // FLAG_STEPW_AFFORM_BRITTLE : afform may decide to add more checks that
+      //   would prevent re-saving of entities via already-processed submissions.
+      $record['fields']['id'] = $record['id'];
+      // Unset any null values in 'fields'. For activities, this might include,
+      // e.g. 'source_contact_id', which could have been auto-populated by the
+      // original afform, but which will be unknown in the submission.
+      // In any case, we onlY want to update values given in the re-submitted
+      // form data.
+      foreach ($record['fields'] as $fieldName => $fieldValue) {
+        if (is_null($fieldValue)) {
+          unset($record['fields'][$fieldName]);
         }
       }
     }
-    $event->setRecords($records);
   }
+  $event->setRecords($records);
 }
 
 /**
@@ -263,51 +276,67 @@ function stepw_civicrm_permission_check($permission, &$granted) {
   // - Grant certain permissions so that afform submissions can be prefilled.
   //
   // fixme3: If is not stepwise workflow: return.
-  // 
-  // fixme3val: validate stepw_civicrm_permission_check.
-  //  - Given WI(referer) exists in state
-  //  - Given Step public id(referer) exists in WI
-  //  - Given Step is for this afform ($afformName matches step['afform_name']), where afform name is in json_decode($_POST['params'])
-  //  - afform sid is associated with this step (sid is in json_decode($_POST['params'])['args'], and in QP_AFFORM_RELOAD_SID)
-  //  -- VALIDATION FAILURE: take no action and return.
-  //
-
 
   // Only take action on afform.submission.prefill, which is actually a POST.
   static $uri;
   if (!isset($uri) && $_SERVER['REQUEST_METHOD'] == 'POST') {
     $uri = $_SERVER['REQUEST_URI'];
-    $a = 1;
   }
   if (
     $uri != "/civicrm/ajax/api4/Afform/prefill/"
-//    fixme3: seems like we don't need to support this path: && $uri != "/civicrm/ajax/api4/Afform/submit/"
+    // fixme3: seems like we don't need to support this path: && $uri != "/civicrm/ajax/api4/Afform/submit/" -- have we verified that claim?
   ) {
     return;
   }
 
-  if (!CRM_Stepw_Utils_Userparams::isStepwiseWorkflow('any')) {
-    // We're not in a workflowInstance (neither per referer NOR per request), so there's nothing for us to do here.
+  // Name the permissions we will grant, if we make it far enough through validation checks.
+  $ourGrantedPermissions = [
+    // fixme3: it seems anon user does not need 'skip ids check' -- have we verified that claim?
+    // If 'administer afform' is not granted, anon will get API4 access denied on AfformSubmission::get,
+    // and user-visible error on afform load
+    // FLAG_STEPW_AFFORM_BRITTLE : Afform could change its required permissions for the prefill operation.
+    'administer afform',
+    // if 'view all contacts' is not granted, afform prefill will be empty (depending on various permissions/ACLs)
+    'view all contacts',
+  ];
+  if (!in_array($permission, $ourGrantedPermissions)) {
+    return;
+  }
+
+  if (!CRM_Stepw_Utils_Userparams::isStepwiseWorkflow('referer')) {
+    // We're not in a workflowInstance (per referer), so there's nothing for us to do here.
+    return;
+  }
+
+  // Validation: on failure we will: return and do nothing.
+  // validate: fail if: Given WI or step don't exist in state.
+  $workflowInstancePublicId = CRM_Stepw_Utils_Userparams::getUserParams('referer', CRM_Stepw_Utils_Userparams::QP_WORKFLOW_INSTANCE_ID);
+  $stepPublicId = CRM_Stepw_Utils_Userparams::getUserParams('referer', CRM_Stepw_Utils_Userparams::QP_STEP_ID);
+  if (!CRM_Stepw_Utils_Validation::isWorkflowInstanceAndStepValid($workflowInstancePublicId, $stepPublicId)) {
+    return;
+  }
+
+  // validate: fail if: Given Step is not for this afform.
+  $postParams = json_decode($_POST['params'], TRUE);
+  $afformName = $postParams['name'];
+  $workflowInstance = CRM_Stepw_State::singleton()->getWorkflowInstance($workflowInstancePublicId);
+  $stepAfformName = $workflowInstance->getStepAfformName($stepPublicId);
+  if ($afformName != $stepAfformName) {
+    return;
+  }
+
+  // validate: fail if: afformsubmission.sid is not given
+  $afformSid = $postParams['args']['sid'];
+  if (empty($afformSid)) {
     return;
   }
   
-  // fixme: we must also verify that the submission id (available in QP_AFFORM_RELOAD_SID)
-  // is valid for the given step.
-  
-  switch ($permission) {
-    // If missing, anon will probably generate an IDS check failure.
-    // fixme3: is 'skip ids check' actually required?
-//    case 'skip IDS check':
-    // If missing, anon will get API4 access denied on AfformSubmission::get,
-    // and user-visible error on afform load
-    // FLAG_STEPW_AFFORM_BRITTLE : Afform could change its required permissions for prefill operation.
-    case 'administer afform':
-    // if missing, afform prefill will be empty (depending on various permissions/ACLs)
-    case 'view all contacts':
-    // If missing, user (probably anon) won't be able to prefill contact data.
-      $granted = true;
-      break;
+  // validate: fail if: afformsubmission.sid is not the sid already saved for this step.
+  if ($afformSid != $workflowInstance->getStepAfformSubmissionId($stepPublicId)) {
+    return;
   }
+
+  $granted = TRUE;
 }
 
 /**
