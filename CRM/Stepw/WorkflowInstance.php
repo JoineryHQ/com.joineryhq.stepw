@@ -48,9 +48,6 @@ class CRM_Stepw_WorkflowInstance {
       $stepPublicId = $step->getVar('publicId');
       $this->steps[$configStepNumber] = $step;
       $this->stepNumbersByPublicId[$stepPublicId] = $configStepNumber;
-
-      // Add 'stepNumber' to configStep for future reference.
-      $configStep['stepNumber'] = $configStepNumber;
     }
     
     // Define the fallback 'final' step object.
