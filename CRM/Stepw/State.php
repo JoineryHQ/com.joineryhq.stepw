@@ -30,8 +30,6 @@ class CRM_Stepw_State {
     // stored, and if so, unserialize it and store it as our state.
     $serializedState = $this->storage->get($this->serializedVarName);
     if (!empty($serializedState)) {
-      $q = $_GET['q'];
-      
       $state = unserialize($serializedState);
       $this->storage->set($this->scopeKey, $state);
       $this->storage->set($this->serializedVarName, NULL);
