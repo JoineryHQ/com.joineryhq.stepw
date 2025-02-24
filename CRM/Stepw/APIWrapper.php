@@ -17,43 +17,75 @@ class CRM_Stepw_APIWrapper {
     
     $requestSignature = $event->getApiRequestSig();
     
-    if ($requestSignature == "4.afform.submit") {      
+    if ($requestSignature == "4.afform.submit") {   
       // Note: here we will:
       //  - alter api request parameters to allow re-saving of an existing afform submission.
-      //  
-      // fixme3val: validate afform.submit prepare (referer):
+      //
+      // note: Ignore and return if any of:
+      // - we're not in a stepwise workflow
+      // - QP_AFFORM_RELOAD_SID is not given (i.e., this is a re-submission)
+      // 
+      //
+      // note:val: validate afform.submit prepare (referer):
       //  - Given WI exists in state
       //  - Given Step exists in WI
-      //  - QP_AFFORM_RELOAD_SID is given (i.e., this is a re-submission)
       //  - QP_AFFORM_RELOAD_SID matches the sid of the given Step 
-      //  - Given step has 'ever been closed'
       //  - Given Step has already been associated with the given submission id.
       //  - Given Step is for this afform
-      //  -- ON VALIDATION FAILURE: take no action; form submission will fail, and we don't care.
-      //
+      //  -- ON VALIDATION FAILURE: throw an exception    
       
+      if (!CRM_Stepw_Utils_Userparams::isStepwiseWorkflow('referer')) {
+        // We're not in a workflowInstance (per referer), so there's nothing for us to do here.
+        return;
+      }
+      
+      $reloadSubmissionId = CRM_Stepw_Utils_Userparams::getUserParams('referer', CRM_Stepw_Utils_Userparams::QP_AFFORM_RELOAD_SID);
+      if (empty($reloadSubmissionId)) {
+        // afformsubmission.sid is not provided (in referer QP_AFFORM_RELOAD_SID);
+        // there's nothing for us to do here.
+        return;
+      }
+      
+      // Validation: on failure we'll throw an exception. Clearly somebody is mucking with params.
+      // 
+      // validate: fail if: Given WI or step don't exist in state.
+      $workflowInstancePublicId = CRM_Stepw_Utils_Userparams::getUserParams('referer', CRM_Stepw_Utils_Userparams::QP_WORKFLOW_INSTANCE_ID);
+      $stepPublicId = CRM_Stepw_Utils_Userparams::getUserParams('referer', CRM_Stepw_Utils_Userparams::QP_STEP_ID);
+      if (!CRM_Stepw_Utils_Validation::isWorkflowInstanceAndStepValid($workflowInstancePublicId, $stepPublicId)) {
+        throw new CRM_Extension_Exception("Invalid publicId for workflowInstance and/or step, in " . __METHOD__, 'CRM_Stepw_APIWrapper_PREPARE_4.afform.submit_invalid-public-ids');
+      }
+
+      // validate: fail if: afformsubmission.sid is not the sid already saved for this step.
+      $workflowInstance = CRM_Stepw_State::singleton()->getWorkflowInstance($workflowInstancePublicId);
+      if ($reloadSubmissionId != $workflowInstance->getStepAfformSubmissionId($stepPublicId)) {
+        throw new CRM_Extension_Exception("Provided afform submission sid does not match existing sid in step, in " . __METHOD__, 'CRM_Stepw_APIWrapper_PREPARE_4.afform.submit_mismatch-submission-id');
+      }
+      
+      // validate: fail if: Given Step is not for this afform.
       $request = $event->getApiRequest();
       $afform = $request->getParams();
       $afformName = ($afform['name'] ?? NULL);
+      $stepAfformName = $workflowInstance->getStepAfformName($stepPublicId);
+      if ($afformName != $stepAfformName) {
+        throw new CRM_Extension_Exception("Referenced step is not for this affrom '$afformName', in " . __METHOD__, 'CRM_Stepw_APIWrapper_PREPARE_4.afform.submit_mismatch-afform');
+      }
       
       // Allow saving of afforms loaded with the ?sid=n query parameter (i.e.,
       // afforms preloaded with a given afform.submission), by stripping the
       // submission id from request args, but only on certain conditions.
       // (Note that this will facilitate OVERWRITING of existing entities
       // that were created by the original submission.)
-      if (CRM_Stepw_Utils_Userparams::getUserParams('referer', CRM_Stepw_Utils_Userparams::QP_AFFORM_RELOAD_SID)) {
-        $args = $event->getApiRequest()->getArgs();
-        // We're modifying the afform entity just before submission processing.
-        // That submission processing demands that args['sid'] must be empty,
-        // because afform does not support re-saving of submissions that have
-        // already been processed.
-        //   Reference https://github.com/civicrm/civicrm-core/blob/5.81.0/ext/afform/core/Civi/Api4/Action/Afform/Submit.php#L41
-        // FLAG_STEPW_AFFORM_BRITTLE : afform could decide to use some other means
-        //  to prevent re-saving of already-processed submissisons.
-        //
-        unset($args['sid']);
-        $event->getApiRequest()->setArgs($args);
-      }
+      $args = $request->getArgs();
+      // We're modifying the afform entity just before submission processing.
+      // That submission processing demands that args['sid'] must be empty,
+      // because afform does not support re-saving of submissions that have
+      // already been processed.
+      // FLAG_STEPW_AFFORM_BRITTLE : afform could decide to use some other means
+      //  to prevent re-saving of already-processed submissisons.
+      //  Reference https://github.com/civicrm/civicrm-core/blob/5.81.0/ext/afform/core/Civi/Api4/Action/Afform/Submit.php#L41
+      //
+      unset($args['sid']);
+      $event->getApiRequest()->setArgs($args);
     }
   }
   
@@ -67,81 +99,122 @@ class CRM_Stepw_APIWrapper {
   public static function RESPOND(Civi\API\Event\RespondEvent $event) {
     $requestSignature = $event->getApiRequestSig();
     if ($requestSignature == "4.afform.get") {
-      // fixme3 note: here we will:
+      // note: here we will:
       // - modify the afform html as we would in alterAngular(), so that the afform
       //   supports auto-fill of Individual1, even if it is not so configured.
       // 
-      // fixme3: If is not stepwise workflow: return.
+      // note: Ignore and return if any of:
+      // - we're not in a stepwise workflow
+      // - We're not on the prefil ajax call ($q == "civicrm/ajax/api4/Afform/prefill"; I've verified this is the way.)
       // 
-      // fixme3val: validate afform.get respond (referer):
+      // note:val: validate afform.get respond (referer):
       //  - Given WI exists in state
       //  - Given Step exists in WI 
       //  - Given Step is for this afform
-      //  - We're on the prefil ajax call ($q == "civicrm/ajax/api4/Afform/prefill"; I've verified this is the way.)
-      //    FLAG_STEPW_AFFORM_BRITTLE : afform may decide to skip hook_civicrm_alterAngluar() in execution flows other than prefill,
-      //      in which case this step will need to support those execution flows too.
-      //    Only in prefill do we care about this. Otherwise, hook_civicrm_alterAngluar()
-      //    is modifying the form as we need; but in prefill, that hook has no effect.
-      //  -- ON VALIDATION FAILURE: do nothing and return (this is an api call, possibly by ajax)
+      //  - 
+      //  -- ON VALIDATION FAILURE: throw an exception
       //
-      
-      $g = $_GET;
-      $p = $_POST;
-      $r = $_REQUEST;
-      $uri = $_SERVER['REQUEST_URI'];
-      $q = CRM_Utils_Request::retrieve('q', 'String', '');
-      $qgqv = get_query_var('q');
-      
-      $response = $event->getResponse();
-      $request = $event->getApiRequest();      
-      $requestParams = $request->getParams();
-      
-      $setpwReferer = CRM_Stepw_Utils_Userparams::getUserParams('referer');
-      $setpwRequest = CRM_Stepw_Utils_Userparams::getUserParams('request');
-      
-      foreach ($response as &$afform) {
-        if (is_array($afform['layout'] ?? NULL)) {
-          // layout is now a deeply nested array, which is very hard to search and 
-          // alter manually. So convert it to html and then to a phpQueryObject,
-          // so we can easily search and modify elements therein.
-          $converter = new \CRM_Afform_ArrayHtml(TRUE);
-          $htmlLayout = $converter->convertArraysToHtml($afform['layout']);
-          $docLayout = \phpQuery::newDocument($htmlLayout, 'text/html');
-          // Modify the layout via phpQueryObject as needed.
-          CRM_Stepw_Utils_Afform::alterForm($docLayout);
-          // Convert phpQueryObject layout back to html.
-          $coder = new \Civi\Angular\Coder();
-          $newHtmlLayout = $coder->encode($docLayout);
-          // Convert html layout back to deeply nested array.
-          $afform['layout'] = $converter->convertHtmlToArray($newHtmlLayout);
-        }
+
+      if (!CRM_Stepw_Utils_Userparams::isStepwiseWorkflow('referer')) {
+        // We're not in a workflowInstance (per referer), so there's nothing for us to do here.
+        return;
       }
+      
+      $q = CRM_Utils_Request::retrieve('q', 'String', '');
+      if ($q != 'civicrm/ajax/api4/Afform/prefill') {
+        // This is not an afform prefill operation, so there's nothing for us to do here.
+        // Only in prefill do we care about this. Otherwise, hook_civicrm_alterAngluar()
+        // is modifying the form as we need; but in prefill, that hook has no effect.
+        // 
+        // FLAG_STEPW_AFFORM_BRITTLE : afform may decide to skip hook_civicrm_alterAngluar() in execution flows other than prefill,
+        //   in which case this section will need to support those execution flows too.
+        return;
+      }
+
+      $response = $event->getResponse();
+      // In prefill, there should be only one response, and it should be an array of properties for one afform.
+      $afformProperties = $response[0];
+      if (($afformProperties['type'] ?? NULL) != 'form') {
+        // Prefill is sometimes called on afform blocks, but we only care if it's a form.
+        // If it's not a form, we have nothing to do here.
+        return;
+      }      
+      
+      // Validation: on failure we'll throw an exception. Clearly somebody is mucking with params.
+      // 
+      // validate: fail if: Given WI or step don't exist in state.
+      $workflowInstancePublicId = CRM_Stepw_Utils_Userparams::getUserParams('referer', CRM_Stepw_Utils_Userparams::QP_WORKFLOW_INSTANCE_ID);
+      $stepPublicId = CRM_Stepw_Utils_Userparams::getUserParams('referer', CRM_Stepw_Utils_Userparams::QP_STEP_ID);
+      if (!CRM_Stepw_Utils_Validation::isWorkflowInstanceAndStepValid($workflowInstancePublicId, $stepPublicId)) {
+        throw new CRM_Extension_Exception("Invalid publicId for workflowInstance and/or step, in " . __METHOD__, 'CRM_Stepw_APIWrapper_RESPOND_4.afform.get_invalid-public-ids');
+      }
+
+      // validate: fail if: Given Step is not for this afform.
+      $afformName = $afformProperties['name'];
+      $workflowInstance = CRM_Stepw_State::singleton()->getWorkflowInstance($workflowInstancePublicId);
+      $stepAfformName = $workflowInstance->getStepAfformName($stepPublicId);
+      if ($afformName != $stepAfformName) {
+        throw new CRM_Extension_Exception("Referenced step is not for this affrom '$afformName', in " . __METHOD__, 'CRM_Stepw_APIWrapper_RESPOND_4.afform.get_mismatch-afform');
+      }
+      
+      // layout is now a deeply nested array, which is very hard to search and 
+      // alter manually. So convert it to html and then to a phpQueryObject,
+      // so we can easily search and modify elements therein.
+      $converter = new \CRM_Afform_ArrayHtml(TRUE);
+      $htmlLayout = $converter->convertArraysToHtml($afformProperties['layout']);
+      $docLayout = \phpQuery::newDocument($htmlLayout, 'text/html');
+      // Modify the layout via phpQueryObject as needed.
+      CRM_Stepw_Utils_Afform::alterForm($docLayout);
+      // Convert phpQueryObject layout back to html.
+      $coder = new \Civi\Angular\Coder();
+      $newHtmlLayout = $coder->encode($docLayout);
+      // Convert html layout back to deeply nested array.
+      $afformProperties['layout'] = $converter->convertHtmlToArray($newHtmlLayout);
+      
       // Update the api response with our modified values.
       $event->setResponse($response);
     }    
     elseif ($requestSignature == "4.afformsubmission.create") {
-      // fixme3 note: here we will:
+      // note: here we will:
       // - Capture saved submission id in the step in workflowInstance.
       // 
-      // fixme3: If is not stepwise workflow: return.
+      // note: ignore and return if any of:
+      // - we're not in a stepwise workflow
       // 
-      // fixme3val: validate afform.get respond (referer):
+      // note:val: validate afform.get respond (referer):
       //  - Given WI exists in state
       //  - Given Step exists in WI 
       //  - Given Step is for this afform
       //  -- ON VALIDATION FAILURE: do nothing and return (this is an api call, possibly by ajax)
       //
+
+      if (!CRM_Stepw_Utils_Userparams::isStepwiseWorkflow('referer')) {
+        // We're not in a workflowInstance (per referer), so there's nothing for us to do here.
+        return;
+      }
       
+      // Validation: on failure we'll throw an exception. Clearly somebody is mucking with params.
+      // 
+      // validate: fail if: Given WI or step don't exist in state.
+      $workflowInstancePublicId = CRM_Stepw_Utils_Userparams::getUserParams('referer', CRM_Stepw_Utils_Userparams::QP_WORKFLOW_INSTANCE_ID);
+      $stepPublicId = CRM_Stepw_Utils_Userparams::getUserParams('referer', CRM_Stepw_Utils_Userparams::QP_STEP_ID);
+      if (!CRM_Stepw_Utils_Validation::isWorkflowInstanceAndStepValid($workflowInstancePublicId, $stepPublicId)) {
+        throw new CRM_Extension_Exception("Invalid publicId for workflowInstance and/or step, in " . __METHOD__, 'CRM_Stepw_APIWrapper_RESPOND_4.afformsubmission.create_invalid-public-ids');
+      }
+
+      // validate: fail if: Given Step is not for this afform.
       $request = $event->getApiRequest();
       $requestParams = $request->getParams();
       $afformName = ($requestParams['values']['afform_name'] ?? NULL);
+      $workflowInstance = CRM_Stepw_State::singleton()->getWorkflowInstance($workflowInstancePublicId);
+      $stepAfformName = $workflowInstance->getStepAfformName($stepPublicId);
+      if ($afformName != $stepAfformName) {
+        throw new CRM_Extension_Exception("Referenced step is not for this affrom '$afformName', in " . __METHOD__, 'CRM_Stepw_APIWrapper_RESPOND_4.afformsubmission.create_mismatch-afform');
+      }
 
       // Capture saved submission id in the step.
       $response = $event->getResponse();
       $afformSubmissionId = $response[0]['id'];
-      $stepPublicId = CRM_Stepw_Utils_Userparams::getUserParams('referer', CRM_Stepw_Utils_Userparams::QP_STEP_ID);
-      $workflowInstancePublicId = CRM_Stepw_Utils_Userparams::getUserParams('referer', CRM_Stepw_Utils_Userparams::QP_WORKFLOW_INSTANCE_ID);
-      $workflowInstance = CRM_Stepw_State::singleton()->getWorkflowInstance($workflowInstancePublicId);
       $workflowInstance->setStepAfformSubmissionId($afformSubmissionId, $stepPublicId);
       
     }
