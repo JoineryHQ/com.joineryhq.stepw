@@ -208,9 +208,16 @@ class CRM_Stepw_WorkflowInstance {
     return $ret;
   }
   
-  public function getStepAfformSubmissionId ($stepKey) {
+  public function getStepLastAfformSubmissionId ($stepKey) {
     $step = $this->getStepByKey($stepKey);
-    return $step->getVar('afformSid');
+    return $step->getLastAfformSubmissionId();
+  }
+  
+  public function stepHasAfformSubmissionId ($stepKey, $submissionId) {
+    $step = $this->getStepByKey($stepKey);
+    $sids = $step->getVar('afformSids');
+    $ret = in_array($submissionId, $sids);
+    return $ret;
   }
   
   public function getStepAfformName ($stepKey) {

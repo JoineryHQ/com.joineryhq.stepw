@@ -51,7 +51,7 @@ function stepw_civicrm_pageRun(CRM_Core_Page $page) {
     // validate: fail if: the 'reload' param is given and step has no sid. (i.e., 
     // reload is only valid on steps that have already been submitted at least once.)
     $reloadSubmissionId = CRM_Stepw_Utils_Userparams::getUserParams('request', CRM_Stepw_Utils_Userparams::QP_AFFORM_RELOAD_SID);
-    $stepSubmissionId = $workflowInstance->getStepAfformSubmissionId($stepPublicId);
+    $stepSubmissionId = $workflowInstance->getStepLastAfformSubmissionId($stepPublicId);
     if (
       (!empty($reloadSubmissionId))
       && (empty($stepSubmissionId))
@@ -255,8 +255,8 @@ function _stepw_afform_submit_early(\Civi\Afform\Event\AfformSubmitEvent $event)
     throw new CRM_Extension_Exception("Referenced step is not for this affrom: '$afformName', in " . __METHOD__, 'stepw_afform_submit_early_mismatch-afform');
   }
 
-  // validate: fail if: afformsubmission.sid is not the sid already saved for this step.
-  if ($reloadSubmissionId != $workflowInstance->getStepAfformSubmissionId($stepPublicId)) {
+  // validate: fail if: afformsubmission.sid is not an sid already saved for this step.
+  if (!$workflowInstance->stepHasAfformSubmissionId($stepPublicId, $reloadSubmissionId)) {
     throw new CRM_Extension_Exception("Provided afform submission sid does not match existing sid in step, in " . __METHOD__, 'stepw_afform_submit_early_mismatch-submission-id');
   }
 
@@ -386,8 +386,8 @@ function stepw_civicrm_permission_check($permission, &$granted) {
     return;
   }
   
-  // validate: fail if: afformsubmission.sid is not the sid already saved for this step.
-  if ($afformSid != $workflowInstance->getStepAfformSubmissionId($stepPublicId)) {
+  // validate: fail if: afformsubmission.sid is not an sid already saved for this step.
+  if (!$workflowInstance->stepHasAfformSubmissionId($stepPublicId, $afformSid)) {
     return;
   }
 

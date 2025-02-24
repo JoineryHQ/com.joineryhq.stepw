@@ -38,7 +38,7 @@ class CRM_Stepw_WorkflowInstanceStep {
     * and the most recent id is written to this property.
     * @var Int
     */
-   private $afformSid;
+   private $afformSids = [];
    
    /**
     * Microtimestamp representing the moment this step was most recently completed.
@@ -87,9 +87,9 @@ class CRM_Stepw_WorkflowInstanceStep {
       if ($individualCid = $this->workflowInstance->getCreatedIndividualCid()) {
         $afformParams['Individual1'] = $individualCid;
       }
-      if ($this->afformSid) {
-        $afformParams['sid'] = $this->afformSid;
-        $params['r'] = $this->afformSid;
+      if ($sid = $this->getLastAfformSubmissionId()) {
+        $afformParams['sid'] = $sid;
+        $params['r'] = $sid;
       }
     }
     $ret = CRM_Stepw_Utils_Userparams::appendParamsToUrl($baseUrl, $params, $afformParams);
@@ -101,6 +101,10 @@ class CRM_Stepw_WorkflowInstanceStep {
   }
 
   public function setAfformSubmissionId($afformSubmissionId) {
-    $this->afformSid = $afformSubmissionId;
+    $this->afformSids[] = $afformSubmissionId;
+  }
+
+  public function getLastAfformSubmissionId() {
+    return $this->afformSids[array_key_last($this->afformSids)];
   }
 }

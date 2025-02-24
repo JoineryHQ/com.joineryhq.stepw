@@ -55,9 +55,9 @@ class CRM_Stepw_APIWrapper {
         throw new CRM_Extension_Exception("Invalid publicId for workflowInstance and/or step, in " . __METHOD__, 'CRM_Stepw_APIWrapper_PREPARE_4.afform.submit_invalid-public-ids');
       }
 
-      // validate: fail if: afformsubmission.sid is not the sid already saved for this step.
+      // validate: fail if: afformsubmission.sid is not an sid already saved for this step.
       $workflowInstance = CRM_Stepw_State::singleton()->getWorkflowInstance($workflowInstancePublicId);
-      if ($reloadSubmissionId != $workflowInstance->getStepAfformSubmissionId($stepPublicId)) {
+      if (!$workflowInstance->stepHasAfformSubmissionId($stepPublicId, $reloadSubmissionId)) {
         throw new CRM_Extension_Exception("Provided afform submission sid does not match existing sid in step, in " . __METHOD__, 'CRM_Stepw_APIWrapper_PREPARE_4.afform.submit_mismatch-submission-id');
       }
       
