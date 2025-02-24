@@ -20,6 +20,12 @@ class CRM_Stepw_Utils_General {
   }
 
   public static function redirectToInvalid(string $logMessage = '', string $publicMessage = '') {
+    // fixme3: if there's a logMessage, append a uniq log identifier both to the logMessage and publicMessage.
+    // This will allow users to report something that will be meaningful in debugging/log-inspection.
+    // This would be similar to what civicrm core does for ajax-context errors, as in
+    // line 159 of CRM/Api4/Page/AJAX.php:
+    // $error_id = rtrim(chunk_split(CRM_Utils_String::createRandom(12, CRM_Utils_String::ALPHANUMERIC), 4, '-'), '-')
+    //
     if ($logMessage) {
       \Civi::log()->debug(E::LONG_NAME .': '. $logMessage, $_REQUEST);
     }
