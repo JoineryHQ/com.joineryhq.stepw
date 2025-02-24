@@ -32,7 +32,6 @@ class CRM_Stepw_Utils_WorkflowData {
     return [
       'type' => 'url',
       'url' => CRM_Utils_System::url('civicrm/stepwise/final', '', TRUE, NULL, FALSE, TRUE),
-      'button_label' => 'Continue',
     ];
   }
 }
