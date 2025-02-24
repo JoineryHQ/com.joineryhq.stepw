@@ -99,6 +99,9 @@ class CRM_Stepw_WorkflowInstance {
     if (!$nextStep) {
       $nextStep = $this->pseudoFinalStep;
     }
+    if (empty($nextStep) || !is_a($nextStep, 'CRM_Stepw_WorkflowInstanceStep')) {
+      throw new CRM_Extension_Exception("When calculating 'Next Step', no valid step was found, in " . __METHOD__, 'CRM_Stepw_WorkflowInstanceStep_getNextStep_invalid');        
+    }
     return $nextStep;
   }
     
@@ -174,6 +177,9 @@ class CRM_Stepw_WorkflowInstance {
   public function getNextStepUrl() {
     $step = $this->getNextStep();
     $url = $step->getUrl();
+    if (empty($url)) {
+      throw new CRM_Extension_Exception("When calculating 'Next Step url', an empty value was found, in " . __METHOD__, 'CRM_Stepw_WorkflowInstanceStep_getNextStepUrl_empty');  
+    }
     return $url;
   }
     
