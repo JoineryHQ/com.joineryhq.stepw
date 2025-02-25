@@ -6,39 +6,30 @@
  */
 class CRM_Stepw_Utils_WpShortcode {
   public static function getStepwiseButtonHtml() {
-    // fixme3 note: here we will:
+    // note: here we will:
     //  - Build and return html for one or more buttons, for replacement of WP [stepwise-button] shortcode.
     // 
-    // fixme3val: validate getStepwiseButtonHtml.
-    //  - Given WI exists in state
-    //  - Given Step public id exists in WI
-    //  - Given step is NOT the last step in workflow
-    //  -- VALIDATION FAILURE: return empty string
-    //
-    
-    // fixme3: this  shortcode could create mutiple buttons, depending on workflow config (e.g. video pages in 3 languages).
-    // Therefore, we must process the template multiple times, per workflow config.
-    //
-    
-    // If is not stepwise workflow (and not shortcode styles debugging: return empty string.
-    $stepwiseShortcodeDebug = $_GET['stepwise-button-debug'] ?? 0;
-    if (!$stepwiseShortcodeDebug && !CRM_Stepw_Utils_Userparams::isStepwiseWorkflow('request')) {    
-      return '';
-    }
-        
-        
-    // support designer's debugging of percentage indicator outside of stepwise workflow.
-    if ($stepwiseShortcodeDebug) {
+
+    // If is stepwise workflow, do some special handling.
+    $stepwiseShortcodeDebug = ($_GET['stepwise-button-debug'] ?? 0);
+    if ($stepwiseShortcodeDebug) {    
       $buttonDisabled = ($_GET['stepwise-button-disabled'] ?? NULL);
       $buttonText = $_GET['stepwise-button-text'] ?? 'Next';
       $buttonHref = '#';
     }
     else {
-
+      if (!self::isValidParams()) {
+        return '';
+      }      
+    
+      // fixme3: this  shortcode could create mutiple buttons, depending on workflow config (e.g. video pages in 3 languages).
+      // Therefore, we must process the template multiple times, per workflow config.
+      //
+      
       $workflowInstancePublicId = CRM_Stepw_Utils_Userparams::getUserParams('request', CRM_Stepw_Utils_Userparams::QP_WORKFLOW_INSTANCE_ID);
       $stepPublicId = CRM_Stepw_Utils_Userparams::getUserParams('request', CRM_Stepw_Utils_Userparams::QP_STEP_ID);
-      $state = CRM_Stepw_State::singleton();
-      $workflowInstance = $state->getWorkflowInstance($workflowInstancePublicId);
+
+      $workflowInstance = CRM_Stepw_State::singleton()->getWorkflowInstance($workflowInstancePublicId);
       $buttonText = $workflowInstance->getStepButtonLabel($stepPublicId);
       $buttonDisabled = $workflowInstance->getStepButtonDisabled($stepPublicId);
 
@@ -59,10 +50,9 @@ class CRM_Stepw_Utils_WpShortcode {
       $buttonHref = '#';
     }
     
-    
     $buttonHtml = '';
     $tpl = CRM_Core_Smarty::singleton();
-    $tpl->assign('buttonHref64', $buttonHref64);
+    $tpl->assign('buttonHref64', ($buttonHref64 ?? NULL));
     $tpl->assign('buttonHref', $buttonHref);
     $tpl->assign('buttonText', $buttonText);
     $tpl->assign('buttonDisabled', $buttonDisabled);
@@ -72,27 +62,21 @@ class CRM_Stepw_Utils_WpShortcode {
   }
   
   public static function getProgressBarHtml() {
-    // fixme3 note: here we will:
+    // note: here we will:
     //  - Build and return html for a progress bar to appear at the top of the page.
     // 
-    // fixme3val: validate getProgressBarHtml.
-    //  - Given WI exists in state
-    //  - Given Step public id exists in WI
-    //  -- VALIDATION FAILURE: return empty string
-    //
-       
-    // If is not stepwise workflow (and not shortcode styles debugging: return empty string.
-    $stepwiseShortcodeDebug = $_GET['stepwise-button-debug'] ?? 0;
-    if (!$stepwiseShortcodeDebug && !CRM_Stepw_Utils_Userparams::isStepwiseWorkflow('request')) {    
-      return '';
-    }
-        
-    // support designer's debugging of percentage indicator outside of stepwise workflow.
-    if ($stepwiseShortcodeDebug) {
+
+    // If is stepwise workflow, do some special handling.
+    $stepwiseShortcodeDebug = ($_GET['stepwise-button-debug'] ?? 0);
+    if ($stepwiseShortcodeDebug) {    
       $stepOrdinal = $_GET['stepwise-step'] ?? 1;
       $stepTotalCount = $_GET['stepwise-step-count'] ?? 10;
     }
     else {
+      if (!self::isValidParams()) {
+        return '';
+      }
+    
       $workflowInstancePublicId = CRM_Stepw_Utils_Userparams::getUserParams('request', CRM_Stepw_Utils_Userparams::QP_WORKFLOW_INSTANCE_ID);
       $stepPublicId = CRM_Stepw_Utils_Userparams::getUserParams('request', CRM_Stepw_Utils_Userparams::QP_STEP_ID);
       $workflowInstance = CRM_Stepw_State::singleton()->getWorkflowInstance($workflowInstancePublicId);
@@ -100,6 +84,7 @@ class CRM_Stepw_Utils_WpShortcode {
       $stepOrdinal = $progressProperties['stepOrdinal'];
       $stepTotalCount = $progressProperties['stepTotalCount'];
     }
+    
     $percentage = round(($stepOrdinal / $stepTotalCount * 100));
     
     $ret = '';
@@ -109,9 +94,32 @@ class CRM_Stepw_Utils_WpShortcode {
     $tpl->assign('stepTotalCount', $stepTotalCount);
     $ret = $tpl->fetch('CRM/Stepw/snippet/StepwiseProgressBar.tpl');
     return $ret;
-    
-  
-    
+  }
+
+  private static function isValidParams() {
+    static $ret;
+    if (!isset($ret)) {
+      // return FALSE (params are invalid) if any of:
+      //  - we're not in a stepwise workflow.
+      //  - Given WI NOT exists in state
+      //  - Given Step public id NOT exists in WI
+      //
+      // return false if: We're not in a workflowInstance.
+      if (!CRM_Stepw_Utils_Userparams::isStepwiseWorkflow('request')) {
+        $ret = FALSE;
+        return $ret;
+      }
+      // return false if: Given WI or step don't exist in state.
+      $workflowInstancePublicId = CRM_Stepw_Utils_Userparams::getUserParams('request', CRM_Stepw_Utils_Userparams::QP_WORKFLOW_INSTANCE_ID);
+      $stepPublicId = CRM_Stepw_Utils_Userparams::getUserParams('request', CRM_Stepw_Utils_Userparams::QP_STEP_ID);
+      if (!CRM_Stepw_Utils_Validation::isWorkflowInstanceAndStepValid($workflowInstancePublicId, $stepPublicId)) {
+        $ret = FALSE;
+        return $ret;
+      }
+      // if we're still here, return true (params are valid)
+      $ret = TRUE;
+      return $ret;      
+    }
   }
 
 }
