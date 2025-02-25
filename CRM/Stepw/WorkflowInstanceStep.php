@@ -79,6 +79,7 @@ class CRM_Stepw_WorkflowInstanceStep {
       'i' => $this->workflowInstance->getPublicId(),
       's' => $this->publicId,
     ];
+    $afformParams = [];
     
     if($this->config['type'] == 'afform') {
         $afformParams = [];
