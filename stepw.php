@@ -42,12 +42,11 @@ function stepw_civicrm_pageRun(CRM_Core_Page $page) {
     // validate: fail if: Given Step is not for this afform.
     $menuItem = CRM_Core_Invoke::getItem($page->urlPath);
     $pageArgs = CRM_Core_Menu::getArrayForPathArgs($menuItem['page_arguments']);
-    $pageAfformName = $pageArgs['afform'];
-    $workflowInstance = CRM_Stepw_State::singleton()->getWorkflowInstance($workflowInstancePublicId);
-    $stepAfformName = $workflowInstance->getStepAfformName($stepPublicId);
-    if ($pageAfformName != $stepAfformName) {
+    $pageAfformName = $pageArgs['afform'];    
+    if (!CRM_Stepw_Utils_Validation::stepIsForAfformName($workflowInstancePublicId, $stepPublicId, $pageAfformName)) {
       CRM_Stepw_Utils_General::redirectToInvalid(__METHOD__ . ": Step, per publicId, is not for this afform: $pageAfformName");
     }
+    
     // validate: fail if: the 'reload' param is given and step has no sid. (i.e., 
     // reload is only valid on steps that have already been submitted at least once.)
     $reloadSubmissionId = CRM_Stepw_Utils_Userparams::getUserParams('request', CRM_Stepw_Utils_Userparams::QP_AFFORM_RELOAD_SID);
@@ -59,6 +58,8 @@ function stepw_civicrm_pageRun(CRM_Core_Page $page) {
       CRM_Stepw_Utils_General::redirectToInvalid(__METHOD__ . ": Reload parameter given, but step has no existing submissionId: $afformName");
     }
     
+    $workflowInstance = CRM_Stepw_State::singleton()->getWorkflowInstance($workflowInstancePublicId);
+
     // If the given step has already been submitted, and we were NOT given QP_AFFORM_RELOAD_SID (with the current sid of the step),
     // redirect to $workflowInstance->getStepUrl(stepPublicId). See notes on
     // $step->afformSid.
@@ -181,13 +182,12 @@ function _stepw_afform_submit_late(\Civi\Afform\Event\AfformSubmitEvent $event) 
   // validate: fail if: Given Step is not for this afform.
   $afform = $event->getAfform();
   $afformName = ($afform['name'] ?? NULL);
-  $workflowInstance = CRM_Stepw_State::singleton()->getWorkflowInstance($workflowInstancePublicId);
-  $stepAfformName = $workflowInstance->getStepAfformName($stepPublicId);
-  if ($afformName != $stepAfformName) {
+  if (!CRM_Stepw_Utils_Validation::stepIsForAfformName($workflowInstancePublicId, $stepPublicId, $afformName)) {
     throw new CRM_Extension_Exception("Referenced step is not for this affrom: '$afformName', in " . __METHOD__, 'stepw_afform_submit_late_mismatch-afform');
   }
   
   // Complete this step in the workflowInstance.
+  $workflowInstance = CRM_Stepw_State::singleton()->getWorkflowInstance($workflowInstancePublicId);
   $workflowInstance->completeStep($stepPublicId);
   // Determine any created contact ID, and set this as a workflowInstance property.
   $entityIds = $event->getEntityIds('Individual1');
@@ -249,14 +249,13 @@ function _stepw_afform_submit_early(\Civi\Afform\Event\AfformSubmitEvent $event)
   // validate: fail if: Given Step is not for this afform.
   $afform = $event->getAfform();
   $afformName = ($afform['name'] ?? NULL);
-  $workflowInstance = CRM_Stepw_State::singleton()->getWorkflowInstance($workflowInstancePublicId);
-  $stepAfformName = $workflowInstance->getStepAfformName($stepPublicId);
-  if ($afformName != $stepAfformName) {
+  
+  if (!CRM_Stepw_Utils_Validation::stepIsForAfformName($workflowInstancePublicId, $stepPublicId, $afformName)) {
     throw new CRM_Extension_Exception("Referenced step is not for this affrom: '$afformName', in " . __METHOD__, 'stepw_afform_submit_early_mismatch-afform');
   }
 
   // validate: fail if: afformsubmission.sid is not an sid already saved for this step.
-  if (!$workflowInstance->stepHasAfformSubmissionId($stepPublicId, $reloadSubmissionId)) {
+  if (!CRM_Stepw_Utils_Validation::stepHasAfformSubmissionId($workflowInstancePublicId, $stepPublicId, $reloadSubmissionId)) {
     throw new CRM_Extension_Exception("Provided afform submission sid does not match existing sid in step, in " . __METHOD__, 'stepw_afform_submit_early_mismatch-submission-id');
   }
 
@@ -374,20 +373,18 @@ function stepw_civicrm_permission_check($permission, &$granted) {
   // validate: fail if: Given Step is not for this afform.
   $postParams = json_decode($_POST['params'], TRUE);
   $afformName = $postParams['name'];
-  $workflowInstance = CRM_Stepw_State::singleton()->getWorkflowInstance($workflowInstancePublicId);
-  $stepAfformName = $workflowInstance->getStepAfformName($stepPublicId);
-  if ($afformName != $stepAfformName) {
+  if (!CRM_Stepw_Utils_Validation::stepIsForAfformName($workflowInstancePublicId, $stepPublicId, $afformName)) {
     return;
   }
 
   // validate: fail if: afformsubmission.sid is not given
-  $afformSid = $postParams['args']['sid'];
+  $afformSid = ($postParams['args']['sid'] ?? NULL);
   if (empty($afformSid)) {
     return;
   }
   
   // validate: fail if: afformsubmission.sid is not an sid already saved for this step.
-  if (!$workflowInstance->stepHasAfformSubmissionId($stepPublicId, $afformSid)) {
+  if (!CRM_Stepw_Utils_Validation::stepHasAfformSubmissionId($workflowInstancePublicId, $stepPublicId, $afformSid)) {
     return;
   }
 
