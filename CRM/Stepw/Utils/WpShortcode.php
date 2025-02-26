@@ -10,12 +10,27 @@ class CRM_Stepw_Utils_WpShortcode {
     //  - Build and return html for one or more buttons, for replacement of WP [stepwise-button] shortcode.
     // 
 
-    // If is stepwise workflow, do some special handling.
+    $buttons = [];
+    
+    // If we're debugging (e.g. for design), do some special handling.
     $stepwiseShortcodeDebug = ($_GET['stepwise-button-debug'] ?? 0);
     if ($stepwiseShortcodeDebug) {    
       $buttonDisabled = ($_GET['stepwise-button-disabled'] ?? NULL);
       $buttonText = $_GET['stepwise-button-text'] ?? 'Next';
+      $buttonCount = $_GET['stepwise-button-count'] ?? 1;
       $buttonHref = '#';
+      
+      if ($buttonDisabled) {
+        $buttonHref64 = base64_encode($buttonHref);
+        $buttonHref = '#';
+      }
+      $button = [
+        'href64' => ($buttonHref64 ?? NULL),
+        'href' => $buttonHref,
+        'text' => $buttonText,
+        'disabled' => $buttonDisabled,        
+      ];
+      $buttons = array_pad($buttons, $buttonCount, $button);
     }
     else {
       if (!self::isValidParams()) {
@@ -45,17 +60,9 @@ class CRM_Stepw_Utils_WpShortcode {
     // 1. do enforcement;
     // 2. set the href
     // 3. enable the button    
-    if ($buttonDisabled) {
-      $buttonHref64 = base64_encode($buttonHref);
-      $buttonHref = '#';
-    }
     
-    $buttonHtml = '';
     $tpl = CRM_Core_Smarty::singleton();
-    $tpl->assign('buttonHref64', ($buttonHref64 ?? NULL));
-    $tpl->assign('buttonHref', $buttonHref);
-    $tpl->assign('buttonText', $buttonText);
-    $tpl->assign('buttonDisabled', $buttonDisabled);
+    $tpl->assign('buttons', $buttons);
     $buttonHtml = $tpl->fetch('CRM/Stepw/snippet/StepwiseButton.tpl');
     return $buttonHtml;
     
@@ -66,7 +73,7 @@ class CRM_Stepw_Utils_WpShortcode {
     //  - Build and return html for a progress bar to appear at the top of the page.
     // 
 
-    // If is stepwise workflow, do some special handling.
+    // If we're debugging (e.g. for design), do some special handling.
     $stepwiseShortcodeDebug = ($_GET['stepwise-button-debug'] ?? 0);
     if ($stepwiseShortcodeDebug) {    
       $stepOrdinal = $_GET['stepwise-step'] ?? 1;

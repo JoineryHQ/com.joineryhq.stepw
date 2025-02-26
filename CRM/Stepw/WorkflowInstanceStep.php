@@ -41,6 +41,38 @@ class CRM_Stepw_WorkflowInstanceStep {
    private $afformSids = [];
    
    /**
+    * Every step acts as if it had at least one split.
+    *  - For steps not of type 'split', the 1 split is keyed '0'. 
+    *  - For steps of type 'split', splits are keyed to a publicId.
+    * 
+    * This property stores the instance-related data for each split (or for non-split
+    * steps, the 1 split keyed '0').
+    * 
+    * A split is "like" a step, except that:
+    * - only 1 split (not "all" splits) in any step must be completed
+    * 
+    * A split has these properties formerly associated with steps:
+    * - config:
+    *   - afform name (if any)
+    *   - url
+    *   - type (afform | url)
+    *   - is_video_page (this is still in debate, as it was in debate for steps)
+    * - instance data:
+    *   - afformSubmitionIds (if any)
+    *   - completion timestamp
+    * 
+    * Why then do steps need to exist at all, i.e., why can't they all be splits?
+    * - Each step must be completed, but only 1 split in a step must be completed.
+    *   - REBUTTAL: Yes, but each step will have at least 1 split. So we could simply track that.
+    * - Each step has its own publicId, by which we access its config and its instance data.
+    *   - REBUTTAL: None.
+    * 
+    * 
+    * @var Array
+    */
+   private $splitsData = [];
+   
+   /**
     * Microtimestamp representing the moment this step was most recently completed.
     * (NULL if never submitted)
     * @var Float

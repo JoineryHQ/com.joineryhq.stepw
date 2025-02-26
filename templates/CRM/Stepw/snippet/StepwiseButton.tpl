@@ -1,12 +1,13 @@
-<div class="stepwise-button-wrapper">
-  <a class="stepwise-button {if $buttonDisabled}stepwise-button-disabled{/if}" href="{$buttonHref}">
-    <span class="stepwise-button-label">
-      {$buttonText}
-    </span>
-  </a>
-</div>
-      
-{* $buttonHref64 is a base64-encoded url, to be used as the href for a.stepwise-button after video enforcer
- * JS has verified that video was fully watched.
- *}
-{if $buttonHref64}<span id="stepwise-data" data-data="{$buttonHref64}" style="display:none;"></span>{/if}
+{foreach from=$buttons item=button key=key}
+  <div class="stepwise-button-wrapper" id="stepwise-button-wrapper-{$key}">
+    <a class="stepwise-button {if $button.disabled}stepwise-button-disabled{/if}" href="{$button.href}" id="stepwise-button-{$key}" data-data="{$button.href64}">
+      <span class="stepwise-button-label" id="stepwise-button-label-{$key}">
+        {$button.text}
+      </span>
+    </a>
+  </div>
+
+  {* $buttonHref64 is a base64-encoded url, to be used as the href for a.stepwise-button after video enforcer
+   * JS has verified that video was fully watched.
+   *}
+{/foreach}
