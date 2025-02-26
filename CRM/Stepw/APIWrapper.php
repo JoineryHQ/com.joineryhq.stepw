@@ -56,8 +56,7 @@ class CRM_Stepw_APIWrapper {
       }
 
       // validate: fail if: afformsubmission.sid is not an sid already saved for this step.
-      $workflowInstance = CRM_Stepw_State::singleton()->getWorkflowInstance($workflowInstancePublicId);
-      if (!$workflowInstance->stepHasAfformSubmissionId($stepPublicId, $reloadSubmissionId)) {
+      if (!CRM_Stepw_Utils_Validation::stepHasAfformSubmissionId($workflowInstancePublicId, $stepPublicId, $reloadSubmissionId) ){
         throw new CRM_Extension_Exception("Provided afform submission sid does not match existing sid in step, in " . __METHOD__, 'CRM_Stepw_APIWrapper_PREPARE_4.afform.submit_mismatch-submission-id');
       }
       
@@ -65,8 +64,7 @@ class CRM_Stepw_APIWrapper {
       $request = $event->getApiRequest();
       $afform = $request->getParams();
       $afformName = ($afform['name'] ?? NULL);
-      $stepAfformName = $workflowInstance->getStepAfformName($stepPublicId);
-      if ($afformName != $stepAfformName) {
+      if (!CRM_Stepw_Utils_Validation::stepIsForAfformName($workflowInstancePublicId, $stepPublicId, $afformName)) {
         throw new CRM_Extension_Exception("Referenced step is not for this affrom '$afformName', in " . __METHOD__, 'CRM_Stepw_APIWrapper_PREPARE_4.afform.submit_mismatch-afform');
       }
       
@@ -151,9 +149,7 @@ class CRM_Stepw_APIWrapper {
 
       // validate: fail if: Given Step is not for this afform.
       $afformName = $afformProperties['name'];
-      $workflowInstance = CRM_Stepw_State::singleton()->getWorkflowInstance($workflowInstancePublicId);
-      $stepAfformName = $workflowInstance->getStepAfformName($stepPublicId);
-      if ($afformName != $stepAfformName) {
+      if (!CRM_Stepw_Utils_Validation::stepIsForAfformName($workflowInstancePublicId, $stepPublicId, $afformName)) {
         throw new CRM_Extension_Exception("Referenced step is not for this affrom '$afformName', in " . __METHOD__, 'CRM_Stepw_APIWrapper_RESPOND_4.afform.get_mismatch-afform');
       }
       
@@ -206,15 +202,14 @@ class CRM_Stepw_APIWrapper {
       $request = $event->getApiRequest();
       $requestParams = $request->getParams();
       $afformName = ($requestParams['values']['afform_name'] ?? NULL);
-      $workflowInstance = CRM_Stepw_State::singleton()->getWorkflowInstance($workflowInstancePublicId);
-      $stepAfformName = $workflowInstance->getStepAfformName($stepPublicId);
-      if ($afformName != $stepAfformName) {
+      if (!CRM_Stepw_Utils_Validation::stepIsForAfformName($workflowInstancePublicId, $stepPublicId, $afformName)) {
         throw new CRM_Extension_Exception("Referenced step is not for this affrom '$afformName', in " . __METHOD__, 'CRM_Stepw_APIWrapper_RESPOND_4.afformsubmission.create_mismatch-afform');
       }
 
       // Capture saved submission id in the step.
       $response = $event->getResponse();
       $afformSubmissionId = $response[0]['id'];
+      $workflowInstance = CRM_Stepw_State::singleton()->getWorkflowInstance($workflowInstancePublicId);
       $workflowInstance->setStepAfformSubmissionId($afformSubmissionId, $stepPublicId);
       
     }
