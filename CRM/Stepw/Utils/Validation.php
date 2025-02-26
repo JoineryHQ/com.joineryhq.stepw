@@ -21,4 +21,23 @@ class CRM_Stepw_Utils_Validation {
     }
     return $ret;
   }
+  
+  public static function stepIsForAfformName(string $workflowInstancePublicId, string $stepPublicId, string $afformName) {
+    $ret = FALSE;
+    $workflowInstance = CRM_Stepw_State::singleton()->getWorkflowInstance($workflowInstancePublicId);
+    $stepAfformName = $workflowInstance->getStepAfformName($stepPublicId);
+    if ($pageAfformName == $stepAfformName) {    
+      $ret = TRUE;
+    }
+    return $ret;
+  }
+  
+  public static function stepHasAfformSubmissionId(string $workflowInstancePublicId, string $stepPublicId, string $afformSubmissionId) {
+    $ret = FALSE;
+    $workflowInstance = CRM_Stepw_State::singleton()->getWorkflowInstance($workflowInstancePublicId);
+    if ($workflowInstance->stepHasAfformSubmissionId($stepPublicId, $afformSubmissionId)) {    
+      $ret = TRUE;
+    }
+    return $ret;
+  }
 }
