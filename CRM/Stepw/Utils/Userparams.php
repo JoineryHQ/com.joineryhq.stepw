@@ -71,7 +71,7 @@ class CRM_Stepw_Utils_Userparams {
       }
     }
     if (!empty($name)) {
-      return $params[$name];
+      return ($params[$name] ?? NULL);
     }
     else {
       return $params;
