@@ -369,7 +369,7 @@ function stepw_civicrm_permission_check($permission, &$granted) {
 function stepw_civicrm_unhandled_exception(CRM_Core_Exception $exception, $request = NULL) {
   if (is_a($exception, 'CRM_Stepw_Exception')) {
     // If this is our exception, redirect to invalid/ (this will also log the error message and code.
-    CRM_Stepw_Utils_General::redirectToInvalid($exception->getMessage(), $exception->getErrorCode());
+    CRM_Stepw_Utils_General::redirectToInvalid($exception);
   }
 }
 
