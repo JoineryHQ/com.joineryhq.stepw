@@ -30,12 +30,18 @@ class CRM_Stepw_Utils_General {
         'error_id' => $error_id
       ];
       if (!empty($errorCode)) {
+        // Add error_code, if any.
         $debugContext['error_code'] = $errorCode;
       }
       $debugContext['_REQUEST'] = $_REQUEST;
       \Civi::log()->debug(E::LONG_NAME .': '. $logMessage, $debugContext);
       // Store an additional informative message for display to the user.
       CRM_Stepw_State::singleton()->storeInvalidMessage(E::ts('When requesting help with this issue, please provide Log Reference Number: %1', ['1' => $error_id]));
+      
+      if (Civi::settings()->get('debug_enabled')) {
+        // If 'debug' is on, go ahead and show the message to the user.
+        CRM_Stepw_State::singleton()->storeInvalidMessage("Debug message: " . $logMessage);
+      }
     }
     $redirect = CRM_Utils_System::url('civicrm/stepwise/invalid', '', TRUE, NULL, FALSE);
     CRM_Utils_System::redirect($redirect);
