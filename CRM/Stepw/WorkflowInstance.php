@@ -41,7 +41,7 @@ class CRM_Stepw_WorkflowInstance {
     $workflowConfig = CRM_Stepw_Utils_WorkflowData::getWorkflowConfigById($workflowId);
     if (empty($workflowConfig)) {
       // If we're given an invaild workflowId, throw an exception.
-      throw new CRM_Extension_Exception("Given QP_START_WORKFLOW_ID ('$workflowId') does not match an available workflow, in " . __METHOD__, 'CRM_Stepw_WorkflowInstance_construct_invalid-workflow-id');
+      throw new  CRM_Stepw_Exception("Given QP_START_WORKFLOW_ID ('$workflowId') does not match an available configured workflow, in " . __METHOD__, 'CRM_Stepw_WorkflowInstance_construct_invalid-workflow-id');
     }
     $this->updateLastModified();
     $this->workflowId = $workflowId;
@@ -101,7 +101,7 @@ class CRM_Stepw_WorkflowInstance {
       $nextStep = $this->pseudoFinalStep;
     }
     if (empty($nextStep) || !is_a($nextStep, 'CRM_Stepw_WorkflowInstanceStep')) {
-      throw new CRM_Extension_Exception("When calculating 'Next Step', no valid step was found, in " . __METHOD__, 'CRM_Stepw_WorkflowInstance_getNextStep_invalid');        
+      throw new  CRM_Stepw_Exception("When calculating 'Next Step', no valid step was found, in " . __METHOD__, 'CRM_Stepw_WorkflowInstance_getNextStep_invalid');        
     }
     return $nextStep;
   }
@@ -119,6 +119,9 @@ class CRM_Stepw_WorkflowInstance {
     else {
       $stepNumber = $this->stepNumbersByPublicId[$stepKey];
       $step = ($this->steps[$stepNumber] ?? NULL);
+    }
+    if (!is_a($step, 'CRM_Stepw_WorkflowInstanceStep')) {
+      throw new CRM_Stepw_Exception("Provided stepKey '$stepKey' does not match a step in this workflowInstnce, in " . __METHOD__, 'CRM_Stepw_WorkflowInstance_getStepByKey-mismatch-stepkey');      
     }
     return $step;
   }
@@ -147,7 +150,7 @@ class CRM_Stepw_WorkflowInstance {
         'given cid' => $contactId,
         'existing_cid' => $this->createdIndividualCid,
       ];
-      throw new CRM_Extension_Exception("Invalid attempt to alter workflowInstance:createdIndividualCid". __METHOD__, 'CRM_Stepw_WorkflowInstance_setCreatedIndividualCid_invalid', $exceptionExtra);      
+      throw new  CRM_Stepw_Exception("Invalid attempt to alter workflowInstance:createdIndividualCid". __METHOD__, 'CRM_Stepw_WorkflowInstance_setCreatedIndividualCid_invalid', $exceptionExtra);      
     }
     $this->createdIndividualCid = $contactId;
     $this->updateLastModified();
@@ -179,7 +182,7 @@ class CRM_Stepw_WorkflowInstance {
     $step = $this->getNextStep();
     $url = $step->getUrl();
     if (empty($url)) {
-      throw new CRM_Extension_Exception("When calculating 'Next Step url', an empty value was found, in " . __METHOD__, 'CRM_Stepw_WorkflowInstanceStep_getNextStepUrl_empty');  
+      throw new  CRM_Stepw_Exception("When calculating 'Next Step url', an empty value was found, in " . __METHOD__, 'CRM_Stepw_WorkflowInstanceStep_getNextStepUrl_empty');  
     }
     return $url;
   }

@@ -19,11 +19,7 @@ class CRM_Stepw_Utils_General {
     return $ret;
   }
 
-  public static function redirectToInvalid(string $logMessage = '', string $publicMessage = '') {
-    if ($publicMessage) {
-      // Store any public message for display to the user.
-      CRM_Stepw_State::singleton()->storeInvalidMessage($publicMessage);
-    }
+  public static function redirectToInvalid(string $logMessage = '', string $errorCode) {
     if ($logMessage) {
       // If there's a logMessage, append a uniq log identifier both to the logMessage and to a publicMessage.
       // This will allow users to report something that will be meaningful in debugging/log-inspection.
@@ -31,11 +27,14 @@ class CRM_Stepw_Utils_General {
       // https://github.com/civicrm/civicrm-core/blob/5.81.0/CRM/Api4/Page/AJAX.php#L159
       $error_id = rtrim(chunk_split(CRM_Utils_String::createRandom(12, CRM_Utils_String::ALPHANUMERIC), 4, '-'), '-');
       $debugContext = [
-        'error_id' => $error_id,
-        '_REQUEST' => $_REQUEST,
+        'error_id' => $error_id
       ];
+      if (!empty($errorCode)) {
+        $debugContext['error_code'] = $errorCode;
+      }
+      $debugContext['_REQUEST'] = $_REQUEST;
       \Civi::log()->debug(E::LONG_NAME .': '. $logMessage, $debugContext);
-      // Store an additional informative message for dislpay to the user.
+      // Store an additional informative message for display to the user.
       CRM_Stepw_State::singleton()->storeInvalidMessage(E::ts('When requesting help with this issue, please provide Log Reference Number: %1', ['1' => $error_id]));
     }
     $redirect = CRM_Utils_System::url('civicrm/stepwise/invalid', '', TRUE, NULL, FALSE);
