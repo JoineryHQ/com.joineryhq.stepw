@@ -18,9 +18,11 @@ class CRM_Stepw_Utils_WorkflowData {
     $data = self::getAllWorkflowConfig();
     foreach ($data as $workflowId => $workflow) {
       foreach (($workflow['steps'] ?? []) as $step) {
-        if (($step['type'] ?? '') == 'afform') {
-          if ($afformName = ($step['afform_name'] ?? FALSE)) {
-            $afformNames[] = $afformName;
+        foreach ($step['options'] as $option) {
+          if (($option['type'] ?? '') == 'afform') {
+            if ($afformName = ($option['afformName'] ?? FALSE)) {
+              $afformNames[] = $afformName;
+            }
           }
         }
       }
@@ -30,8 +32,12 @@ class CRM_Stepw_Utils_WorkflowData {
 
   public static function getPseudoFinalStepConfig() {
     return [
-      'type' => 'url',
-      'url' => CRM_Utils_System::url('civicrm/stepwise/final', '', TRUE, NULL, FALSE, TRUE),
+      'options' => [
+        [
+          'type' => 'url',
+          'url' => CRM_Utils_System::url('civicrm/stepwise/final', '', TRUE, NULL, FALSE, TRUE),
+        ]
+      ],
     ];
   }
 }

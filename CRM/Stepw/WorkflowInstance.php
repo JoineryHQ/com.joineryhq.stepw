@@ -125,6 +125,29 @@ class CRM_Stepw_WorkflowInstance {
     }
     return $step;
   }
+  
+  public function getSubsequentStepOptionButtonProperties($stepPublicId) {
+    $stepNumber = $this->stepNumbersByPublicId[$stepPublicId];
+    $subsequentStepNumber = $stepNumber + 1;
+    $subsequentStep = $this->steps[$subsequentStepNumber];
+    $subsequentOptions = $subsequentStep->getVar('options');
+    
+    $buttonsDisabled = self::getStepButtonsDisabled($stepPublicId);
+    $currentStepOptionLabels = $this->getStepButtonLabels($stepPublicId);
+    $i = 0;
+    foreach ($subsequentOptions as &$subsequentOption) {
+      $subsequentOption['buttonDisabled'] = $buttonsDisabled;
+      $subsequentOption['buttonLabel'] = ($currentStepOptionLabels[$i++] ?? self::getDefaultOptionButtonLabel());
+    }
+    return $subsequentOptions;
+  }
+  
+  public function setSubsequentStepOptionId($stepPublicId, $optionPublicId) {
+    $stepNumber = $this->stepNumbersByPublicId[$stepPublicId];
+    $subsequentStepNumber = $stepNumber + 1;
+    $subsequentStep = $this->steps[$subsequentStepNumber];
+    $subsequentStep->setSelectedOptionId($optionPublicId);
+  }
     
   public function getLastModified() {
     return $this->lastModified;
@@ -181,9 +204,6 @@ class CRM_Stepw_WorkflowInstance {
   public function getNextStepUrl() {
     $step = $this->getNextStep();
     $url = $step->getUrl();
-    if (empty($url)) {
-      throw new  CRM_Stepw_Exception("When calculating 'Next Step url', an empty value was found, in " . __METHOD__, 'CRM_Stepw_WorkflowInstanceStep_getNextStepUrl_empty');  
-    }
     return $url;
   }
     
@@ -219,7 +239,7 @@ class CRM_Stepw_WorkflowInstance {
   
   public function stepHasAfformSubmissionId ($stepKey, $submissionId) {
     $step = $this->getStepByKey($stepKey);
-    $sids = $step->getVar('afformSids');
+    $sids = $step->getSelectedOptionVar('afformSids');
     $ret = in_array($submissionId, $sids);
     return $ret;
   }
@@ -227,39 +247,45 @@ class CRM_Stepw_WorkflowInstance {
   public function getStepAfformName ($stepKey) {
     $ret = NULL;
     $step = $this->getStepByKey($stepKey);
-    $stepConfig = $step->getVar('config');
-    if (($stepConfig['type'] ?? NULL) == 'afform') {
-      $ret = ($stepConfig['afform_name'] ?? NULL);
+    $optionType = $step->getSelectedOptionVar('type');
+    if ($optionType == 'afform') {
+      $ret = $step->getSelectedOptionVar('afformName');
     }
     return $ret;
   }
   
-  public function getStepButtonLabel($stepKey) {
+  public function getStepButtonLabels($stepKey) {
     $step = $this->getStepByKey($stepKey);
-    $stepConfig = $step->getVar('config');
-    return ($stepConfig['button_label'] ?? '');
+    $optionLabels = $step->getSelectedOptionVar('optionLabels');
+    return ($optionLabels);
   }
   
-  public function getStepButtonDisabled($stepKey) {
+  private static function getDefaultOptionButtonLabel() {
+    return 'Continue';
+  }
+  
+  private static function getStepButtonsDisabled($stepPublicId) {
+    // fixme3: this should get the disabled status for the CURRENTLY VIEWED step/option,
+    // not for the subsequent one.
     // fixme3: we're returning FALSE here because we don't yet have the video-enforcer
     //   javascript in place, which means our "real" logic for this method will
     //   always return TRUE. Once the video-enforcer is working, we should remove
     //   this comment and the hard-coded FALSE return.
     return false;
+    
+    $step = $this->getStepByKey($stepPublicId);
 
     // button is disabled by default; it is only enabled if:
-    //   - step has ever been completed, OR
-    //   - step is NOT a video page.
+    //   - option has ever been completed, OR
+    //   - option is NOT a video page.
     //
     $disabled = TRUE;
     
-    $step = $this->getStepByKey($stepKey);
-    if ($step->getVar('lastCompleted')) {
+    if ($step->getSelectedOptionVar('lastCompleted')) {
       $disabled = FALSE;
     }
     else {
-      $config = $step->getVar('config');
-      $isVideoPage = ($config['is_video_page'] ?? FALSE);
+      $isVideoPage = ($step->getSelectedOptionVar('is_video_page') ?? FALSE);
       if (!$isVideoPage) {
         $disabled = FALSE;
       }

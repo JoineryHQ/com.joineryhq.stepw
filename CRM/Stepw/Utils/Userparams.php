@@ -35,6 +35,14 @@ class CRM_Stepw_Utils_Userparams {
   const QP_DONE_STEP_ID = 'stepw_dsid';
   
   /**
+   * PublicId for a given option in the subsequent step; indicates that when the
+   * subsequent step is displayed, it should use properties for this option.
+   * (Designed to support user-selection of one-of-many "next step options"
+   * where multiple buttons are displayed by the [stepwise-button] shortcode.)
+   */
+  const QP_SUBSEQUENT_STEP_SELECTED_OPTION_ID = 'stepw_soid';
+  
+  /**
    * Afform submission id for a the step represented by QP_STEP_ID, as it was 
    * most recently saved in the step's afformSid property. (Note
    * that this extension supports prefilling of afforms with submission data,

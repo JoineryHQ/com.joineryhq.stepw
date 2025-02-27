@@ -34,6 +34,13 @@ class CRM_Stepw_Page_Step extends CRM_Core_Page {
     if ($doneStepPublicId) {
       // Complete the step.
       $workflowInstance->completeStep($doneStepPublicId);
+      
+      // If we're also given a subsequentStepOptionid, update that step to use the given option.
+      // (This is useless without $doneStepPublicId.)
+      $subsequentStepOptionId = CRM_Stepw_Utils_Userparams::getUserParams('request', CRM_Stepw_Utils_Userparams::QP_SUBSEQUENT_STEP_SELECTED_OPTION_ID);    
+      if ($subsequentStepOptionId) {
+        $workflowInstance->setSubsequentStepOptionId($doneStepPublicId, $subsequentStepOptionId);
+      }
     }
     
     $nextStepUrl = $workflowInstance->getNextStepUrl();

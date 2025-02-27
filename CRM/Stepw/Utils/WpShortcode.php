@@ -45,14 +45,34 @@ class CRM_Stepw_Utils_WpShortcode {
       $stepPublicId = CRM_Stepw_Utils_Userparams::getUserParams('request', CRM_Stepw_Utils_Userparams::QP_STEP_ID);
 
       $workflowInstance = CRM_Stepw_State::singleton()->getWorkflowInstance($workflowInstancePublicId);
-      $buttonText = $workflowInstance->getStepButtonLabel($stepPublicId);
-      $buttonDisabled = $workflowInstance->getStepButtonDisabled($stepPublicId);
+      $subsequentStepOptions = $workflowInstance->getSubsequentStepOptionButtonProperties($stepPublicId);
+      foreach ($subsequentStepOptions as $subsequentStepOption) {
+        $hrefQueryParams = [
+          CRM_Stepw_Utils_Userparams::QP_WORKFLOW_INSTANCE_ID=> $workflowInstancePublicId,
+          CRM_Stepw_Utils_Userparams::QP_DONE_STEP_ID => CRM_Stepw_Utils_Userparams::getUserParams('request', CRM_Stepw_Utils_Userparams::QP_STEP_ID),
+        ];
+        if (count($subsequentStepOptions) > 1) {
+          $hrefQueryParams[CRM_Stepw_Utils_Userparams::QP_SUBSEQUENT_STEP_SELECTED_OPTION_ID] = $subsequentStepOption['publicId'];
+        }
+        $buttonHref = CRM_Stepw_Utils_General::buildStepUrl($hrefQueryParams);
 
-      $hrefQueryParams = [
-        CRM_Stepw_Utils_Userparams::QP_WORKFLOW_INSTANCE_ID=> $workflowInstancePublicId,
-        CRM_Stepw_Utils_Userparams::QP_DONE_STEP_ID => CRM_Stepw_Utils_Userparams::getUserParams('request', CRM_Stepw_Utils_Userparams::QP_STEP_ID)
-      ];
-      $buttonHref = CRM_Stepw_Utils_General::buildStepUrl($hrefQueryParams);
+
+        $buttonDisabled = $subsequentStepOption['buttonDisabled'];
+        
+        if ($buttonDisabled) {
+          $buttonHref64 = base64_encode($buttonHref);
+          $buttonHref = '#';
+        }
+        $button = [
+          'href64' => ($buttonHref64 ?? NULL),
+          'href' => $buttonHref,
+          'text' => $subsequentStepOption['buttonLabel'],
+          'disabled' => $buttonDisabled,        
+        ];
+
+        $buttons[] = $button;
+      }
+
     }
     
     // if button is disabled, use '#' for the buttonHref, and pass $buttonHref to

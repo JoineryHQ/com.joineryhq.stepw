@@ -5,7 +5,7 @@ require_once 'stepw.civix.php';
 use CRM_Stepw_ExtensionUtil as E;
 
 function stepw_civicrm_pageRun(CRM_Core_Page $page) {
-  
+
   $pageName = $page->getVar('_name');
   if ($pageName == 'CRM_Afform_Page_AfformBase') {
     // note: here we will:
@@ -55,7 +55,7 @@ function stepw_civicrm_pageRun(CRM_Core_Page $page) {
     
     // If the given step has already been submitted, and we were NOT given QP_AFFORM_RELOAD_SID (with the current sid of the step),
     // redirect to $workflowInstance->getStepUrl(stepPublicId). See notes on
-    // $step->afformSid.
+    // $step->options[]['afformSid'].
     // This redirection is part of our security/validation protocol, because it 
     // ensures that the value of QP_AFFORM_RELOAD_SID is corret, which is important
     // because that value is later checked by our validation process.
@@ -77,8 +77,14 @@ function stepw_civicrm_pageRun(CRM_Core_Page $page) {
       CRM_Stepw_Utils_Userparams::QP_WORKFLOW_INSTANCE_ID => $workflowInstancePublicId,
     ];
     $redirectUrl = CRM_Stepw_Utils_General::buildStepUrl($redirectQueryParams);
-    // Also send the button label to js.
-    $buttonLabel = $workflowInstance->getStepButtonLabel($stepPublicId);
+    // Determine the button label so we can send it to JS.
+    // Since this is an afform, we can only support one button label (indeed,
+    // there should be only one in the config for this step/option). So we'll
+    // fetch the array of labels, and just use the first one (there should be 
+    // only one.)
+    $buttonLabels = $workflowInstance->getStepButtonLabels($stepPublicId);
+    $buttonLabel = $buttonLabels[0];
+    
     $jsVars = [
       'submitButtonLabel' => $buttonLabel,
       'redirectUrl' => $redirectUrl,
@@ -153,7 +159,7 @@ function _stepw_afform_submit_late(\Civi\Afform\Event\AfformSubmitEvent $event) 
   // - Determine any created contact ID, and set this as a workflowInstance property.
 
   // note:val: validate _stepw_afform_submit_late.                                                                                                                                        
-  //  - Given Step is for this afform ($afformName matches step['afform_name'])                                                                                                            
+  //  - Given Step is for this afform ($afformName matches step/option['afformName'])
   //  -- VALIDATION FAILURE: Throw an exception.
 
   // If is not stepwise workflow: return.
@@ -202,7 +208,7 @@ function _stepw_afform_submit_early(\Civi\Afform\Event\AfformSubmitEvent $event)
   //  - afformsubmission.sid is not provided (in referer QP_AFFORM_RELOAD_SID; i.e., this is not a re-submission)
   //
   // note:val: validate _stepw_afform_submit_early.                                                                                                                                       
-  //  - Given Step is for this afform ($afformName matches step['afform_name'])                                                                                                            
+  //  - Given Step is for this afform ($afformName matches step/option['afformName'])                                                                                                            
   //  - given afformsubmission.sid is not the sid already saved for this step.
   //
   //  -- VALIDATION FAILURE: throw an exception.
@@ -301,7 +307,7 @@ function stepw_civicrm_permission_check($permission, &$granted) {
   //  - we're not in a stepwise workflow
   //                                                                                                                                                                                         
   // note:val: validate stepw_civicrm_permission_check.                                                                                                                                     
-  //  - Given Step is for this afform ($afformName matches step['afform_name']), where afform name is in json_decode($_POST['params'])                                                       
+  //  - Given Step is for this afform ($afformName matches step/option['afformName']), where afform name is in json_decode($_POST['params'])                                                       
   //  - afform sid is associated with this step (sid is in json_decode($_POST['params'])['args'], and in QP_AFFORM_RELOAD_SID)                                                               
   //  -- VALIDATION FAILURE: take no action and return.                                                                                                                                      
   //                
