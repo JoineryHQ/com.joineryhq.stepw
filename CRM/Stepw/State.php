@@ -95,7 +95,11 @@ class CRM_Stepw_State {
    */
   public function getWorkflowInstance($workflowInstancePublicId) {
     $stateWorkflows = $this->get('workflowInstances');
-    return ($stateWorkflows[$workflowInstancePublicId] ?? NULL);
+    $workflowInstance = ($stateWorkflows[$workflowInstancePublicId] ?? NULL);
+    if (!is_a($workflowInstance, 'CRM_Stepw_WorkflowInstance')) {
+      throw new  CRM_Stepw_Exception("Provided workflowInstancePublicId '$workflowInstancePublicId' does not match a workflowInstance in state, in " . __METHOD__, 'CRM_Stepw_State_getWorkflowInstance-mismatch-workflowInstancePublicId');
+    }
+    return $workflowInstance;
   }
 
   public function storeInvalidMessage(string $message) {
@@ -123,7 +127,8 @@ class CRM_Stepw_State {
     $retainedWorkflowInstances = [];
     $multisortLastModified = [];
 
-    // Ignore any workflowInstances that aren't the right class, and prepare to sort by age.
+    // Ignore any workflowInstances that aren't the right class (which should never happen anyway),
+    // and prepare to sort by age.
     foreach  ($stateWorkflowInstances as $key => $workflowInstance) {
       $retain = true;
       if (!is_a($workflowInstance, 'CRM_Stepw_WorkflowInstance')) {

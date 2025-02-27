@@ -23,6 +23,4 @@ as no other means was easily found for adding our own parameters into afform req
 (such as form submission and prefill). Therefore, special care is required in
 assuring that only valid query parameters are used in URLs that will load pages
 in such contexts; where invalid parameters are given, the user should be redirected
-away from the afform page -- typically to via CRM_Stepw_Utils_General::redirectToInvalid(),
-which allows for logging such errors to the CiviCRM error log and optionally displaying
-a useful message to the end-user.
+away from the afform page -- typically to via a thrown CRM_Stepw_Exception.

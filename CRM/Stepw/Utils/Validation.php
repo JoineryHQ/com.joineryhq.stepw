@@ -26,7 +26,7 @@ class CRM_Stepw_Utils_Validation {
     $ret = FALSE;
     $workflowInstance = CRM_Stepw_State::singleton()->getWorkflowInstance($workflowInstancePublicId);
     $stepAfformName = $workflowInstance->getStepAfformName($stepPublicId);
-    if ($pageAfformName == $stepAfformName) {    
+    if ($afformName == $stepAfformName) {    
       $ret = TRUE;
     }
     return $ret;

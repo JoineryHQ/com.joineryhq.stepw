@@ -1,6 +1,5 @@
 <?php
 
-
 /**
  * WorkflowInstanceStep class
  */
@@ -92,7 +91,7 @@ class CRM_Stepw_WorkflowInstanceStep {
    */
   public function getVar($name) {
     if (!property_exists($this, $name)) {
-      throw new CRM_Extension_Exception("Invalid variable name requested in ". __METHOD__, 'CRM_Stepw_WorkflowInstanceStep_getVar_invalid', ['requested var name' => $name]);
+      throw new  CRM_Stepw_Exception("Invalid variable name requested in ". __METHOD__, 'CRM_Stepw_WorkflowInstanceStep_getVar_invalid', ['requested var name' => $name]);
     }
     return ($this->$name ?? NULL);
   }
