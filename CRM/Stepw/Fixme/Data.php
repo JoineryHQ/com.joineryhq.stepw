@@ -17,9 +17,8 @@ class CRM_Stepw_Fixme_Data {
                 // next step.
                 // if these are omitted, 
                 'optionLabels' => [
-                  'Option 1 (page)',
-                  'Option 2 (page)',
-                  'Option 3 (afform)',
+                  'Video Option 1 (page)',
+                  'Video Option 2 (page)',
                 ],
               ],
             ],
@@ -29,17 +28,23 @@ class CRM_Stepw_Fixme_Data {
               [
                 'type' => 'url',
                 'url' => 'http://plana.l/option-step-option-1/',
+                'requireOnpageEnforcer' => 1,
                 'optionLabels' => [
-                  'Go to afform 2',
+                  'Go to afform 1',
                 ],
               ],
               [
                 'type' => 'url',
                 'url' => 'http://plana.l/option-step-option-2/',
+                'requireOnpageEnforcer' => 1,
                 'optionLabels' => [
-                  'Go to afform 2',
+                  'Go to afform 1',
                 ],
               ],
+            ],
+          ],
+          [
+            'options' => [
               [
                 'type' => 'afform',
                 'url' => 'http://plana.l/civicrm/test-form-start/',
@@ -61,23 +66,24 @@ class CRM_Stepw_Fixme_Data {
                 // Because this step has at least one afform option (this one),
                 // the subsequent step MUST have only one option.
                 'optionLabels' => [
-                  'Submit and the end.',
+                  'Submit and view final step.',
                 ],
               ],
             ],
           ],
-//          [
-//            'options' => [
-//              [
-//              ],
-//            ],
-//          ],
-//          [
-//            'options' => [
-//              [
-//              ],
-//            ],
-//          ],
+          [
+            'options' => [
+              [
+                'type' => 'url',
+                'url' => 'http://plana.l/example-final-page/',
+                'optionLabels' => [
+                  // This page shouldn't have a button, and even if it does,
+                  // the button shortcode should not display it, because it's last.
+                  'THIS SHOULD NOT DISPLAY',
+                ],
+              ],
+            ],
+          ],
 //          
 //          
 //          
@@ -127,11 +133,6 @@ class CRM_Stepw_Fixme_Data {
 //            'url' => 'http://plana.l/civicrm/test-form-3-activity-2/',
 //            'afformName' => 'afformTestForm3Activity2',
 //            'buttonLabel' => 'Submit and Next',
-//          ],
-//          [
-//            'type' => 'url',
-//            'url' => 'http://plana.l/example-final-page/',
-//            'buttonLabel' => '',
 //          ],
         ],
       ],

@@ -1,5 +1,7 @@
 <?php
 
+use CRM_Stepw_ExtensionUtil as E;
+
 /**
  * General-purpose utilities for stepw extension.
  *
@@ -13,33 +15,24 @@ class CRM_Stepw_Utils_WpShortcode {
     $buttons = [];
     
     // If we're debugging (e.g. for design), do some special handling.
-    $stepwiseShortcodeDebug = ($_GET['stepwise-button-debug'] ?? 0);
-    if ($stepwiseShortcodeDebug) {    
-      $buttonDisabled = ($_GET['stepwise-button-disabled'] ?? NULL);
-      $buttonText = $_GET['stepwise-button-text'] ?? 'Next';
-      $buttonCount = $_GET['stepwise-button-count'] ?? 1;
-      $buttonHref = '#';
-      
-      if ($buttonDisabled) {
+    $debugParams = self::getDebugParams();
+    if (!empty($debugParams)) {
+      $buttonHref = '#';      
+      if ($debugParams['buttonDisabled']) {
         $buttonHref64 = base64_encode($buttonHref);
-        $buttonHref = '#';
       }
       $button = [
         'href64' => ($buttonHref64 ?? NULL),
         'href' => $buttonHref,
-        'text' => $buttonText,
-        'disabled' => $buttonDisabled,        
+        'text' => $debugParams['buttonText'],
+        'disabled' => $debugParams['buttonDisabled'],
       ];
-      $buttons = array_pad($buttons, $buttonCount, $button);
+      $buttons = array_pad($buttons, $debugParams['buttonCount'], $button);
     }
     else {
       if (!self::isValidParams()) {
         return '';
       }      
-    
-      // fixme3: this  shortcode could create mutiple buttons, depending on workflow config (e.g. video pages in 3 languages).
-      // Therefore, we must process the template multiple times, per workflow config.
-      //
       
       $workflowInstancePublicId = CRM_Stepw_Utils_Userparams::getUserParams('request', CRM_Stepw_Utils_Userparams::QP_WORKFLOW_INSTANCE_ID);
       $stepPublicId = CRM_Stepw_Utils_Userparams::getUserParams('request', CRM_Stepw_Utils_Userparams::QP_STEP_ID);
@@ -56,10 +49,14 @@ class CRM_Stepw_Utils_WpShortcode {
         }
         $buttonHref = CRM_Stepw_Utils_General::buildStepUrl($hrefQueryParams);
 
-
         $buttonDisabled = $subsequentStepOption['buttonDisabled'];
         
         if ($buttonDisabled) {
+          // if button is disabled, use '#' for the buttonHref, and pass $buttonHref to
+          // the template where JS can get at it. The onpage enforcer js will then:
+          // 1. do enforcement;
+          // 2. set the href
+          // 3. enable the button    
           $buttonHref64 = base64_encode($buttonHref);
           $buttonHref = '#';
         }
@@ -75,12 +72,6 @@ class CRM_Stepw_Utils_WpShortcode {
 
     }
     
-    // if button is disabled, use '#' for the buttonHref, and pass $buttonHref to
-    // the template where JS can get at it. The video enforcer js will then:
-    // 1. do enforcement;
-    // 2. set the href
-    // 3. enable the button    
-    
     $tpl = CRM_Core_Smarty::singleton();
     $tpl->assign('buttons', $buttons);
     $buttonHtml = $tpl->fetch('CRM/Stepw/snippet/StepwiseButton.tpl');
@@ -94,10 +85,10 @@ class CRM_Stepw_Utils_WpShortcode {
     // 
 
     // If we're debugging (e.g. for design), do some special handling.
-    $stepwiseShortcodeDebug = ($_GET['stepwise-button-debug'] ?? 0);
-    if ($stepwiseShortcodeDebug) {    
-      $stepOrdinal = $_GET['stepwise-step'] ?? 1;
-      $stepTotalCount = $_GET['stepwise-step-count'] ?? 10;
+    $debugParams = self::getDebugParams();
+    if (!empty($debugParams)) {
+      $stepOrdinal = $debugParams['stepOrdinal'];
+      $stepTotalCount = $debugParams['stepTotalCount'];
     }
     else {
       if (!self::isValidParams()) {
@@ -120,6 +111,65 @@ class CRM_Stepw_Utils_WpShortcode {
     $tpl->assign('stepOrdinal', $stepOrdinal);
     $tpl->assign('stepTotalCount', $stepTotalCount);
     $ret = $tpl->fetch('CRM/Stepw/snippet/StepwiseProgressBar.tpl');
+    return $ret;
+  }
+  
+  public static function getPageAssets() {
+    $ret = [];
+    if (!self::isValidParams() && empty(self::getDebugParams())) {
+      return $ret;
+    }
+    $ret[] = [
+      'type'   => 'style',
+      'handle' => 'stepwise-button-css', 
+      'src'    => E::url('cms_resources/wordpress/css/stepwise-button.css'),
+    ];
+    $ret[] = [
+      'type'   => 'script',
+      'handle' => 'jquery',
+      'src'    => '',
+    ];
+    $ret[] = [
+      'type'   => 'script',
+      'handle' => 'stepwise-button-js',
+      'src'    => E::url('cms_resources/wordpress/js/stepwise-button.js'),
+    ];
+    
+    
+    // if this step/option requires onpage enforcement, also add onpage enforcer JS.
+    $workflowInstancePublicId = CRM_Stepw_Utils_Userparams::getUserParams('request', CRM_Stepw_Utils_Userparams::QP_WORKFLOW_INSTANCE_ID);
+    $stepPublicId = CRM_Stepw_Utils_Userparams::getUserParams('request', CRM_Stepw_Utils_Userparams::QP_STEP_ID);
+    $workflowInstance = CRM_Stepw_State::singleton()->getWorkflowInstance($workflowInstancePublicId);
+    if($workflowInstance->stepRequiresOnpageEnforcer($stepPublicId)) {
+      $ret[] = [
+        'type'   => 'script',
+        'handle' => 'stepwise-onpage-enforcer-sdk',
+        'src'    => 'https://player.vimeo.com/api/player.js',
+      ];
+      $ret[] = [
+        'type'   => 'script',
+        'handle' => 'stepwise-onpage-enforcer-js',
+        'src'    => E::url('cms_resources/wordpress/js/stepwise-video-enforcer-sdk.js'),
+      ];
+    }
+    
+    
+    return $ret;
+  }
+
+  private static function getDebugParams() {
+    static $ret;
+    if (!isset($ret)) {
+      $ret = [];
+      $stepwiseShortcodeDebug = ($_GET['stepwise-button-debug'] ?? 0);
+      if ($stepwiseShortcodeDebug) {
+        $ret['buttonDisabled'] = ($_GET['stepwise-button-disabled'] ?? NULL);
+        $ret['buttonText'] = $_GET['stepwise-button-text'] ?? 'Next';
+        $ret['buttonCount'] = $_GET['stepwise-button-count'] ?? 1;
+        $ret['stepOrdinal'] = $_GET['stepwise-step'] ?? 1;
+        $ret['stepTotalCount'] = $_GET['stepwise-step-count'] ?? 10;        
+      }      
+    }
     return $ret;
   }
 
@@ -147,6 +197,7 @@ class CRM_Stepw_Utils_WpShortcode {
       $ret = TRUE;
       return $ret;      
     }
+    return $ret;    
   }
 
 }

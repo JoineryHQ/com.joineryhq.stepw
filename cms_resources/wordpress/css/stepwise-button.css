@@ -1,0 +1,24 @@
+/* CSS Styles for pages using [stepwise-button ] shortcode
+*/
+
+div.stepwise-progress-bar {
+  background: red;
+  height: 1em;
+}
+div.stepwise-progress-complete {
+  background: pink;
+  height: 100%;
+}
+
+a.stepwise-button {
+  display: inline-block;
+  background: lightgray;
+  text-decoration: none;
+  padding: 1em;
+  border: 1px solid;
+}
+a.stepwise-button.stepwise-button-disabled {
+  color: gray;
+  cursor: default;
+  border: none;
+}

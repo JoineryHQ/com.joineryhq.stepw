@@ -6,6 +6,11 @@
  */
 class CRM_Stepw_WorkflowInstance {
   
+  // fixme3: how to record everything correctly upon closure of this instance 
+  //  (i.e., when the user has completed the workflow)?
+  // fixme3: we need to support post-submit validation handling (e.g. demographics) for each afform step/option.
+  //
+  
   private $workflowId;
   private $publicId;
   private $lastModified;
@@ -129,10 +134,15 @@ class CRM_Stepw_WorkflowInstance {
   public function getSubsequentStepOptionButtonProperties($stepPublicId) {
     $stepNumber = $this->stepNumbersByPublicId[$stepPublicId];
     $subsequentStepNumber = $stepNumber + 1;
-    $subsequentStep = $this->steps[$subsequentStepNumber];
+    $subsequentStep = ($this->steps[$subsequentStepNumber] ?? NULL);
+    if (!$subsequentStep) {
+      // If there is no subsequent step (this is the final configured step),
+      // return an empty array (i.e., there are no subsequent step button properties).
+      return [];
+    }
     $subsequentOptions = $subsequentStep->getVar('options');
     
-    $buttonsDisabled = self::getStepButtonsDisabled($stepPublicId);
+    $buttonsDisabled = $this->getStepButtonsDisabled($stepPublicId);
     $currentStepOptionLabels = $this->getStepButtonLabels($stepPublicId);
     $i = 0;
     foreach ($subsequentOptions as &$subsequentOption) {
@@ -254,6 +264,12 @@ class CRM_Stepw_WorkflowInstance {
     return $ret;
   }
   
+  public function stepRequiresOnpageEnforcer ($stepKey) {
+    $step = $this->getStepByKey($stepKey);
+    $ret = (bool)$step->getSelectedOptionVar('requireOnpageEnforcer');
+    return $ret;
+  }
+  
   public function getStepButtonLabels($stepKey) {
     $step = $this->getStepByKey($stepKey);
     $optionLabels = $step->getSelectedOptionVar('optionLabels');
@@ -264,29 +280,26 @@ class CRM_Stepw_WorkflowInstance {
     return 'Continue';
   }
   
-  private static function getStepButtonsDisabled($stepPublicId) {
-    // fixme3: this should get the disabled status for the CURRENTLY VIEWED step/option,
-    // not for the subsequent one.
-    // fixme3: we're returning FALSE here because we don't yet have the video-enforcer
-    //   javascript in place, which means our "real" logic for this method will
-    //   always return TRUE. Once the video-enforcer is working, we should remove
-    //   this comment and the hard-coded FALSE return.
-    return false;
+  private function getStepButtonsDisabled($stepPublicId) {
+    // This gets the disabled status for the CURRENTLY VIEWED step/option,
+    // (i.e. not for the subsequent step/option).
     
     $step = $this->getStepByKey($stepPublicId);
 
     // button is disabled by default; it is only enabled if:
-    //   - option has ever been completed, OR
-    //   - option is NOT a video page.
-    //
+    //   - option has been completed (ever, in this workflowInstance), OR
+    //   - option does NOT require onpage enforcement.
     $disabled = TRUE;
     
     if ($step->getSelectedOptionVar('lastCompleted')) {
+      // Option has been completed.
       $disabled = FALSE;
     }
     else {
-      $isVideoPage = ($step->getSelectedOptionVar('is_video_page') ?? FALSE);
-      if (!$isVideoPage) {
+      
+      $requireOnpageEnforcer = ($this->stepRequiresOnpageEnforcer($stepPublicId) ?? FALSE);
+      if (!$requireOnpageEnforcer) {
+        // option does NOT require onpage enforcement.
         $disabled = FALSE;
       }
     }

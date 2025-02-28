@@ -5,6 +5,9 @@
  */
 class CRM_Stepw_Utils_WorkflowData {
   private static function getAllWorkflowConfig() {
+    // fixme3: somewhere (perhaps not here?) we need a data structure validator (e.g.
+    // to make sure multi-option steps don't follow steps with any 'afform' options)
+    //
     return CRM_Stepw_Fixme_Data::getSampleData();
   }
 
