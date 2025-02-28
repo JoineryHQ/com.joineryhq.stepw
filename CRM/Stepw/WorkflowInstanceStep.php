@@ -47,7 +47,7 @@ class CRM_Stepw_WorkflowInstanceStep {
     foreach ($config['options'] as $option) {
       $optionPublicId = CRM_Stepw_Utils_General::generatePublicId();
       // Define an array member to hold the lastCompleted timestamp for this option.
-      $option['lastCompleted'] = $optionPublicId;
+      $option['lastCompleted'] = '';
       // For this option, define an array to hold Afform submission ids (if any),
       // which will be populated when the step-option type is afform and the form
       // has been submitted. 
