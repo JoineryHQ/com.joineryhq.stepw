@@ -1,5 +1,5 @@
 /**
- * on-page actions to handle elements created by [stepwise-button] shortcode.
+ * on-page actions to handle buttons created by [stepwise-button] shortcode.
  */
 
 jQuery(function ($) {
@@ -28,10 +28,6 @@ jQuery(function ($) {
       }
     }
   }
-
-  // Move progress bar to just before h1 tag.
-  $('h1').before($('.stepwise-progress-wrapper'));
-  $('.stepwise-progress-wrapper').show();
 
   // Add a click handler for disabled step links.
   $('a.stepwise-button.stepwise-button-disabled').click(stepwEnforcer.clickHandler);

@@ -92,6 +92,12 @@ function stepw_civicrm_pageRun(CRM_Core_Page $page) {
     ];
     CRM_Core_Resources::singleton()->addVars('stepw', $jsVars);
 
+    // We're injecting html for the progress bar in stepw_civicrm_alterContent(),
+    // but that function cannot add resources. Do that here.
+    if (CIVICRM_UF == 'WordPress') {
+      $assets = CRM_Stepw_Utils_WpShortcode::getPageAssets('progressbar');
+    }
+    CRM_Stepw_Utils_General::addCivicrmResources($assets);
   }
 }
 
@@ -99,13 +105,24 @@ function stepw_civicrm_alterContent(&$content, $context, $tplName, &$object) {
   // Note: here we will:
   // - display a progress bar above the afform
   //
-                                                                                                                                                                                              
+
+  if (!is_a($object, 'CRM_Afform_Page_AfformBase')) {
+    // We'll only do this on afforms; otherwise, do nothing and return.
+    return;
+  }
+
   if (!CRM_Stepw_Utils_Userparams::isStepwiseWorkflow('request')) {
     // If we're not in a stepwise workflow, there's nothing for us to do here.
     return;
   }  
   
-  // fixme3: if this is an afform and we're in a workflowInstance, display a progress bar OUTSIDE OF THE FORM
+  if (CIVICRM_UF == 'WordPress') {
+    // Currently this is only supported in WordPress.
+    $progressBarHtml = CRM_Stepw_Utils_WpShortcode::getProgressBarHtml();
+    $content .= $progressBarHtml;
+    // NOTE: we've added the html here, but script/style resources must be (and are)
+    // added in stepw_civicrm_pageRun();
+  }
 }
 
 function stepw_civicrm_angularModules(&$angularModules) {

@@ -74,5 +74,27 @@ class CRM_Stepw_Utils_General {
     $url = CRM_Utils_System::url('civicrm/stepwise/reload', $queryParams, TRUE, NULL, FALSE);    
     return $url;
   }
+  
+  /**
+   * Add civicrm page resources, as given.
+   * 
+   * @param Array $resources Array of script and/or style resources, as defined,
+   *   e.g. by CRM_Stepw_Utils_WpShortcode::getPageAssets().
+   */
+  public static function addCivicrmResources($resources) {
+    foreach ($resources as $asset) {
+      $src = ($asset['src'] ?? '');
+      if (empty($src)) {
+        // Some assets may be just handles for WP and include no src. Skip those.
+        continue;
+      }
+      if ($asset['type'] == 'script') {
+        CRM_Core_Resources::singleton()->addScriptUrl($src);
+      }
+      elseif ($asset['type'] == 'style') {
+        CRM_Core_Resources::singleton()->addStyleUrl($src);
+      }
+    }
+  }
     
 }

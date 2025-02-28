@@ -114,27 +114,59 @@ class CRM_Stepw_Utils_WpShortcode {
     return $ret;
   }
   
-  public static function getPageAssets() {
+  public static function getPageAssets($type = 'all') {
     $ret = [];
     if (!self::isValidParams() && empty(self::getDebugParams())) {
       return $ret;
     }
-    $ret[] = [
-      'type'   => 'style',
-      'handle' => 'stepwise-button-css', 
-      'src'    => E::url('cms_resources/wordpress/css/stepwise-button.css'),
-    ];
-    $ret[] = [
-      'type'   => 'script',
-      'handle' => 'jquery',
-      'src'    => '',
-    ];
-    $ret[] = [
-      'type'   => 'script',
-      'handle' => 'stepwise-button-js',
-      'src'    => E::url('cms_resources/wordpress/js/stepwise-button.js'),
-    ];
     
+    switch($type) {
+      case 'button':
+        $isButton = TRUE;
+        break;
+      case 'progressbar':
+        $isProgress = TRUE;
+        break;
+      case 'all':
+        $isButton = TRUE;        
+        $isProgress = TRUE;
+        break;
+    }
+    
+    if ($isButton) {
+      $ret[] = [
+        'type'   => 'style',
+        'handle' => 'stepwise-button-css', 
+        'src'    => E::url('cms_resources/WordPress/css/stepwise-button.css'),
+      ];
+      $ret[] = [
+        'type'   => 'script',
+        'handle' => 'jquery',
+        'src'    => '',
+      ];
+      $ret[] = [
+        'type'   => 'script',
+        'handle' => 'stepwise-button-js',
+        'src'    => E::url('cms_resources/WordPress/js/stepwise-button.js'),
+      ];
+    }
+    if ($isProgress) {
+      $ret[] = [
+        'type'   => 'style',
+        'handle' => 'stepwise-progressbar-css', 
+        'src'    => E::url('cms_resources/WordPress/css/stepwise-progressbar.css'),
+      ];
+      $ret[] = [
+        'type'   => 'script',
+        'handle' => 'jquery',
+        'src'    => '',
+      ];
+      $ret[] = [
+        'type'   => 'script',
+        'handle' => 'stepwise-progressbar-js',
+        'src'    => E::url('cms_resources/WordPress/js/stepwise-progressbar.js'),
+      ];      
+    }
     
     // if this step/option requires onpage enforcement, also add onpage enforcer JS.
     $workflowInstancePublicId = CRM_Stepw_Utils_Userparams::getUserParams('request', CRM_Stepw_Utils_Userparams::QP_WORKFLOW_INSTANCE_ID);
@@ -149,10 +181,9 @@ class CRM_Stepw_Utils_WpShortcode {
       $ret[] = [
         'type'   => 'script',
         'handle' => 'stepwise-onpage-enforcer-js',
-        'src'    => E::url('cms_resources/wordpress/js/stepwise-video-enforcer-sdk.js'),
+        'src'    => E::url('cms_resources/WordPress/js/stepwise-video-enforcer-sdk.js'),
       ];
     }
-    
     
     return $ret;
   }

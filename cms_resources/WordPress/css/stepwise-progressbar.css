@@ -1,0 +1,11 @@
+/* CSS Styles for stepwise progress bar.
+*/
+
+div.stepwise-progress-bar {
+  background: red;
+  height: 1em;
+}
+div.stepwise-progress-complete {
+  background: pink;
+  height: 100%;
+}
