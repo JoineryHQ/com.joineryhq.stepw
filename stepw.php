@@ -129,6 +129,9 @@ function _stepw_alterAfformHtml(phpQueryObject $doc, $path) {
 
 
 function stepw_civicrm_alterAngular(\Civi\Angular\Manager $angular) {
+  // fixme3: test everything to verify that nothing (anywhere in this extension)
+  // breaks or changes afform functionality outside of stepwise workflows.
+
   // This hook fires only when afform cache is rebuilt.
   // For any afform defined in any step of any workflow, add our alterAfformHtml callback.
   $hookedAfformNames = CRM_Stepw_Utils_WorkflowData::getAllAfformNames();
@@ -188,6 +191,7 @@ function _stepw_afform_submit_late(\Civi\Afform\Event\AfformSubmitEvent $event) 
   if (!empty($individualContactId)) {
     $workflowInstance->setCreatedIndividualCid($individualContactId);
   }
+  // fixme3: should we also record the created activity Ids?
 }
 
 /**
