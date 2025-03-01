@@ -6,9 +6,9 @@
  */
 class CRM_Stepw_WorkflowInstance {
   
-  // fixme3: how to record everything correctly upon closure of this instance 
+  // fixme: how to record everything correctly upon closure of this instance 
   //  (i.e., when the user has completed the workflow)?
-  // fixme3: we need to support post-submit validation handling (e.g. demographics) for each afform step/option.
+  // fixme: we need to support post-submit validation handling (e.g. demographics) for each afform step/option.
   //
   
   private $workflowId;

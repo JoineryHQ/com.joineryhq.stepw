@@ -13,7 +13,7 @@
         }
         console.log('scope', $scope);
         
-        // fixme3: the button should only show under these conditions
+        // fixme: the button should only show under these conditions
         // - we're not in a stepwise workflow; AND
         // - $scope.$parent.afform.showSubmitButton is true
         // OR

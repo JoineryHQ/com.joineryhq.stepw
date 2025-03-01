@@ -12,7 +12,7 @@
  */
 class CRM_Stepw_Utils_Afform {
   public static function alterForm(phpQueryObject $doc) {
-    // fixme3: we must support adding a css class name to any field in the afform.
+    // fixme: we must support adding a css class name to any field in the afform.
     // This is possible only with civicrm patch:
     // https://github.com/civicrm/civicrm-core/pull/32266/
     //
@@ -21,7 +21,7 @@ class CRM_Stepw_Utils_Afform {
     //  - built with code in: https://github.com/TobiaszCudnik/phpquery)
     //  - Best phpquery documentation I've found so far: https://github.com/electrolinux/phpquery/blob/master/wiki/README.md
 
-    // fixme3: Change any RBAC (role-based) security to FBAC (form-based), because
+    // fixme: Change any RBAC (role-based) security to FBAC (form-based), because
     //   we want this to work for anon users; we are going to handle
     //   validation/permissions via stepw_* query params.
     //  $doc->find('af-entity')->attr('security', 'FBAC');
