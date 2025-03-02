@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <extension key="com.joineryhq.stepw" type="module">
   <file>stepw</file>
-  <name>com.joineryhq.stepw</name>
+  <name>Stepwise Workflow</name>
   <description>FIXME</description>
   <license>GPL-3.0</license>
   <authors>
