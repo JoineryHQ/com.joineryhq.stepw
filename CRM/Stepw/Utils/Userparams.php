@@ -153,7 +153,7 @@ class CRM_Stepw_Utils_Userparams {
       }
     }
     
-    $u = \Civi::url($url);
+    $u = \Civi::url($url, 'a');
     $u->addQuery($queryParams);
     $u->addFragmentQuery($fragmentQuery);
     return (string)$u;

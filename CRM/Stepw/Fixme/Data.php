@@ -1,9 +1,15 @@
 <?php
 use CRM_Stepw_ExtensionUtil as E;
 
+// fixme: skip progressbar (and omit from step total count) on first step?
+// In some configurations, step1 may be of the type that doesn't need a progress
+// bar and shouldn't be counted in the step total count -- i.e., it's a page
+// that says "welcome" and offers a "start" button.
+//
+
 class CRM_Stepw_Fixme_Data {
   public static function getSampleData() {
-    $ufBaseUrl = CRM_Utils_File::addTrailingSlash(CIVICRM_UF_BASEURL);
+    $ufBaseUrl = rtrim(CIVICRM_UF_BASEURL, '/');
     return [
       '1' => [
         'steps' => [
