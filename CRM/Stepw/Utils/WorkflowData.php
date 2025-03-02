@@ -18,7 +18,26 @@ class CRM_Stepw_Utils_WorkflowData {
     // from the config (that seems risky, as it will break the workflow)?
     // Maybe we just redirect to invalid/ or otherwise find a way to say "this workflow
     // is not configured properly; please try again".
-    return CRM_Stepw_Fixme_Data::getSampleData();
+    $data = CRM_Stepw_Fixme_Data::getSampleData();
+    foreach ($data as $workflowId => $workflow) {
+      foreach (($workflow['steps'] ?? []) as $stepId => $step) {
+        foreach ($step['options'] as $optionId => $option) {
+          if (($option['type'] ?? '') == 'afform' && ($afformName = ($option['afformName'] ?? FALSE))) {
+            // If this afform doesn't exist, throw an exception.
+            self::afformExistsOrException($afformName);
+            $afform = \Civi\Api4\Afform::get(TRUE)
+              ->setCheckPermissions(FALSE)
+              ->addWhere('name', '=', $afformName)
+              ->setLimit(1)
+              ->execute()
+              ->first();
+            $data[$workflowId]['steps'][$stepId]['options'][$optionId]['url'] = CRM_Utils_System::url($afform['server_route']);
+            $a = 1;
+          }
+        }
+      }
+    }
+    return $data;
   }
 
   public static function getWorkflowConfigById(String $workflowId) {
@@ -34,8 +53,6 @@ class CRM_Stepw_Utils_WorkflowData {
         foreach ($step['options'] as $option) {
           if (($option['type'] ?? '') == 'afform') {
             if ($afformName = ($option['afformName'] ?? FALSE)) {
-              // If this afform doesn't exist, throw an exception.
-              self::afformExistsOrException($afformName);
               $afformNames[] = $afformName;
             }
           }
@@ -58,12 +75,14 @@ class CRM_Stepw_Utils_WorkflowData {
   
   private static function afformExistsOrException($afformName) {
     $afformCount = \Civi\Api4\Afform::get(TRUE)
+      ->setCheckPermissions(FALSE)
       ->addWhere('name', '=', $afformName)
       ->setLimit(1)
       ->execute()
       ->count();
     if (!$afformCount) {
       $extension = \Civi\Api4\Extension::get(TRUE)
+        ->setCheckPermissions(FALSE)
         ->addWhere('key', '=', 'com.joineryhq.stepw')
         ->setLimit(1)
         ->addSelect('label')
