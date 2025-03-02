@@ -3,6 +3,9 @@
 /**
  * Utilities for retrieving workflow configuration data.
  */
+
+use CRM_Stepw_ExtensionUtil as E;
+
 class CRM_Stepw_Utils_WorkflowData {
   private static function getAllWorkflowConfig() {
     // fixme: somewhere (perhaps not here?) we need a data structure validator (e.g.
@@ -31,6 +34,8 @@ class CRM_Stepw_Utils_WorkflowData {
         foreach ($step['options'] as $option) {
           if (($option['type'] ?? '') == 'afform') {
             if ($afformName = ($option['afformName'] ?? FALSE)) {
+              // If this afform doesn't exist, throw an exception.
+              self::afformExistsOrException($afformName);
               $afformNames[] = $afformName;
             }
           }
@@ -49,5 +54,27 @@ class CRM_Stepw_Utils_WorkflowData {
         ]
       ],
     ];
+  }
+  
+  private static function afformExistsOrException($afformName) {
+    $afformCount = \Civi\Api4\Afform::get(TRUE)
+      ->addWhere('name', '=', $afformName)
+      ->setLimit(1)
+      ->execute()
+      ->count();
+    if (!$afformCount) {
+      $extension = \Civi\Api4\Extension::get(TRUE)
+        ->addWhere('key', '=', 'com.joineryhq.stepw')
+        ->setLimit(1)
+        ->addSelect('label')
+        ->execute()
+        ->first();
+      $label = ($extension['label'] ?? E::LONG_NAME);
+      $errData = [
+        'afformName' => $afformName
+      ];
+      throw new CRM_Extension_Exception("Extension '$label' is configured to use a form that does not exist.", 'CRM_Stepw_Utils_WorkflowData_afformExistsOrException_bad-afform-name', $errData);
+    }
+    
   }
 }
