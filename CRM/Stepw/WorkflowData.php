@@ -21,6 +21,8 @@ class CRM_Stepw_WorkflowData {
    */
   private $allAfformNames = [];
   
+  private $workflowIdsWithBadConfig = [];
+  
   private function __construct() {
 
     // fixme: somewhere (perhaps not here?) we need a data structure validator (e.g.
@@ -39,19 +41,34 @@ class CRM_Stepw_WorkflowData {
         foreach ($step['options'] as $optionId => $option) {
           if (($option['type'] ?? '') == 'afform' && ($afformName = ($option['afformName'] ?? FALSE))) {
             // If this afform doesn't exist, throw an exception.
-            self::afformExistsOrException($afformName);
+            if (self::afformExists($afformName)) {
+              // Add afform url to config data for this afform step/option.
+              $afform = \Civi\Api4\Afform::get(TRUE)
+                ->setCheckPermissions(FALSE)
+                ->addWhere('name', '=', $afformName)
+                ->setLimit(1)
+                ->execute()
+                ->first();
+              $data[$workflowId]['steps'][$stepId]['options'][$optionId]['url'] = CRM_Utils_System::url($afform['server_route']);
 
-            // Add afform url to config data for this afform step/option.
-            $afform = \Civi\Api4\Afform::get(TRUE)
-              ->setCheckPermissions(FALSE)
-              ->addWhere('name', '=', $afformName)
-              ->setLimit(1)
-              ->execute()
-              ->first();
-            $data[$workflowId]['steps'][$stepId]['options'][$optionId]['url'] = CRM_Utils_System::url($afform['server_route']);
-
-            // Add this afformName to allAfformNamtes, for future reference.
-            $this->allAfformNames[] = $afformName;
+              // Add this afformName to allAfformNamtes, for future reference.
+              $this->allAfformNames[] = $afformName;
+            }
+            else {
+              // This function is sometimes called (e.g. when debug is on, or when otherwise
+              // afform cache is being rebuilt) from executino paths that will
+              // end with WSOD if we throw an exception. Therefore, just flag
+              // this workflow config as invalid, and we'll throw an exception
+              // elsewhere -- see, e.g. this->getWorkflowConfigById().
+              $errorContext = [
+                'error_id' => $this->getsetWorkflowConfigErrorId($workflowId),
+                'workflowId' => $workflowId,
+                'stepId' => $stepId,
+                'optionId' => $optionId,
+                'afformName' => $afformName,
+              ];
+              \Civi::log()->error("Workflow step/option configured with non-existent afformName.", $errorContext);
+            }
           }
         }
       }
@@ -75,6 +92,9 @@ class CRM_Stepw_WorkflowData {
   }
   
   public function getWorkflowConfigById(String $workflowId) {
+    if (!empty($this->workflowIdsWithBadConfig[$workflowId])) {      
+      throw new CRM_Stepw_Exception('Workflow has bad configuration. For more info, see error log entries for error_id '. $this->workflowIdsWithBadConfig[$workflowId], 'CRM_Stepw_WorkflowData_getWorkflowConfigById_bad-workflow-config');
+    }
     return ($this->data[$workflowId] ?? NULL);
   }
   
@@ -93,27 +113,21 @@ class CRM_Stepw_WorkflowData {
     ];
   }
   
-  private static function afformExistsOrException($afformName) {
+  private static function afformExists(string $afformName) {
     $afformCount = \Civi\Api4\Afform::get(TRUE)
       ->setCheckPermissions(FALSE)
       ->addWhere('name', '=', $afformName)
       ->setLimit(1)
       ->execute()
       ->count();
-    if (!$afformCount) {
-      $extension = \Civi\Api4\Extension::get(TRUE)
-        ->setCheckPermissions(FALSE)
-        ->addWhere('key', '=', 'com.joineryhq.stepw')
-        ->setLimit(1)
-        ->addSelect('label')
-        ->execute()
-        ->first();
-      $label = ($extension['label'] ?? E::LONG_NAME);
-      $errData = [
-        'afformName' => $afformName
-      ];
-      throw new CRM_Extension_Exception("Extension '$label' is configured to use a form that does not exist.", 'CRM_Stepw_WorkflowData_afformExistsOrException_bad-afform-name', $errData);
-    }
-    
+    return ($afformCount ? TRUE : FALSE);
   }
+  
+  private function getsetWorkflowConfigErrorId(string $workflowId) {
+    if (empty($this->workflowIdsWithBadConfig[$workflowId])) {
+      $this->workflowIdsWithBadConfig[$workflowId] = CRM_Stepw_Utils_General::generateErrorId();    
+    }
+    return $this->workflowIdsWithBadConfig[$workflowId];
+  }
+
 }
