@@ -43,7 +43,7 @@ class CRM_Stepw_WorkflowInstance {
   private $stepNumbersByPublicId = [];
   
   public function __construct(String $workflowId) {
-    $workflowConfig = CRM_Stepw_Utils_WorkflowData::getWorkflowConfigById($workflowId);
+    $workflowConfig = CRM_Stepw_WorkflowData::singleton()->getWorkflowConfigById($workflowId);
     if (empty($workflowConfig)) {
       // If we're given an invaild workflowId, throw an exception.
       throw new  CRM_Stepw_Exception("Given QP_START_WORKFLOW_ID ('$workflowId') does not match an available configured workflow, in " . __METHOD__, 'CRM_Stepw_WorkflowInstance_construct_invalid-workflow-id');
@@ -60,7 +60,7 @@ class CRM_Stepw_WorkflowInstance {
     }
     
     // Define the fallback 'final' step object.
-    $this->pseudoFinalStep = new CRM_Stepw_WorkflowInstanceStep($this, -1, CRM_Stepw_Utils_WorkflowData::getPseudoFinalStepConfig());
+    $this->pseudoFinalStep = new CRM_Stepw_WorkflowInstanceStep($this, -1, CRM_Stepw_WorkflowData::getPseudoFinalStepConfig());
     
     // Store the workflow config for easy reference.
     $this->workflowConfig = $workflowConfig;

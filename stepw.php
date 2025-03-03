@@ -151,7 +151,7 @@ function stepw_civicrm_alterAngular(\Civi\Angular\Manager $angular) {
 
   // This hook fires only when afform cache is rebuilt.
   // For any afform defined in any step of any workflow, add our alterAfformHtml callback.
-  $hookedAfformNames = CRM_Stepw_Utils_WorkflowData::getAllAfformNames();
+  $hookedAfformNames = CRM_Stepw_WorkflowData::singleton()->getAllAfformNames();
 
   foreach ($hookedAfformNames as $hookedAfformName) {
     /* If I know the $name of the saved form, eg. afformQuickAddIndividual, I can

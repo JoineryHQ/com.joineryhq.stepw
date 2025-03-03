@@ -1,13 +1,28 @@
 <?php
 
 /**
- * Utilities for retrieving workflow configuration data.
+ * Class to handle workflow configuration data.
  */
 
 use CRM_Stepw_ExtensionUtil as E;
 
-class CRM_Stepw_Utils_WorkflowData {
-  private static function getAllWorkflowConfig() {
+class CRM_Stepw_WorkflowData {
+  static $_singleton;
+  
+  /**
+   * Array of all workflow data
+   * @var Array
+   */
+  private $data;
+  
+  /**
+   * List of afformNames used in workflow data.
+   * @var Array
+   */
+  private $allAfformNames = [];
+  
+  private function __construct() {
+
     // fixme: somewhere (perhaps not here?) we need a data structure validator (e.g.
     // to make sure multi-option steps don't follow steps with any 'afform' options)
     //
@@ -25,6 +40,8 @@ class CRM_Stepw_Utils_WorkflowData {
           if (($option['type'] ?? '') == 'afform' && ($afformName = ($option['afformName'] ?? FALSE))) {
             // If this afform doesn't exist, throw an exception.
             self::afformExistsOrException($afformName);
+
+            // Add afform url to config data for this afform step/option.
             $afform = \Civi\Api4\Afform::get(TRUE)
               ->setCheckPermissions(FALSE)
               ->addWhere('name', '=', $afformName)
@@ -32,34 +49,37 @@ class CRM_Stepw_Utils_WorkflowData {
               ->execute()
               ->first();
             $data[$workflowId]['steps'][$stepId]['options'][$optionId]['url'] = CRM_Utils_System::url($afform['server_route']);
-            $a = 1;
+
+            // Add this afformName to allAfformNamtes, for future reference.
+            $this->allAfformNames[] = $afformName;
           }
         }
       }
     }
-    return $data;
+    $this->data = $data;
   }
 
-  public static function getWorkflowConfigById(String $workflowId) {
-    $data = self::getAllWorkflowConfig();
-    return ($data[$workflowId] ?? NULL);
+  /**
+   * Singleton pattern.
+   *
+   * @see __construct()
+   *
+   * @param Int $workflowId
+   * @return object This
+   */
+  public static function &singleton() {
+    if (self::$_singleton === NULL) {
+      self::$_singleton = new CRM_Stepw_WorkflowData();
+    }
+    return self::$_singleton;
   }
   
-  public static function getAllAfformNames() {
-    $afformNames = [];
-    $data = self::getAllWorkflowConfig();
-    foreach ($data as $workflowId => $workflow) {
-      foreach (($workflow['steps'] ?? []) as $step) {
-        foreach ($step['options'] as $option) {
-          if (($option['type'] ?? '') == 'afform') {
-            if ($afformName = ($option['afformName'] ?? FALSE)) {
-              $afformNames[] = $afformName;
-            }
-          }
-        }
-      }
-    }
-    return $afformNames;
+  public function getWorkflowConfigById(String $workflowId) {
+    return ($this->data[$workflowId] ?? NULL);
+  }
+  
+  public function getAllAfformNames() {
+    return $this->allAfformNames;
   }
 
   public static function getPseudoFinalStepConfig() {
@@ -92,7 +112,7 @@ class CRM_Stepw_Utils_WorkflowData {
       $errData = [
         'afformName' => $afformName
       ];
-      throw new CRM_Extension_Exception("Extension '$label' is configured to use a form that does not exist.", 'CRM_Stepw_Utils_WorkflowData_afformExistsOrException_bad-afform-name', $errData);
+      throw new CRM_Extension_Exception("Extension '$label' is configured to use a form that does not exist.", 'CRM_Stepw_WorkflowData_afformExistsOrException_bad-afform-name', $errData);
     }
     
   }
