@@ -6,7 +6,7 @@
 <div class="messages status no-popup crm-error" data-options="null">
   <i aria-hidden="true" class="crm-i fa-exclamation-triangle"></i>    
   <span class="msg-title">{ts}Error.{/ts}</span>
-  <span class="msg-text">{ts}Your request appears to be invalid. Please start again from the beginning.{/ts}</span>
+  <span class="msg-text">{ts}There was a problem processing this request.{/ts}</span>
 </div>
 {foreach from=$messages item=message}
   <div class="messages status no-popup crm-warning" data-options="null">
