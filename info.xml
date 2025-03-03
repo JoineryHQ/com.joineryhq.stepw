@@ -2,7 +2,7 @@
 <extension key="com.joineryhq.stepw" type="module">
   <file>stepw</file>
   <name>Stepwise Workflow</name>
-  <description>FIXME</description>
+  <description>Provides for configuration of workflows consisting of CMS pages and CiviCRM FormBuilder forms.</description>
   <license>GPL-3.0</license>
   <authors>
     <author>
@@ -12,13 +12,13 @@
     </author>
   </authors>
   <urls>
-    <url desc="Main Extension Page">https://FIXME</url>
-    <url desc="Documentation">https://FIXME</url>
-    <url desc="Support">https://FIXME</url>
+    <url desc="Main Extension Page">https://github.com/JoineryHQ/com.joineryhq.stepw</url>
+    <url desc="Documentation">https://github.com/JoineryHQ/com.joineryhq.stepw</url>
+    <url desc="Support">https://github.com/JoineryHQ/com.joineryhq.stepw/issues</url>
     <url desc="Licensing">https://www.gnu.org/licenses/gpl-3.0.html</url>
   </urls>
-  <releaseDate>2025-01-19</releaseDate>
-  <version>1.0.0</version>
+  <releaseDate>2025-03-02</releaseDate>
+  <version>0.0.1</version>
   <develStage>alpha</develStage>
   <compatibility>
     <ver>5.81</ver>
