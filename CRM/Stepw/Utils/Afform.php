@@ -12,11 +12,6 @@
  */
 class CRM_Stepw_Utils_Afform {
   public static function alterForm(phpQueryObject $doc) {
-    // fixme: we must support adding a css class name to any field in the afform.
-    // This is possible only with civicrm patch:
-    // https://github.com/civicrm/civicrm-core/pull/32266/
-    //
-    
     // $doc is a phpquery object:
     //  - built with code in: https://github.com/TobiaszCudnik/phpquery)
     //  - Best phpquery documentation I've found so far: https://github.com/electrolinux/phpquery/blob/master/wiki/README.md

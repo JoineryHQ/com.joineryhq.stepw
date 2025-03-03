@@ -146,8 +146,8 @@ function _stepw_alterAfformHtml(phpQueryObject $doc, $path) {
 
 
 function stepw_civicrm_alterAngular(\Civi\Angular\Manager $angular) {
-  // fixme: test everything to verify that nothing (anywhere in this extension)
-  // breaks or changes afform functionality outside of stepwise workflows.
+  // fixme: test everything to verify that we're not breaking afform in its normal usage...
+  //   This testing should cover evertying this extension does.
 
   // This hook fires only when afform cache is rebuilt.
   // For any afform defined in any step of any workflow, add our alterAfformHtml callback.
@@ -208,7 +208,7 @@ function _stepw_afform_submit_late(\Civi\Afform\Event\AfformSubmitEvent $event) 
   if (!empty($individualContactId)) {
     $workflowInstance->setCreatedIndividualCid($individualContactId);
   }
-  // fixme: should we also record the created activity Ids?
+  // fixme: should we also record the created activity Ids? Might be needed for workflow instance closure / final recording.
 }
 
 /**
@@ -340,14 +340,12 @@ function stepw_civicrm_permission_check($permission, &$granted) {
   }
   if (
     $uri != "/civicrm/ajax/api4/Afform/prefill/"
-    // fixme: seems like we don't need to support this path: && $uri != "/civicrm/ajax/api4/Afform/submit/" -- have we verified that claim?
   ) {
     return;
   }
 
   // Name the permissions we will grant, if we make it far enough through validation checks.
   $ourGrantedPermissions = [
-    // fixme: it seems anon user does not need 'skip ids check' -- have we verified that claim?
     // If 'administer afform' is not granted, anon will get API4 access denied on AfformSubmission::get,
     // and user-visible error on afform load
     // FLAG_STEPW_AFFORM_BRITTLE : Afform could change its required permissions for the prefill operation.

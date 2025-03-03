@@ -99,8 +99,6 @@ class CRM_Stepw_State {
     if (!is_a($workflowInstance, 'CRM_Stepw_WorkflowInstance')) {
       throw new  CRM_Stepw_Exception("Provided workflowInstancePublicId '$workflowInstancePublicId' does not match a workflowInstance in state, in " . __METHOD__, 'CRM_Stepw_State_getWorkflowInstance-mismatch-workflowInstancePublicId');
     }
-    // fixme: we should set 'lastModified' (which should probably be renamed 'lastAccessed'
-    // here, in order to keep the workflowInstance in state when doStateCleanup() fires.
     return $workflowInstance;
   }
 
