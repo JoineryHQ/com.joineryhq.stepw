@@ -19,13 +19,18 @@ class CRM_Stepw_Utils_General {
     return $ret;
   }
 
+  public static function generateErrorId() {
+    $errorId = rtrim(chunk_split(CRM_Utils_String::createRandom(12, CRM_Utils_String::ALPHANUMERIC), 4, '-'), '-');    
+    return $errorId;
+  }
+  
   public static function redirectToInvalid(CRM_Stepw_Exception $e) {
     
     // Add a uniq log identifier both to the logMessage and to a publicMessage.
     // This will allow users to report something that will be meaningful in debugging/log-inspection.
     // This would be similar to what civicrm core does for ajax-context errors, as in
     // https://github.com/civicrm/civicrm-core/blob/5.81.0/CRM/Api4/Page/AJAX.php#L159
-    $errorId = rtrim(chunk_split(CRM_Utils_String::createRandom(12, CRM_Utils_String::ALPHANUMERIC), 4, '-'), '-');
+    $errorId = self::generateErrorid();
     $publicMessage = E::ts('When requesting help with this issue, please provide Log Reference Number: %1', ['1' => $errorId]);
 
     $logMessage = $e->getMessage();
