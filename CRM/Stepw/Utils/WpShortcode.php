@@ -102,7 +102,7 @@ class CRM_Stepw_Utils_WpShortcode {
       $stepOrdinal = $progressProperties['stepOrdinal'];
       $stepTotalCount = $progressProperties['stepTotalCount'];
     }
-    
+
     $percentage = round(($stepOrdinal / $stepTotalCount * 100));
     
     $ret = '';
@@ -110,6 +110,7 @@ class CRM_Stepw_Utils_WpShortcode {
     $tpl->assign('percentage', $percentage);
     $tpl->assign('stepOrdinal', $stepOrdinal);
     $tpl->assign('stepTotalCount', $stepTotalCount);
+    $tpl->assign('omitProgressbar', ($progressProperties['omitProgressbar'] ?? FALSE));
     $ret = $tpl->fetch('CRM/Stepw/snippet/StepwiseProgressBar.tpl');
     return $ret;
   }

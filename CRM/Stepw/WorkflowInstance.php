@@ -233,11 +233,19 @@ class CRM_Stepw_WorkflowInstance {
     $step = $this->getStepByKey($stepKey);
     $stepNumber = $step->getVar('stepNumber');
     $stepTotalCount = count($this->steps);
-    
+
     $ret = [
       'stepOrdinal' => ($stepNumber + 1),
       'stepTotalCount' => $stepTotalCount,
     ];
+    
+    if ($this->workflowConfig['settings']['progressOmitFirstStep']) {
+      if ($stepNumber == 0) {
+        $ret['omitProgressbar'] = TRUE;
+      }
+      $ret['stepOrdinal']--;
+      $ret['stepTotalCount']--;
+    }
     
     return $ret;
   }
