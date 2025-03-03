@@ -35,7 +35,7 @@ class CRM_Stepw_WorkflowData {
     // from the config (that seems risky, as it will break the workflow)?
     // Maybe we just redirect to invalid/ or otherwise find a way to say "this workflow
     // is not configured properly; please try again".
-    $data = CRM_Stepw_Fixme_Data::getSampleData();
+    $data = CRM_Stepw_Fixme_LoadData::getSampleData();
     foreach ($data as $workflowId => $workflow) {
       foreach (($workflow['steps'] ?? []) as $stepId => $step) {
         foreach ($step['options'] as $optionId => $option) {
