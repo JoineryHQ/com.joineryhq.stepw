@@ -1,3 +1,4 @@
+{if $buttons|count}
 <div class="stepwise-button-container">
   {foreach from=$buttons item=button key=key}
     <div class="stepwise-button-wrapper" id="stepwise-button-wrapper-{$key}">
@@ -18,3 +19,4 @@
      *}
   {/foreach}
 </div>
+{/if}

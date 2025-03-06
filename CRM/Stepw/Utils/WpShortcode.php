@@ -12,70 +12,76 @@ class CRM_Stepw_Utils_WpShortcode {
     //  - Build and return html for one or more buttons, for replacement of WP [stepwise-button] shortcode.
     // 
 
-    $buttons = [];
-    
-    // If we're debugging (e.g. for design), do some special handling.
-    $debugParams = self::getDebugParams();
-    if (!empty($debugParams)) {
-      $buttonHref = '#';      
-      if ($debugParams['buttonDisabled']) {
-        $buttonHref64 = base64_encode($buttonHref);
-      }
-      $button = [
-        'href64' => ($buttonHref64 ?? NULL),
-        'href' => $buttonHref,
-        'text' => $debugParams['buttonText'],
-        'disabled' => $debugParams['buttonDisabled'],
-      ];
-      $buttons = array_pad($buttons, $debugParams['buttonCount'], $button);
-    }
-    else {
-      if (!self::isValidParams()) {
-        return '';
-      }      
-      
-      $workflowInstancePublicId = CRM_Stepw_Utils_Userparams::getUserParams('request', CRM_Stepw_Utils_Userparams::QP_WORKFLOW_INSTANCE_ID);
-      $stepPublicId = CRM_Stepw_Utils_Userparams::getUserParams('request', CRM_Stepw_Utils_Userparams::QP_STEP_ID);
+    // Use a static cache here, because the WP plugin may call this method multiple
+    // times in a single page load.
+    static $ret;
+    if (!isset($ret)) {
+      $buttons = [];
 
-      $workflowInstance = CRM_Stepw_State::singleton()->getWorkflowInstance($workflowInstancePublicId);
-      $subsequentStepOptions = $workflowInstance->getSubsequentStepOptionButtonProperties($stepPublicId);
-      foreach ($subsequentStepOptions as $subsequentStepOption) {
-        $hrefQueryParams = [
-          CRM_Stepw_Utils_Userparams::QP_WORKFLOW_INSTANCE_ID=> $workflowInstancePublicId,
-          CRM_Stepw_Utils_Userparams::QP_DONE_STEP_ID => CRM_Stepw_Utils_Userparams::getUserParams('request', CRM_Stepw_Utils_Userparams::QP_STEP_ID),
-        ];
-        if (count($subsequentStepOptions) > 1) {
-          $hrefQueryParams[CRM_Stepw_Utils_Userparams::QP_SUBSEQUENT_STEP_SELECTED_OPTION_ID] = $subsequentStepOption['publicId'];
-        }
-        $buttonHref = CRM_Stepw_Utils_General::buildStepUrl($hrefQueryParams);
-
-        $buttonDisabled = $subsequentStepOption['buttonDisabled'];
-        
-        if ($buttonDisabled) {
-          // if button is disabled, use '#' for the buttonHref, and pass $buttonHref to
-          // the template where JS can get at it. The onpage enforcer js will then:
-          // 1. do enforcement;
-          // 2. set the href
-          // 3. enable the button    
+      // If we're debugging (e.g. for design), do some special handling.
+      $debugParams = self::getDebugParams();
+      if (!empty($debugParams)) {
+        $buttonHref = '#';      
+        if ($debugParams['buttonDisabled']) {
           $buttonHref64 = base64_encode($buttonHref);
-          $buttonHref = '#';
         }
         $button = [
           'href64' => ($buttonHref64 ?? NULL),
           'href' => $buttonHref,
-          'text' => $subsequentStepOption['buttonLabel'],
-          'disabled' => $buttonDisabled,        
+          'text' => $debugParams['buttonText'],
+          'disabled' => $debugParams['buttonDisabled'],
         ];
+        $buttons = array_pad($buttons, $debugParams['buttonCount'], $button);
+      }
+      else {
+        if (!self::isValidParams()) {
+          return '';
+        }      
 
-        $buttons[] = $button;
+        $workflowInstancePublicId = CRM_Stepw_Utils_Userparams::getUserParams('request', CRM_Stepw_Utils_Userparams::QP_WORKFLOW_INSTANCE_ID);
+        $stepPublicId = CRM_Stepw_Utils_Userparams::getUserParams('request', CRM_Stepw_Utils_Userparams::QP_STEP_ID);
+
+        $workflowInstance = CRM_Stepw_State::singleton()->getWorkflowInstance($workflowInstancePublicId);
+        $subsequentStepOptions = $workflowInstance->getSubsequentStepOptionButtonProperties($stepPublicId);
+        foreach ($subsequentStepOptions as $subsequentStepOption) {
+          $hrefQueryParams = [
+            CRM_Stepw_Utils_Userparams::QP_WORKFLOW_INSTANCE_ID=> $workflowInstancePublicId,
+            CRM_Stepw_Utils_Userparams::QP_DONE_STEP_ID => CRM_Stepw_Utils_Userparams::getUserParams('request', CRM_Stepw_Utils_Userparams::QP_STEP_ID),
+          ];
+          if (count($subsequentStepOptions) > 1) {
+            $hrefQueryParams[CRM_Stepw_Utils_Userparams::QP_SUBSEQUENT_STEP_SELECTED_OPTION_ID] = $subsequentStepOption['publicId'];
+          }
+          $buttonHref = CRM_Stepw_Utils_General::buildStepUrl($hrefQueryParams);
+
+          $buttonDisabled = $subsequentStepOption['buttonDisabled'];
+
+          if ($buttonDisabled) {
+            // if button is disabled, use '#' for the buttonHref, and pass $buttonHref to
+            // the template where JS can get at it. The onpage enforcer js will then:
+            // 1. do enforcement;
+            // 2. set the href
+            // 3. enable the button    
+            $buttonHref64 = base64_encode($buttonHref);
+            $buttonHref = '#';
+          }
+          $button = [
+            'href64' => ($buttonHref64 ?? NULL),
+            'href' => $buttonHref,
+            'text' => $subsequentStepOption['buttonLabel'],
+            'disabled' => $buttonDisabled,        
+          ];
+
+          $buttons[] = $button;
+        }
+
       }
 
+      $tpl = CRM_Core_Smarty::singleton();
+      $tpl->assign('buttons', $buttons);
+      $buttonHtml = $tpl->fetch('CRM/Stepw/snippet/StepwiseButton.tpl');
+      $ret = $buttonHtml;
     }
-    
-    $tpl = CRM_Core_Smarty::singleton();
-    $tpl->assign('buttons', $buttons);
-    $buttonHtml = $tpl->fetch('CRM/Stepw/snippet/StepwiseButton.tpl');
-    return $buttonHtml;
+    return $ret;
     
   }
   

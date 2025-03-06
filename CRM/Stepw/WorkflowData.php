@@ -25,8 +25,15 @@ class CRM_Stepw_WorkflowData {
   
   private function __construct() {
 
-    // fixme: somewhere (perhaps not here?) we need a data structure validator (e.g.
-    // to make sure multi-option steps don't follow steps with any 'afform' options)
+    // fixme: somewhere (perhaps not here?) we need a data structure validator:
+    // - make sure multi-option steps don't follow steps with any 'afform' options
+    // - first and final steps must contain only 'page' options
+    // - first step must contain exactly 1 option
+    // - afforms named in 'afform' steps must exist
+    // - afform configuration:
+    //   - must include individual1
+    // - wp page configuration:
+    //   - must include [stepwise-button] shortcode
     //
     
     $data = CRM_Stepw_Fixme_LoadData::getSampleData();
@@ -66,6 +73,9 @@ class CRM_Stepw_WorkflowData {
           }
         }
       }
+      // Mark the next-to-last step as "close workflow instance on complete", so
+      // that any workflowInstance will be closed as soon as that step is completed.
+      $data[$workflowId]['steps'][($stepId - 1)]['closeWorkflowInstanceOnComplete'] = TRUE;
     }
     $this->data = $data;
   }

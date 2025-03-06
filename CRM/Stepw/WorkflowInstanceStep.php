@@ -153,6 +153,11 @@ class CRM_Stepw_WorkflowInstanceStep {
     $option['lastCompleted'] = $timestamp;
     $this->updateOption($option);
     
+    // If called for in the step config, close the WorkflowInstance.
+    if ($this->config['closeWorkflowInstanceOnComplete']) {
+      $this->workflowInstance->close();
+    }
+
     $this->lastCompleted = $timestamp;
   }
 

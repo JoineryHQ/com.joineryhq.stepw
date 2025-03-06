@@ -6,14 +6,13 @@
  */
 class CRM_Stepw_WorkflowInstance {
   
-  // fixme: need to record everything correctly upon closure of this instance 
-  //  (i.e., when the user has completed the workflow).
   // fixme: we need to support post-submit validation handling (e.g. demographics) for each afform step/option.
   //
   
   private $workflowId;
   private $publicId;
   private $lastModified;
+  private $isClosed = FALSE;
   
   private $createdIndividualCid;
 
@@ -80,6 +79,15 @@ class CRM_Stepw_WorkflowInstance {
    * @return CRM_Stepw_WorkflowInstanceStep
    */
   private function getNextStep() : CRM_Stepw_WorkflowInstanceStep {
+    if ($this->isClosed) {
+      // Instance is closed, so the only step available is the last one
+      // (which, per configuration standards, must be a CMS page (not afform).
+      // This of course implies that the last step will never be completed,
+      // but we're okay with that because the intention is that it's a "thank-you"
+      // page of some sort.
+      $nextStep = $this->steps[array_key_last($this->steps)];
+      return $nextStep;
+    }
     $stepsLastCompleted = [];
     $stepsToSort = [];
     foreach ($this->steps as $stepNumber => $step) {
@@ -324,4 +332,24 @@ class CRM_Stepw_WorkflowInstance {
     $step = $this->getStepByKey($stepKey);
     return (!empty($step));
   }  
+
+  public function close() {
+    $this->isClosed = TRUE;
+    // fixme: need to record everything correctly in civicrm, upon closure of this instance
+    //  (i.e., when the user has completed the workflow).
+  }
+
+  /**
+   *
+   * Get a property of this object by name.
+   *
+   * @param string $name
+   * @throws CRM_Stepw_Exception
+   */
+  public function getVar(string $name) {
+    if (!property_exists($this, $name)) {
+      throw new  CRM_Stepw_Exception("Invalid variable name requested in ". __METHOD__, 'CRM_Stepw_WorkflowInstance_getVar_invalid', ['requested var name' => $name]);
+    }
+    return ($this->$name ?? NULL);
+  }
 }

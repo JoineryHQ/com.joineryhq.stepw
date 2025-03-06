@@ -1,5 +1,7 @@
 <?php
 
+// fixme: add a tool for generating qr codes in-app?
+
 require_once 'stepw.civix.php';
 
 use CRM_Stepw_ExtensionUtil as E;
@@ -53,6 +55,12 @@ function stepw_civicrm_pageRun(CRM_Core_Page $page) {
       throw new CRM_Stepw_Exception(__METHOD__ . ": Reload parameter given, but step has no existing submissionId: $afformName");
     }
     
+    // If workflowInstance is closed, redirect to last step.
+    if ($workflowInstance->getVar('isClosed')) {
+      $closedWorkflowInstanceStepUrl = $workflowInstance->getNextStepUrl();
+      CRM_Utils_System::redirect($closedWorkflowInstanceStepUrl);
+    }
+
     // If the given step has already been submitted, and we were NOT given QP_AFFORM_RELOAD_SID (with the current sid of the step),
     // redirect to $workflowInstance->getStepUrl(stepPublicId). See notes on
     // $step->options[]['afformSid'].
