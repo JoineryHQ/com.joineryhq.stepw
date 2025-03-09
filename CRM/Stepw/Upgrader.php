@@ -149,7 +149,7 @@ class CRM_Stepw_Upgrader extends \CRM_Extension_Upgrader_Base {
       // If the uninstall hook can execute, this api call should be allowed also.
       ->setCheckPermissions(FALSE)
       ->addWhere('option_group_id:name', '=', 'activity_type')
-      ->addWhere('name', 'IN', ['Stepwise_Workflow_Instance', "Stepwise_Workflow_Instance_Step'"])
+      ->addWhere('name', 'IN', ['Stepwise_Workflow_Instance', 'Stepwise_Workflow_Instance_Step'])
       ->addChain('name_me_0', \Civi\Api4\OptionValue::delete()
         ->addWhere('id', '=', '$id')
       )
