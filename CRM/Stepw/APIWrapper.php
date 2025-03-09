@@ -274,7 +274,7 @@ class CRM_Stepw_APIWrapper {
       'Stepwise Workflow Instance',
       'Stepwise Workflow Instance Step',
     ];
-    $activityTypeOptionValues = \Civi\Api4\OptionValue::get(TRUE)
+    $activityTypeOptionValues = \Civi\Api4\OptionValue::get()
       ->setCheckPermissions(FALSE)
       ->addSelect('value')
       ->addWhere('option_group_id:name', '=', 'activity_type')

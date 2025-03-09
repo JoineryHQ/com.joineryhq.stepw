@@ -44,7 +44,7 @@ class CRM_Stepw_WorkflowData {
             // If this afform doesn't exist, throw an exception.
             if (self::afformExists($afformName)) {
               // Add afform url to config data for this afform step/option.
-              $afform = \Civi\Api4\Afform::get(TRUE)
+              $afform = \Civi\Api4\Afform::get()
                 ->setCheckPermissions(FALSE)
                 ->addWhere('name', '=', $afformName)
                 ->setLimit(1)
@@ -118,7 +118,7 @@ class CRM_Stepw_WorkflowData {
   }
   
   private static function afformExists(string $afformName) {
-    $afformCount = \Civi\Api4\Afform::get(TRUE)
+    $afformCount = \Civi\Api4\Afform::get()
       ->setCheckPermissions(FALSE)
       ->addWhere('name', '=', $afformName)
       ->setLimit(1)

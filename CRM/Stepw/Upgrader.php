@@ -17,7 +17,7 @@ class CRM_Stepw_Upgrader extends \CRM_Extension_Upgrader_Base {
    */
   public function install(): void {
     // Create activity type: Workflow Instance
-    $results = \Civi\Api4\OptionValue::create(TRUE)
+    $results = \Civi\Api4\OptionValue::create()
       // If the install hook can execute, this api call should be allowed also.
       ->setCheckPermissions(FALSE)
       ->addValue('option_group_id.name', 'activity_type')
@@ -30,7 +30,7 @@ class CRM_Stepw_Upgrader extends \CRM_Extension_Upgrader_Base {
     $workflowInstanceOptionValueValue = $results[0]['value'];
 
     // Create activity type: Workflow Instance Step
-    $results = \Civi\Api4\OptionValue::create(TRUE)
+    $results = \Civi\Api4\OptionValue::create()
       // If the install hook can execute, this api call should be allowed also.
       ->setCheckPermissions(FALSE)
       ->addValue('option_group_id.name', 'activity_type')
@@ -43,7 +43,7 @@ class CRM_Stepw_Upgrader extends \CRM_Extension_Upgrader_Base {
     $workflowInstanceStepOptionValueValue = $results[0]['value'];
 
     // Create custom fields for activity type: Workflow Instance    
-    $results = \Civi\Api4\CustomGroup::create(TRUE)
+    $results = \Civi\Api4\CustomGroup::create()
       // If the install hook can execute, this api call should be allowed also.
       ->setCheckPermissions(FALSE)
       ->addValue('name', 'Stepwise_Workflow_Instance_Details')
@@ -51,7 +51,7 @@ class CRM_Stepw_Upgrader extends \CRM_Extension_Upgrader_Base {
       ->addValue('extends', 'Activity')
       ->addValue('extends_entity_column_value', [$workflowInstanceOptionValueValue])
       ->addValue('style', 'Inline')
-      ->addChain('name_me_0', \Civi\Api4\CustomField::create(TRUE)
+      ->addChain('name_me_0', \Civi\Api4\CustomField::create()
         ->addValue('custom_group_id', '$id')
         ->addValue('name', 'Workflow')
         ->addValue('label', 'Workflow')
@@ -64,7 +64,7 @@ class CRM_Stepw_Upgrader extends \CRM_Extension_Upgrader_Base {
 
     // Create custom fields for activity type: Workflow Instance Step
     $i = 0;
-    $results = \Civi\Api4\CustomGroup::create(TRUE)
+    $results = \Civi\Api4\CustomGroup::create()
       // If the install hook can execute, this api call should be allowed also.
       ->setCheckPermissions(FALSE)
       ->addValue('name', 'Stepwise_Workflow_Instance_Step_Details')
@@ -72,7 +72,7 @@ class CRM_Stepw_Upgrader extends \CRM_Extension_Upgrader_Base {
       ->addValue('extends', 'Activity')
       ->addValue('extends_entity_column_value', [$workflowInstanceStepOptionValueValue])
       ->addValue('style', 'Inline')
-      ->addChain('name_me_' . $i++, \Civi\Api4\CustomField::create(TRUE)
+      ->addChain('name_me_' . $i++, \Civi\Api4\CustomField::create()
         ->addValue('custom_group_id', '$id')
         ->addValue('name', 'Stepwise_Workflow_Instance_Activity')
         ->addValue('label', E::ts('Stepwise Workflow Instance Activity'))
@@ -81,7 +81,7 @@ class CRM_Stepw_Upgrader extends \CRM_Extension_Upgrader_Base {
         ->addValue('is_view', TRUE)
         ->addValue('fk_entity', 'Activity')
       )
-      ->addChain('name_me_' . $i++, \Civi\Api4\CustomField::create(TRUE)
+      ->addChain('name_me_' . $i++, \Civi\Api4\CustomField::create()
         ->addValue('custom_group_id', '$id')
         ->addValue('name', 'Step_URL')
         ->addValue('label', E::ts('Step URL'))
@@ -89,7 +89,7 @@ class CRM_Stepw_Upgrader extends \CRM_Extension_Upgrader_Base {
         ->addValue('html_type', 'Link')
         ->addValue('is_view', TRUE)
       )
-      ->addChain('name_me_' . $i++, \Civi\Api4\CustomField::create(TRUE)
+      ->addChain('name_me_' . $i++, \Civi\Api4\CustomField::create()
         ->addValue('custom_group_id', '$id')
         ->addValue('name', 'Activity_created_by_this_step')
         ->addValue('label', E::ts('Activity created by this step'))
@@ -125,32 +125,32 @@ class CRM_Stepw_Upgrader extends \CRM_Extension_Upgrader_Base {
    */
   public function uninstall(): void {
     // remove custom fields
-    $customFields = \Civi\Api4\CustomField::get(TRUE)
+    $customFields = \Civi\Api4\CustomField::get()
       // If the uninstall hook can execute, this api call should be allowed also.
       ->setCheckPermissions(FALSE)
       ->addWhere('custom_group_id:name', 'IN', ['Stepwise_Workflow_Instance_Details', 'Stepwise_Workflow_Instance_Step_Details'])
-      ->addChain('name_me_0', \Civi\Api4\CustomField::delete(TRUE)
+      ->addChain('name_me_0', \Civi\Api4\CustomField::delete()
         ->addWhere('id', '=', '$id')
       )
       ->execute();
 
     // remove custom groups
-    $customGroups = \Civi\Api4\CustomGroup::get(TRUE)
+    $customGroups = \Civi\Api4\CustomGroup::get()
       // If the uninstall hook can execute, this api call should be allowed also.
       ->setCheckPermissions(FALSE)
       ->addWhere('name', 'IN', ['Stepwise_Workflow_Instance_Details', 'Stepwise_Workflow_Instance_Step_Details'])
-      ->addChain('name_me_0', \Civi\Api4\CustomGroup::delete(TRUE)
+      ->addChain('name_me_0', \Civi\Api4\CustomGroup::delete()
         ->addWhere('id', '=', '$id')
       )
       ->execute();
 
     // remove activity types
-    $optionValues = \Civi\Api4\OptionValue::get(TRUE)
+    $optionValues = \Civi\Api4\OptionValue::get()
       // If the uninstall hook can execute, this api call should be allowed also.
       ->setCheckPermissions(FALSE)
       ->addWhere('option_group_id:name', '=', 'activity_type')
       ->addWhere('name', 'IN', ['Stepwise_Workflow_Instance', "Stepwise_Workflow_Instance_Step'"])
-      ->addChain('name_me_0', \Civi\Api4\OptionValue::delete(TRUE)
+      ->addChain('name_me_0', \Civi\Api4\OptionValue::delete()
         ->addWhere('id', '=', '$id')
       )
     ->execute();    
