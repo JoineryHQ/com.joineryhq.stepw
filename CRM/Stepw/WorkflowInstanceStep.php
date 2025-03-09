@@ -176,7 +176,7 @@ class CRM_Stepw_WorkflowInstanceStep {
 
   public function getLastAfformSubmissionId() {
     $option = $this->getSelectedOption();
-    $sids = $option['afformSids'];
-    return $sids[array_key_last($sids)];
+    $sids = ($option['afformSids'] ?? []);
+    return ($sids[array_key_last($sids)] ?? NULL);
   }
 }
