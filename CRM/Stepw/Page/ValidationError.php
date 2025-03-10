@@ -4,12 +4,8 @@ use CRM_Stepw_ExtensionUtil as E;
 class CRM_Stepw_Page_ValidationError extends CRM_Core_Page {
 
   public function run() {
-    // Example: Set the page-title dynamically; alternatively, declare a static title in xml/Menu/*.xml
-    CRM_Utils_System::setTitle(E::ts('ValidationError'));
-
-    // Example: Assign a variable for use in a template
-    $this->assign('currentTime', date('Y-m-d H:i:s'));
-
+    $messages = (CRM_Stepw_State::singleton()->getInvalidMessages() ?? []);
+    $this->assign('messages', $messages);
     parent::run();
   }
 

@@ -65,6 +65,16 @@ class CRM_Stepw_Utils_General {
     CRM_Utils_System::redirect($redirect);
   }
   
+  public static function redirectToValidationError($errors) {
+    // Store errors for display on the page.
+    // fixme: we should either create a separate storage from 'invalidMessages', or else rename it to more general purpose.
+    foreach ($errors as $error) {
+      CRM_Stepw_State::singleton()->storeInvalidMessage($error);
+    }
+    $redirect = CRM_Utils_System::url('civicrm/stepwise/requirements', '', TRUE, 'messages', FALSE);
+    CRM_Utils_System::redirect($redirect);
+  }
+  
   public static function buildStepUrl($queryParams) {
     $url = CRM_Utils_System::url('civicrm/stepwise/step', $queryParams, TRUE, NULL, FALSE);    
     return $url;

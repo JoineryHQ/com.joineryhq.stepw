@@ -74,12 +74,6 @@ function stepw_civicrm_pageRun(CRM_Core_Page $page) {
       $stepReloadUrl = $workflowInstance->getStepUrl($stepPublicId);
       CRM_Utils_System::redirect($stepReloadUrl);
     }
-
-    if (!$workflowInstance->validatePreviousStep($stepPublicId)) {
-      // fixme: If we're still here, it means we're about to display a fresh (not previously 
-      // submitted) afform. Before doing so, we should do validation on the most
-      // recently submitted step (if any) and, on failure, redirect to ValidationError page.
-    }    
       
     // If we'er still here, it means we'll display the afform page (fresh, not
     // for review/re-submission).

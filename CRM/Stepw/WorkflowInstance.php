@@ -144,9 +144,10 @@ class CRM_Stepw_WorkflowInstance {
    * Given an identifier, return the matching workflowInstancance step.
    * 
    * @param String $stepKey Either a stepNumber (which is an integer), or a publicId
+   * @param Boolean $abort (Default TRUE); if true, an invalid $stepkey will throw an exception.  
    * @return CRM_Stepw_WorkflowInstanceStep|NULL The matching step (or null if no such step)
    */
-  private function getStepByKey(String $stepKey) {
+  private function getStepByKey(String $stepKey, bool $abort = TRUE) {
     if (is_numeric(($stepKey))) {
       $step = ($this->steps[$stepKey] ?? NULL);
     }
@@ -154,8 +155,8 @@ class CRM_Stepw_WorkflowInstance {
       $stepNumber = $this->stepNumbersByPublicId[$stepKey];
       $step = ($this->steps[$stepNumber] ?? NULL);
     }
-    if (!is_a($step, 'CRM_Stepw_WorkflowInstanceStep')) {
-      throw new CRM_Stepw_Exception("Provided stepKey '$stepKey' does not match a step in this workflowInstnce, in " . __METHOD__, 'CRM_Stepw_WorkflowInstance_getStepByKey-mismatch-stepkey');      
+    if ($abort && !is_a($step, 'CRM_Stepw_WorkflowInstanceStep')) {
+      throw new CRM_Stepw_Exception("Provided stepKey '$stepKey' does not match a step in this workflowInstance, in " . __METHOD__, 'CRM_Stepw_WorkflowInstance_getStepByKey-mismatch-stepkey');      
     }
     return $step;
   }
@@ -351,12 +352,12 @@ class CRM_Stepw_WorkflowInstance {
   }
   
   /**
-   * Determin if stepKey represents an existing step in this workflowInstance.
+   * Determine if stepKey represents an existing step in this workflowInstance.
    * @param String $stepKey Either a stepNumber (which is an integer), or a publicId
    * @return Boolean True if step exists, otherwise false.
    */
   public function hasStep ($stepKey) {
-    $step = $this->getStepByKey($stepKey);
+    $step = $this->getStepByKey($stepKey, FALSE);
     return (!empty($step));
   }  
 
@@ -407,8 +408,47 @@ class CRM_Stepw_WorkflowInstance {
     return ($this->$name ?? NULL);
   }
   
-  public function validatePreviousStep($stepPublicId) {
-    // fixme: stub: validatePreviousStep
-    return TRUE;
+  public function validateLastCompletedStep(&$errors) : bool {
+    $isError = FALSE;
+    
+    $lastCompletedStep = $this->getLastCompletedStep();
+    
+    if ($lastCompletedStep) {
+      $postSubmitValidation = $lastCompletedStep->getSelectedOptionVar('postSubmitValidation');
+      
+      if ($this->createdIndividualCid && ($individualWhere = $postSubmitValidation['where']['Individual1'])) {
+        $individualGet = \Civi\Api4\Individual::get()
+          ->setCheckPermissions(FALSE)
+          ->addWhere('id', '=', $this->createdIndividualCid);
+        foreach ($individualWhere as $whereArgs) {
+          list($fieldName, $op, $value, $isExpression) = $whereArgs;
+          $individualGet = $individualGet->addWhere($fieldName, $op, $value, (bool)$isExpression);
+        }
+        $individualGet = $individualGet->execute()->count();
+        if (!$individualGet) {
+          $isError = TRUE;
+        }
+      }
+      
+      if (($activityId = $lastCompletedStep->getCreatedActivityId()) && ($activityWhere = $postSubmitValidation['where']['Activity1'])) {
+        $activityGet = \Civi\Api4\Individual::get()
+          ->setCheckPermissions(FALSE)
+          ->addWhere('id', '=', $activityId);
+        foreach ($activityWhere as $whereArgs) {
+          list($fieldName, $op, $value, $isExpression) = $whereArgs;
+          $activityGet = $activityGet->addWhere($fieldName, $op, $value, (bool)$isExpression);
+        }
+        $activityGet = $activityGet->execute()->count();
+        if (!$activityGet) {
+          $isError = TRUE;
+        }
+      }
+    }
+    
+    if ($isError) {
+      $errors[] = $postSubmitValidation['failureMessage'];
+    }
+    
+    return ($isError == FALSE);
   }
 }

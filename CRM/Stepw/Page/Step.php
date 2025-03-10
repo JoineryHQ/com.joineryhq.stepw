@@ -42,6 +42,13 @@ class CRM_Stepw_Page_Step extends CRM_Core_Page {
         $workflowInstance->setSubsequentStepOptionId($doneStepPublicId, $subsequentStepOptionId);
       }
     }
+
+    $errors = [];
+    if(!$workflowInstance->validateLastCompletedStep($errors)) {
+      // We've presumably just completed one step, so we should perform any input
+      // validation of that step, here. On failure, redirect to ValidationError page.
+      CRM_Stepw_Utils_General::redirectToValidationError($errors);
+    }
     
     $firstUncompletedStepUrl = $workflowInstance->getFirstUncompletedStepUrl();
     CRM_Utils_System::redirect($firstUncompletedStepUrl);

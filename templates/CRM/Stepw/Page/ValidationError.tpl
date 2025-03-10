@@ -1,3 +1,5 @@
 <h2>{ts}Ineligible submission{/ts}</h2>
 
-{$failureMessage}
+{foreach from=$messages item=message}
+  {$message}
+{/foreach}
