@@ -7,23 +7,30 @@
       $scope.init = function() {
         // Set button label text.
         if (CRM.vars.stepw) {
+          // Set button label per workflow step config.
           $scope.submitButtonLabel = CRM.vars.stepw.submitButtonLabel;
           // Set redirect property per workflow step config.
           $scope.$parent.meta.redirect = CRM.vars.stepw.redirectUrl;
         }
-        console.log('scope', $scope);
         
-        // fixme: the button should only show under these conditions
+        // The button should only show under these conditions
         // - we're not in a stepwise workflow; AND
         // - $scope.$parent.afform.showSubmitButton is true
         // OR
-        // - we are in a stepwise workflow; AND
-        // - stepwise workflow is valid;
+        // - we are in a stepwise workflow
+        // - (If an afform is being displayed in a stepwise workflow, server-side
+        //   validation has already ensured we're in a valid state.)
         $scope.stepwiseShowSubmitButton = function() {
-          return true;
-          // return $scope.$parent.afform.showSubmitButton;
+          if (typeof CRM.vars.stepw == 'undefined') {
+            // We're not in a stepwise workflow. Just return whatever Afform
+            // has decided.
+            return $scope.$parent.afform.showSubmitButton;
+          }
+          else {
+            return true;
+          }
         };
-        
+
         $scope.hideIfInvalid = function() {
           // Note: We'll hide the form if either afform.sid or CRM.vars.stepw.stepAfformSid
           // are provided, AND they don't match each other. HOWEVER, this form
