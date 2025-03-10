@@ -55,11 +55,11 @@ class CRM_Stepw_Utils_General {
     \Civi::log()->debug(E::LONG_NAME .': '. $logMessage, $debugContext);
     
     // Store an additional informative message for display to the user.
-    CRM_Stepw_State::singleton()->storeInvalidMessage($publicMessage);
+    CRM_Stepw_State::singleton()->storePublicErrorMessage($publicMessage);
 
     if (Civi::settings()->get('debug_enabled')) {
       // If 'debug' is on, go ahead and show the original logged message to the user.
-      CRM_Stepw_State::singleton()->storeInvalidMessage("Debug message: " . $logMessage);
+      CRM_Stepw_State::singleton()->storePublicErrorMessage("Debug message: " . $logMessage);
     }
     $redirect = CRM_Utils_System::url('civicrm/stepwise/invalid', '', TRUE, NULL, FALSE);
     CRM_Utils_System::redirect($redirect);
@@ -67,9 +67,8 @@ class CRM_Stepw_Utils_General {
   
   public static function redirectToValidationError($errors) {
     // Store errors for display on the page.
-    // fixme: we should either create a separate storage from 'invalidMessages', or else rename it to more general purpose.
     foreach ($errors as $error) {
-      CRM_Stepw_State::singleton()->storeInvalidMessage($error);
+      CRM_Stepw_State::singleton()->storePublicErrorMessage($error);
     }
     $redirect = CRM_Utils_System::url('civicrm/stepwise/requirements', '', TRUE, 'messages', FALSE);
     CRM_Utils_System::redirect($redirect);

@@ -102,16 +102,16 @@ class CRM_Stepw_State {
     return $workflowInstance;
   }
 
-  public function storeInvalidMessage(string $message) {
-    $messages = ($this->get('invlidMessages') ?? []);
+  public function storePublicErrorMessage(string $message) {
+    $messages = ($this->get('publicErrorMessages') ?? []);
     $messages[] = $message;
-    $this->set('invlidMessages', $messages);
+    $this->set('publicErrorMessages', $messages);
   }
 
-  public function getInvalidMessages(bool $clear = TRUE) {
-    $messages = ($this->get('invlidMessages') ?? []);
+  public function getPublicErrorMessages(bool $clear = TRUE) {
+    $messages = ($this->get('publicErrorMessages') ?? []);
     if ($clear) {
-      $this->set('invlidMessages', []);      
+      $this->set('publicErrorMessages', []);      
     }
     return $messages;
   }
