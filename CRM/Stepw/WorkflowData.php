@@ -36,8 +36,11 @@ class CRM_Stepw_WorkflowData {
     //   - must include [stepwise-button] shortcode
     //
     
-    $data = CRM_Stepw_Fixme_LoadData::getSampleData();
-    foreach ($data as $workflowId => $workflow) {
+    $rawData = CRM_Stepw_Fixme_LoadData::getSampleData();
+    $data = [];
+    foreach ($rawData as $workflowId => $workflow) {
+      $publicId = $workflow['settings']['public_id'];
+      $data[$publicId] = $workflow;
       foreach (($workflow['steps'] ?? []) as $stepId => $step) {
         foreach ($step['options'] as $optionId => $option) {
           if (($option['type'] ?? '') == 'afform' && ($afformName = ($option['afformName'] ?? FALSE))) {
@@ -50,16 +53,16 @@ class CRM_Stepw_WorkflowData {
                 ->setLimit(1)
                 ->execute()
                 ->first();
-              $data[$workflowId]['steps'][$stepId]['options'][$optionId]['url'] = CRM_Utils_System::url($afform['server_route']);
+              $data[$publicId]['steps'][$stepId]['options'][$optionId]['url'] = CRM_Utils_System::url($afform['server_route']);
 
               // Add this afformName to allAfformNamtes, for future reference.
               $this->allAfformNames[] = $afformName;
             }
             else {
               // This function is sometimes called (e.g. when debug is on, or when otherwise
-              // afform cache is being rebuilt) from executino paths that will
+              // afform cache is being rebuilt) from execution paths that will
               // end with WSOD if we throw an exception. Therefore, just flag
-              // this workflow config as invalid, and we'll throw an exception
+              // this workflow config as invalid, log it, and we'll throw an exception
               // elsewhere -- see, e.g. this->getWorkflowConfigById().
               $errorContext = [
                 'error_id' => $this->getsetWorkflowConfigErrorId($workflowId),
@@ -75,7 +78,7 @@ class CRM_Stepw_WorkflowData {
       }
       // Mark the next-to-last step as "close workflow instance on complete", so
       // that any workflowInstance will be closed as soon as that step is completed.
-      $data[$workflowId]['steps'][($stepId - 1)]['closeWorkflowInstanceOnComplete'] = TRUE;
+      $data[$publicId]['steps'][($stepId - 1)]['closeWorkflowInstanceOnComplete'] = TRUE;
     }
     $this->data = $data;
   }
