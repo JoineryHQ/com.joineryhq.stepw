@@ -228,8 +228,7 @@ class CRM_Stepw_Utils_WpShortcode {
       $workflowInstancePublicId = CRM_Stepw_Utils_Userparams::getUserParams('request', CRM_Stepw_Utils_Userparams::QP_WORKFLOW_INSTANCE_ID);
       $stepPublicId = CRM_Stepw_Utils_Userparams::getUserParams('request', CRM_Stepw_Utils_Userparams::QP_STEP_ID);
       if (!CRM_Stepw_Utils_Validation::isWorkflowInstanceAndStepValid($workflowInstancePublicId, $stepPublicId)) {
-        $ret = FALSE;
-        return $ret;
+        throw new CRM_Stepw_Exception('WorkflowInstanceId and StepId were both given, but together are not valid in state, in ' . __METHOD__, 'CRM_Stepw_Utils_WpShortcode_isValidParams-invalid-public-ids');
       }
       // if we're still here, return true (params are valid)
       $ret = TRUE;
