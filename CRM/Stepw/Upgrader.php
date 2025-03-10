@@ -1,105 +1,21 @@
 <?php
-
 use CRM_Stepw_ExtensionUtil as E;
-
 /**
  * Collection of upgrade steps.
  */
 class CRM_Stepw_Upgrader extends \CRM_Extension_Upgrader_Base {
+
   // By convention, functions that look like "function upgrade_NNNN()" are
   // upgrade tasks. They are executed in order (like Drupal's hook_update_N).
 
   /**
-   * Create activity types and related custom fields for tracking Workflow Instances
-   * and Steps. (Would have used managed entities for this, but the dependencies
-   * between these entities makes that unworkable at present.
+   * Example: Run an external SQL script when the module is installed.
    *
+   * Note that if a file is present sql\auto_install that will run regardless of this hook.
    */
-  public function install(): void {
-    // Create activity type: Workflow Instance
-    $results = \Civi\Api4\OptionValue::create()
-      // If the install hook can execute, this api call should be allowed also.
-      ->setCheckPermissions(FALSE)
-      ->addValue('option_group_id.name', 'activity_type')
-      ->addValue('label', E::ts('Stepwise Workflow Instance'))
-      ->addValue('name', 'Stepwise_Workflow_Instance')
-      ->addValue('description', E::ts('Contact has begun and/or completed a workflow.'))
-      ->addValue('icon', 'fa-arrows-turn-to-dots fa-flip-vertical')
-      ->addValue('is_reserved', TRUE)
-      ->execute();
-    $workflowInstanceOptionValueValue = $results[0]['value'];
-
-    // Create activity type: Workflow Instance Step
-    $results = \Civi\Api4\OptionValue::create()
-      // If the install hook can execute, this api call should be allowed also.
-      ->setCheckPermissions(FALSE)
-      ->addValue('option_group_id.name', 'activity_type')
-      ->addValue('label', E::ts('Stepwise Workflow Instance Step'))
-      ->addValue('name', 'Stepwise_Workflow_Instance_Step')
-      ->addValue('description', E::ts('Contact has completed a specific step within a workflow.'))
-      ->addValue('icon', 'fa-person-walking-arrow-right')
-      ->addValue('is_reserved', TRUE)
-      ->execute();
-    $workflowInstanceStepOptionValueValue = $results[0]['value'];
-
-    // Create custom fields for activity type: Workflow Instance    
-    $results = \Civi\Api4\CustomGroup::create()
-      // If the install hook can execute, this api call should be allowed also.
-      ->setCheckPermissions(FALSE)
-      ->addValue('name', 'Stepwise_Workflow_Instance_Details')
-      ->addValue('title', E::ts('Stepwise Workflow Instance Details'))
-      ->addValue('extends', 'Activity')
-      ->addValue('extends_entity_column_value', [$workflowInstanceOptionValueValue])
-      ->addValue('style', 'Inline')
-      ->addChain('name_me_0', \Civi\Api4\CustomField::create()
-        ->addValue('custom_group_id', '$id')
-        ->addValue('name', 'Workflow')
-        ->addValue('label', 'Workflow')
-        ->addValue('data_type', 'EntityReference')
-        ->addValue('html_type', 'Autocomplete-Select')
-        ->addValue('is_view', TRUE)
-        ->addValue('fk_entity', 'StepwWorkflow')
-      )
-      ->execute();
-
-    // Create custom fields for activity type: Workflow Instance Step
-    $i = 0;
-    $results = \Civi\Api4\CustomGroup::create()
-      // If the install hook can execute, this api call should be allowed also.
-      ->setCheckPermissions(FALSE)
-      ->addValue('name', 'Stepwise_Workflow_Instance_Step_Details')
-      ->addValue('title', E::ts('Stepwise Workflow Instance Step Details'))
-      ->addValue('extends', 'Activity')
-      ->addValue('extends_entity_column_value', [$workflowInstanceStepOptionValueValue])
-      ->addValue('style', 'Inline')
-      ->addChain('name_me_' . $i++, \Civi\Api4\CustomField::create()
-        ->addValue('custom_group_id', '$id')
-        ->addValue('name', 'Stepwise_Workflow_Instance_Activity')
-        ->addValue('label', E::ts('Stepwise Workflow Instance Activity'))
-        ->addValue('data_type', 'EntityReference')
-        ->addValue('html_type', 'Autocomplete-Select')
-        ->addValue('is_view', TRUE)
-        ->addValue('fk_entity', 'Activity')
-      )
-      ->addChain('name_me_' . $i++, \Civi\Api4\CustomField::create()
-        ->addValue('custom_group_id', '$id')
-        ->addValue('name', 'Step_URL')
-        ->addValue('label', E::ts('Step URL'))
-        ->addValue('data_type', 'Link')
-        ->addValue('html_type', 'Link')
-        ->addValue('is_view', TRUE)
-      )
-      ->addChain('name_me_' . $i++, \Civi\Api4\CustomField::create()
-        ->addValue('custom_group_id', '$id')
-        ->addValue('name', 'Activity_created_by_this_step')
-        ->addValue('label', E::ts('Activity created by this step'))
-        ->addValue('data_type', 'EntityReference')
-        ->addValue('html_type', 'Autocomplete-Select')
-        ->addValue('is_view', TRUE)
-        ->addValue('fk_entity', 'Activity')
-      )
-      ->execute();
-  }
+  // public function install(): void {
+  //   $this->executeSqlFile('sql/my_install.sql');
+  // }
 
   /**
    * Example: Work with entities usually not available during the install step.
@@ -120,41 +36,13 @@ class CRM_Stepw_Upgrader extends \CRM_Extension_Upgrader_Base {
   // }
 
   /**
-   * Remove activity types and related custom fields that were created in self::install().
+   * Example: Run an external SQL script when the module is uninstalled.
    *
+   * Note that if a file is present sql\auto_uninstall that will run regardless of this hook.
    */
-  public function uninstall(): void {
-    // remove custom fields
-    $customFields = \Civi\Api4\CustomField::get()
-      // If the uninstall hook can execute, this api call should be allowed also.
-      ->setCheckPermissions(FALSE)
-      ->addWhere('custom_group_id:name', 'IN', ['Stepwise_Workflow_Instance_Details', 'Stepwise_Workflow_Instance_Step_Details'])
-      ->addChain('name_me_0', \Civi\Api4\CustomField::delete()
-        ->addWhere('id', '=', '$id')
-      )
-      ->execute();
-
-    // remove custom groups
-    $customGroups = \Civi\Api4\CustomGroup::get()
-      // If the uninstall hook can execute, this api call should be allowed also.
-      ->setCheckPermissions(FALSE)
-      ->addWhere('name', 'IN', ['Stepwise_Workflow_Instance_Details', 'Stepwise_Workflow_Instance_Step_Details'])
-      ->addChain('name_me_0', \Civi\Api4\CustomGroup::delete()
-        ->addWhere('id', '=', '$id')
-      )
-      ->execute();
-
-    // remove activity types
-    $optionValues = \Civi\Api4\OptionValue::get()
-      // If the uninstall hook can execute, this api call should be allowed also.
-      ->setCheckPermissions(FALSE)
-      ->addWhere('option_group_id:name', '=', 'activity_type')
-      ->addWhere('name', 'IN', ['Stepwise_Workflow_Instance', 'Stepwise_Workflow_Instance_Step'])
-      ->addChain('name_me_0', \Civi\Api4\OptionValue::delete()
-        ->addWhere('id', '=', '$id')
-      )
-    ->execute();    
-  }
+  // public function uninstall(): void {
+  //   $this->executeSqlFile('sql/my_uninstall.sql');
+  // }
 
   /**
    * Example: Run a simple query when a module is enabled.
@@ -204,6 +92,7 @@ class CRM_Stepw_Upgrader extends \CRM_Extension_Upgrader_Base {
    */
   // public function upgrade_4202(): bool {
   //   $this->ctx->log->info('Planning update 4202'); // PEAR Log interface
+
   //   $this->addTask(E::ts('Process first step'), 'processPart1', $arg1, $arg2);
   //   $this->addTask(E::ts('Process second step'), 'processPart2', $arg3, $arg4);
   //   $this->addTask(E::ts('Process second step'), 'processPart3', $arg5);
@@ -222,6 +111,7 @@ class CRM_Stepw_Upgrader extends \CRM_Extension_Upgrader_Base {
    */
   // public function upgrade_4203(): bool {
   //   $this->ctx->log->info('Planning update 4203'); // PEAR Log interface
+
   //   $minId = CRM_Core_DAO::singleValueQuery('SELECT coalesce(min(id),0) FROM civicrm_contribution');
   //   $maxId = CRM_Core_DAO::singleValueQuery('SELECT coalesce(max(id),0) FROM civicrm_contribution');
   //   for ($startId = $minId; $startId <= $maxId; $startId += self::BATCH_SIZE) {
@@ -242,4 +132,5 @@ class CRM_Stepw_Upgrader extends \CRM_Extension_Upgrader_Base {
   //   }
   //   return TRUE;
   // }
+
 }

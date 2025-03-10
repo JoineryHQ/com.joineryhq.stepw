@@ -1,4 +1,5 @@
 <?php
+
 use CRM_Stepw_ExtensionUtil as E;
 
 return [
@@ -28,12 +29,14 @@ return [
       'sql_type' => 'varchar(255)',
       'input_type' => 'Text',
       'description' => E::ts('Administrative title'),
+      'required' => TRUE,
     ],
     'public_id' => [
       'title' => E::ts('Public ID'),
       'sql_type' => 'varchar(255)',
       'input_type' => 'Text',
       'description' => E::ts('Long unguessable string identifier'),
+      'required' => TRUE,
     ],
   ],
   'getIndices' => fn() => [
@@ -41,13 +44,13 @@ return [
       'fields' => [
         'title' => TRUE,
       ],
-      'unique' => TRUE,      
+      'unique' => TRUE,
     ],
     'index_stepwWorkflow_public_id' => [
       'fields' => [
         'public_id' => TRUE,
       ],
-      'unique' => TRUE,      
+      'unique' => TRUE,
     ],
   ],
   'getPaths' => fn() => [],
