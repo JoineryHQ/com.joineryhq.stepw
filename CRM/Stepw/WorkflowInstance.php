@@ -79,8 +79,32 @@ class CRM_Stepw_WorkflowInstance {
   }
 
   /**
+   * Return the most-recently completed step if any, else null.
+   * @return CRM_Stepw_WorkflowInstanceStep|null
+   */
+  private function getLastCompletedStep() : ?CRM_Stepw_WorkflowInstanceStep {
+    $stepsLastCompleted = [];
+    $stepsToSort = [];
+    foreach ($this->steps as $stepNumber => $step) {
+      if ($lastCompleted = $step->getVar('lastCompleted')) {
+        $stepsLastCompleted[] = $lastCompleted;
+        $stepsToSort[] = $step;
+      }
+    }
+    if(empty($stepsToSort)) {
+      // If we're here, it means no steps have been completed, so return null;
+      $lastCompletedStep = NULL;
+    }
+    else {
+      array_multisort($stepsLastCompleted, $stepsToSort);
+      $lastCompletedStep = array_pop($stepsToSort);
+    }
+    return $lastCompletedStep;    
+  }
+ 
+  /**
    * Determine most-recently completed step (if any), and return the subsequent
-   * step to that one, if any.
+   * step to that one, if any, or else pseudoFinal step (as a fallback)
    * @return CRM_Stepw_WorkflowInstanceStep
    */
   private function getNextStep() : CRM_Stepw_WorkflowInstanceStep {
@@ -93,22 +117,13 @@ class CRM_Stepw_WorkflowInstance {
       $nextStep = $this->steps[array_key_last($this->steps)];
       return $nextStep;
     }
-    $stepsLastCompleted = [];
-    $stepsToSort = [];
-    foreach ($this->steps as $stepNumber => $step) {
-      if ($lastCompleted = $step->getVar('lastCompleted')) {
-        $stepsLastCompleted[] = $lastCompleted;
-        $stepsToSort[] = $step;
-      }
-    }
-    if(empty($stepsToSort)) {
+    $lastCompletedStep = $this->getLastCompletedStep();
+    if(is_null($lastCompletedStep)) {
       // If we're here, it means no steps have been completed, so nextStep 
       // is step 0.
       $nextStep = $this->steps[0];
     }
     else {
-      array_multisort($stepsLastCompleted, $stepsToSort);
-      $lastCompletedStep = array_pop($stepsToSort);
       $lastCompletedStepNumber = $lastCompletedStep->getVar('stepNumber');
       $nextStepNumber = ($lastCompletedStepNumber + 1);
       // Note that if $lastCompletedStep was really the last step in the workflow,
@@ -389,5 +404,10 @@ class CRM_Stepw_WorkflowInstance {
       throw new  CRM_Stepw_Exception("Invalid variable name requested in ". __METHOD__, 'CRM_Stepw_WorkflowInstance_getVar_invalid', ['requested var name' => $name]);
     }
     return ($this->$name ?? NULL);
+  }
+  
+  public function validatePreviousStep() {
+    // fixme: stub: validatePreviousStep
+    return TRUE;
   }
 }
