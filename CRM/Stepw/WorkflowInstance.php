@@ -1,6 +1,5 @@
 <?php
 
-
 /**
  * WorkflowInstance class
  */
@@ -16,7 +15,7 @@ class CRM_Stepw_WorkflowInstance {
   private $workflowId;
 
   private $publicId;
-  private $lastModified;
+  private $modifiedTimestamp;
   private $isClosed = FALSE;
   
   private $createdIndividualCid;
@@ -52,7 +51,7 @@ class CRM_Stepw_WorkflowInstance {
       // If we're given an invaild workflowId, throw an exception.
       throw new  CRM_Stepw_Exception("Given QP_START_WORKFLOW_ID ('$publicWorkflowId') does not match an available configured workflow, in " . __METHOD__, 'CRM_Stepw_WorkflowInstance_construct_invalid-workflow-id');
     }
-    $this->updateLastModified();
+    $this->updateModifiedTimestamp();
     $this->workflowId = $workflowConfig['id'];
     $this->publicId = CRM_Stepw_Utils_General::generatePublicId();
     foreach ($workflowConfig['steps'] as $configStepNumber => &$configStep) {
@@ -74,8 +73,8 @@ class CRM_Stepw_WorkflowInstance {
     $state->storeWorkflowInstance($this);
   }
   
-  private function updateLastModified() {
-    $this->lastModified = time();
+  private function updateModifiedTimestamp() {
+    $this->modifiedTimestamp = time();
   }
 
   /**
@@ -83,11 +82,11 @@ class CRM_Stepw_WorkflowInstance {
    * @return CRM_Stepw_WorkflowInstanceStep|null
    */
   private function getLastCompletedStep() : ?CRM_Stepw_WorkflowInstanceStep {
-    $stepsLastCompleted = [];
+    $stepsTimestamps = [];
     $stepsToSort = [];
     foreach ($this->steps as $stepNumber => $step) {
-      if ($lastCompleted = $step->getVar('lastCompleted')) {
-        $stepsLastCompleted[] = $lastCompleted;
+      if ($timestamp = $step->getVar('mostRecentCompletedTimestamp')) {
+        $stepsTimestamps[] = $timestamp;
         $stepsToSort[] = $step;
       }
     }
@@ -96,7 +95,7 @@ class CRM_Stepw_WorkflowInstance {
       $lastCompletedStep = NULL;
     }
     else {
-      array_multisort($stepsLastCompleted, $stepsToSort);
+      array_multisort($stepsTimestamps, $stepsToSort);
       $lastCompletedStep = array_pop($stepsToSort);
     }
     return $lastCompletedStep;    
@@ -107,36 +106,38 @@ class CRM_Stepw_WorkflowInstance {
    * step to that one, if any, or else pseudoFinal step (as a fallback)
    * @return CRM_Stepw_WorkflowInstanceStep
    */
-  private function getNextStep() : CRM_Stepw_WorkflowInstanceStep {
+  private function getFirstUncompletedStep() : CRM_Stepw_WorkflowInstanceStep {
     if ($this->isClosed) {
       // Instance is closed, so the only step available is the last one
       // (which, per configuration standards, must be a CMS page (not afform).
       // This of course implies that the last step will never be completed,
       // but we're okay with that because the intention is that it's a "thank-you"
       // page of some sort.
-      $nextStep = $this->steps[array_key_last($this->steps)];
-      return $nextStep;
+      $firstUncompletedStep = $this->steps[array_key_last($this->steps)];
+      return $firstUncompletedStep;
     }
     $lastCompletedStep = $this->getLastCompletedStep();
     if(is_null($lastCompletedStep)) {
-      // If we're here, it means no steps have been completed, so nextStep 
-      // is step 0.
-      $nextStep = $this->steps[0];
+      // If we're here, it means no steps have been completed, so first uncompleted 
+      // step is step 0.
+      $firstUncompletedStep = $this->steps[0];
     }
     else {
       $lastCompletedStepNumber = $lastCompletedStep->getVar('stepNumber');
-      $nextStepNumber = ($lastCompletedStepNumber + 1);
+      $firstUncompletedStepNumber = ($lastCompletedStepNumber + 1);
       // Note that if $lastCompletedStep was really the last step in the workflow,
-      // $nextStep will be NULL.
-      $nextStep = ($this->steps[$nextStepNumber] ?? NULL);
+      // $firstUncompletedStep will be NULL.
+      $firstUncompletedStep = ($this->steps[$firstUncompletedStepNumber] ?? NULL);
     }    
-    if (!$nextStep) {
-      $nextStep = $this->pseudoFinalStep;
+    if (!$firstUncompletedStep) {
+      // If we really could not find any ucompleted step, use the fall-back
+      // pseudoFinal step.
+      $firstUncompletedStep = $this->pseudoFinalStep;
     }
-    if (empty($nextStep) || !is_a($nextStep, 'CRM_Stepw_WorkflowInstanceStep')) {
-      throw new  CRM_Stepw_Exception("When calculating 'Next Step', no valid step was found, in " . __METHOD__, 'CRM_Stepw_WorkflowInstance_getNextStep_invalid');        
+    if (empty($firstUncompletedStep) || !is_a($firstUncompletedStep, 'CRM_Stepw_WorkflowInstanceStep')) {
+      throw new  CRM_Stepw_Exception("When calculating 'First Uncompleted Step', no valid step was found, in " . __METHOD__, 'CRM_Stepw_WorkflowInstance_getFirstUncompletedStep_invalid');
     }
-    return $nextStep;
+    return $firstUncompletedStep;
   }
     
   /**
@@ -187,8 +188,8 @@ class CRM_Stepw_WorkflowInstance {
     $subsequentStep->setSelectedOptionId($optionPublicId);
   }
     
-  public function getLastModified() {
-    return $this->lastModified;
+  public function getModifiedTimestamp() {
+    return $this->modifiedTimestamp;
   }
   
   
@@ -214,7 +215,7 @@ class CRM_Stepw_WorkflowInstance {
       throw new  CRM_Stepw_Exception("Invalid attempt to alter workflowInstance:createdIndividualCid". __METHOD__, 'CRM_Stepw_WorkflowInstance_setCreatedIndividualCid_invalid', $exceptionExtra);      
     }
     $this->createdIndividualCid = $contactId;
-    $this->updateLastModified();
+    $this->updateModifiedTimestamp();
   }
   
   /**
@@ -236,11 +237,11 @@ class CRM_Stepw_WorkflowInstance {
   public function completeStep($stepKey) {
     $step = $this->getStepByKey($stepKey);
     $step->complete();
-    $this->updateLastModified();    
+    $this->updateModifiedTimestamp();    
   }
   
-  public function getNextStepUrl() {
-    $step = $this->getNextStep();
+  public function getFirstUncompletedStepUrl() {
+    $step = $this->getFirstUncompletedStep();
     $url = $step->getUrl();
     return $url;
   }
@@ -254,13 +255,13 @@ class CRM_Stepw_WorkflowInstance {
   public function setStepAfformSubmissionId(string $stepKey, int $afformSubmissionId) {
     $step = $this->getStepByKey($stepKey);
     $step->setAfformSubmissionId($afformSubmissionId);
-    $this->updateLastModified();
+    $this->updateModifiedTimestamp();
   }
 
   public function setStepCreatedActivityId(string $stepKey, int $activityId) {
     $step = $this->getStepByKey($stepKey);
     $step->setCreatedActivityId($activityId);
-    $this->updateLastModified();
+    $this->updateModifiedTimestamp();
   }
   
   public function getProgress($stepKey) {
@@ -333,7 +334,7 @@ class CRM_Stepw_WorkflowInstance {
     //   - option does NOT require onpage enforcement.
     $disabled = TRUE;
     
-    if ($step->getSelectedOptionVar('lastCompleted')) {
+    if ($step->getSelectedOptionVar('mostRecentlyCompletedTimestamp')) {
       // Option has been completed.
       $disabled = FALSE;
     }
@@ -406,7 +407,7 @@ class CRM_Stepw_WorkflowInstance {
     return ($this->$name ?? NULL);
   }
   
-  public function validatePreviousStep() {
+  public function validatePreviousStep($stepPublicId) {
     // fixme: stub: validatePreviousStep
     return TRUE;
   }

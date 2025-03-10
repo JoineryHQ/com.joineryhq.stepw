@@ -77,7 +77,7 @@ class CRM_Stepw_WorkflowData {
           }
         }
       }
-      // Mark the next-to-last step as "close workflow instance on complete", so
+      // Mark the previous-to-last step as "close workflow instance on complete", so
       // that any workflowInstance will be closed as soon as that step is completed.
       $data[$publicId]['steps'][($stepId - 1)]['closeWorkflowInstanceOnComplete'] = TRUE;
     }

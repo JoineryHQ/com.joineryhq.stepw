@@ -34,7 +34,7 @@ class CRM_Stepw_WorkflowInstanceStep {
     * (NULL if never submitted)
     * @var Float
     */
-   private $lastCompleted;
+   private $mostRecentCompletedTimestamp;
 
    private $options = [];
    private $selectedOptionId = NULL;
@@ -46,8 +46,8 @@ class CRM_Stepw_WorkflowInstanceStep {
     $this->config = $config;
     foreach ($config['options'] as $option) {
       $optionPublicId = CRM_Stepw_Utils_General::generatePublicId();
-      // Define an array member to hold the lastCompleted timestamp for this option.
-      $option['lastCompleted'] = '';
+      // Define an array member to hold the mostRecentlyCompletedTimestamp for this option.
+      $option['mostRecentlyCompletedTimestamp'] = '';
       // For this option, define an array to hold Afform submission ids (if any),
       // which will be populated when the step-option type is afform and the form
       // has been submitted. 
@@ -161,7 +161,7 @@ class CRM_Stepw_WorkflowInstanceStep {
     $timestamp = microtime(TRUE);
     
     $option = $this->getSelectedOption();
-    $option['lastCompleted'] = $timestamp;
+    $option['mostRecentlyCompletedTimestamp'] = $timestamp;
     $this->updateOption($option);
     
     // If called for in the step config, close the WorkflowInstance.
@@ -169,7 +169,7 @@ class CRM_Stepw_WorkflowInstanceStep {
       $this->workflowInstance->close();
     }
 
-    $this->lastCompleted = $timestamp;
+    $this->mostRecentCompletedTimestamp = $timestamp;
   }
 
   public function setAfformSubmissionId($afformSubmissionId) {

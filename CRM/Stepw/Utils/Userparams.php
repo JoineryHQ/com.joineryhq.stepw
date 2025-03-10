@@ -37,7 +37,7 @@ class CRM_Stepw_Utils_Userparams {
   /**
    * PublicId for a given option in the subsequent step; indicates that when the
    * subsequent step is displayed, it should use properties for this option.
-   * (Designed to support user-selection of one-of-many "next step options"
+   * (Designed to support user-selection of one-of-many "subsequent step options"
    * where multiple buttons are displayed by the [stepwise-button] shortcode.)
    */
   const QP_SUBSEQUENT_STEP_SELECTED_OPTION_ID = 'stepw_soid';

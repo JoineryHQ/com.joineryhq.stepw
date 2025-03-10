@@ -11,7 +11,7 @@ class CRM_Stepw_Page_Step extends CRM_Core_Page {
   //   - get workflowintance $wi based on given 'stepw_wiid'
   // - if we're given step_done_step_id:
   //   - timestamp step completed in $wi
-  // - get $wi next step url, and redirect thence.
+  // - get $wi first uncompleted step url, and redirect thence.
   // 
   // note:val: none; WI and Step classes will throw exceptions on invalid publicIds
   //
@@ -43,8 +43,8 @@ class CRM_Stepw_Page_Step extends CRM_Core_Page {
       }
     }
     
-    $nextStepUrl = $workflowInstance->getNextStepUrl();
-    CRM_Utils_System::redirect($nextStepUrl);
+    $firstUncompletedStepUrl = $workflowInstance->getFirstUncompletedStepUrl();
+    CRM_Utils_System::redirect($firstUncompletedStepUrl);
     
   }
 

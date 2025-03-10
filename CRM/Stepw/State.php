@@ -125,7 +125,7 @@ class CRM_Stepw_State {
   private function doStateCleanup($state) {
     $stateWorkflowInstances = $state['workflowInstances'];
     $retainedWorkflowInstances = [];
-    $multisortLastModified = [];
+    $multisortByModifiedTimestamp = [];
 
     // Ignore any workflowInstances that aren't the right class (which should never happen anyway),
     // and prepare to sort by age.
@@ -135,13 +135,13 @@ class CRM_Stepw_State {
         // not a valid instance.
         $retain = false;
       }
-      elseif ((time() - ($workflowInstance->getLastModified() ?? 0)) > self::maxWorkflowAgeSeconds) {
+      elseif ((time() - ($workflowInstance->getModifiedTimestamp() ?? 0)) > self::maxWorkflowAgeSeconds) {
         // instance is too old.
         $retain = false;
       }
 
       if ($retain) {
-        $multisortLastModified[$key] = $workflowInstance->getLastModified();
+        $multisortByModifiedTimestamp[$key] = $workflowInstance->getModifiedTimestamp();
         $retainedWorkflowInstances[$key] = $workflowInstance;
       }
     }
@@ -149,7 +149,7 @@ class CRM_Stepw_State {
     // If we have more than N instances, remove all but the N newest.
     if (count($retainedWorkflowInstances) > self::maxWorkflowCount) {
       // Sort by age, newest first
-      array_multisort($multisortLastModified, SORT_DESC, $retainedWorkflowInstances);
+      array_multisort($multisortByModifiedTimestamp, SORT_DESC, $retainedWorkflowInstances);
       $keys = array_keys($retainedWorkflowInstances);
       // Keep only the N newest.
       $retainedWorkflowInstances = array_slice($retainedWorkflowInstances, 0, self::maxWorkflowCount);

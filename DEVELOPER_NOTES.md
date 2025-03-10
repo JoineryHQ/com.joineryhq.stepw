@@ -24,3 +24,16 @@ as no other means was easily found for adding our own parameters into afform req
 assuring that only valid query parameters are used in URLs that will load pages
 in such contexts; where invalid parameters are given, the user should be redirected
 away from the afform page -- typically to via a thrown CRM_Stepw_Exception.
+
+## Consistent naming of sequential terminology:
+In PHP/JS names (variables, methods, etc.), this codebase aims for consistent use 
+of the following terms:
+
+- previous: the item before the given item.
+- subsequent: the item after the given item.
+- first: first item in the set
+- last: last item in the set.
+- final: not used except in special cases.
+
+Inconsistent use of these and other terms (such as 'next', which is not used)
+can lead to confusion, which this section aims to avoid.

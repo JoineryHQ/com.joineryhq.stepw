@@ -202,7 +202,7 @@ class CRM_Stepw_Utils_WpShortcode {
       $stepwiseShortcodeDebug = ($_GET['stepwise-button-debug'] ?? 0);
       if ($stepwiseShortcodeDebug) {
         $ret['buttonDisabled'] = ($_GET['stepwise-button-disabled'] ?? NULL);
-        $ret['buttonText'] = $_GET['stepwise-button-text'] ?? 'Next';
+        $ret['buttonText'] = $_GET['stepwise-button-text'] ?? 'Continue';
         $ret['buttonCount'] = $_GET['stepwise-button-count'] ?? 1;
         $ret['stepOrdinal'] = $_GET['stepwise-step'] ?? 1;
         $ret['stepTotalCount'] = $_GET['stepwise-step-count'] ?? 10;        
