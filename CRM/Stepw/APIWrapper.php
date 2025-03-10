@@ -264,6 +264,8 @@ class CRM_Stepw_APIWrapper {
 
   private static function RESPOND_4_afformsubmission_update(Civi\API\Event\RespondEvent $event) {
     // note: here we will:
+    // - Determine any created contact ID, and set this as a workflowInstance property.
+    // - Determine any created activity ID, and record this in the step.
     // - Close the step.
     //
     // note: ignore and return if any of:
@@ -287,20 +289,30 @@ class CRM_Stepw_APIWrapper {
     $response = $event->getResponse();
     $afformSubmissionId = ($response[0]['id'] ?? '');
     if ($afformSubmissionId) {
+      // Seems impossible that afformSubmissionid would be empty, but we're being conditional just in case.
       $afformSubmission = \Civi\Api4\AfformSubmission::get()
         ->setCheckPermissions(FALSE)
         ->addWhere('id', '=', $afformSubmissionId)
         ->execute()
         ->first();
       $afformName = ($afformSubmission['afform_name'] ?? '');
-    }
-    if (empty($afformName) || !CRM_Stepw_Utils_Validation::stepIsForAfformName($workflowInstancePublicId, $stepPublicId, $afformName)) {
-      throw new  CRM_Stepw_Exception("Referenced step is not for this affrom '$afformName', in " . __METHOD__, 'CRM_Stepw_APIWrapper_RESPOND_4.afformsubmission.create_mismatch-afform');
-    }
-    
-    // Complete this step in the workflowInstance.
-    $workflowInstance = CRM_Stepw_State::singleton()->getWorkflowInstance($workflowInstancePublicId);
-    $workflowInstance->completeStep($stepPublicId);
-    
+      if (empty($afformName) || !CRM_Stepw_Utils_Validation::stepIsForAfformName($workflowInstancePublicId, $stepPublicId, $afformName)) {
+        throw new  CRM_Stepw_Exception("Referenced step is not for this affrom '$afformName', in " . __METHOD__, 'CRM_Stepw_APIWrapper_RESPOND_4.afformsubmission.create_mismatch-afform');
+      }
+
+      $workflowInstance = CRM_Stepw_State::singleton()->getWorkflowInstance($workflowInstancePublicId);
+
+      // Determine any created contact ID, and set this as a workflowInstance property.
+      if ($createdContactId = ($afformSubmission['data']['Individual1'][0]['id'] ?? '')) {
+        $workflowInstance->setCreatedIndividualCid($createdContactId);
+      }
+      // Determine any created activity ID, and record this in the step.
+      if ($createdActivityId = ($afformSubmission['data']['Activity1'][0]['id'] ?? '')) {
+        $workflowInstance->setStepCreatedActivityId($stepPublicId, $createdActivityId);
+      }
+
+      // Complete this step in the workflowInstance.
+      $workflowInstance->completeStep($stepPublicId);
+    }   
   }
 }

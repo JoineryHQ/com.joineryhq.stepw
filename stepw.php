@@ -176,64 +176,6 @@ function stepw_civicrm_alterAngular(\Civi\Angular\Manager $angular) {
 }
 
 /**
- * Late (low-priority) listener on 'civi.afform.submit' event (bound in stepw_civicrm_config()).
- * 
- * @param \Civi\Afform\Event\AfformSubmitEvent $event
- * @return void
- */
-function _stepw_afform_submit_late(\Civi\Afform\Event\AfformSubmitEvent $event) {
-  // Note: here we will:
-  // - Determine any created contact ID, and set this as a workflowInstance property.
-  // - Determine any created activity ID, and record this in the step.
-
-  // note:val: validate _stepw_afform_submit_late.                                                                                                                                        
-  //  - Given Step is for this afform ($afformName matches step/option['afformName'])
-  //  -- VALIDATION FAILURE: Throw an exception.
-
-  // If is not stepwise workflow: return.
-  if (!CRM_Stepw_Utils_Userparams::isStepwiseWorkflow('referer')) {
-    // If we're not in a stepwise workflow, there's nothing for us to do here.
-    return;
-  }  
-
-  // Validation: on failure we will: throw an exception. Clearly somebody is mucking with params.
-  // 
-  // validate: fail if: Given Step is not for this afform.
-  $workflowInstancePublicId = CRM_Stepw_Utils_Userparams::getUserParams('referer', CRM_Stepw_Utils_Userparams::QP_WORKFLOW_INSTANCE_ID);
-  $stepPublicId = CRM_Stepw_Utils_Userparams::getUserParams('referer', CRM_Stepw_Utils_Userparams::QP_STEP_ID);
-  $afform = $event->getAfform();
-  $afformName = ($afform['name'] ?? NULL);
-  if (!CRM_Stepw_Utils_Validation::stepIsForAfformName($workflowInstancePublicId, $stepPublicId, $afformName)) {
-    throw new  CRM_Stepw_Exception("Referenced step is not for this affrom: '$afformName', in " . __METHOD__, 'stepw_afform_submit_late_mismatch-afform');
-  }
-
-  $workflowInstance = CRM_Stepw_State::singleton()->getWorkflowInstance($workflowInstancePublicId);
-  
-  $event->getEntityIds();
-  
-  $entityType = $event->getEntityType();
-  switch ($entityType) {
-    case 'Individual':
-      // Determine any created contact ID, and set this as a workflowInstance property.
-      $entityIds = $event->getEntityIds('Individual1');
-      $individualContactId = ($entityIds[0] ?? NULL);
-      if (!empty($individualContactId)) {
-        $workflowInstance->setCreatedIndividualCid($individualContactId);
-      }
-      break;
-    case 'Activity':
-      // Determine any created activity ID, and record this in the step.
-      $entityIds = $event->getEntityIds('Activity1');
-      $activityId = ($entityIds[0] ?? NULL);
-      if (!empty($activityId)) {
-        $workflowInstance->setStepCreatedActivityId($stepPublicId, $activityId);
-      }
-      break;
-  }
-
-}
-
-/**
  * Early (high-priority) listener on 'civi.afform.submit' event (bound in stepw_civicrm_config()).
  * 
  * FLAG_STEPW_AFFORM_BRITTLE
@@ -328,7 +270,6 @@ function stepw_civicrm_config(&$config): void {
   Civi::dispatcher()->addListener('civi.api.prepare', ['CRM_Stepw_APIWrapper', 'PREPARE'], -100);
   Civi::dispatcher()->addListener('civi.api.respond', ['CRM_Stepw_APIWrapper', 'RESPOND'], -100);
   Civi::dispatcher()->addListener('civi.afform.submit', '_stepw_afform_submit_early', 1000);
-  Civi::dispatcher()->addListener('civi.afform.submit', '_stepw_afform_submit_late', -1000);
 }
 
 /**
