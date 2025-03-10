@@ -234,7 +234,7 @@ class CRM_Stepw_APIWrapper {
     //
     // note:val: validate afform.get respond (referer):
     //  - Given Step is for this afform
-    //  -- ON VALIDATION FAILURE: do nothing and return (this is an api call, possibly by ajax)
+    //  -- ON VALIDATION FAILURE: throw an exception
     //
 
     if (!CRM_Stepw_Utils_Userparams::isStepwiseWorkflow('referer')) {
@@ -258,45 +258,49 @@ class CRM_Stepw_APIWrapper {
     $response = $event->getResponse();
     $afformSubmissionId = $response[0]['id'];
     $workflowInstance = CRM_Stepw_State::singleton()->getWorkflowInstance($workflowInstancePublicId);
-    $workflowInstance->setStepAfformSubmissionId($afformSubmissionId, $stepPublicId);
+    $workflowInstance->setStepAfformSubmissionId($stepPublicId, $afformSubmissionId);
 
   }
 
-  /**
-   * API wrapper for 'respond' events on 4.activity.getlinks
-   *
-   * @param Civi\API\Event\RespondEvent $event
-   */
-  private static function RESPOND_4_activity_getlinks (Civi\API\Event\RespondEvent $event) {
-    // Remove our custom activity types from the list of types for which the user
-    // could create an activity (these should never be created manually).
-    $protectedActivityTypeNames = [
-      'Stepwise Workflow Instance',
-      'Stepwise Workflow Instance Step',
-    ];
-    $activityTypeOptionValues = \Civi\Api4\OptionValue::get()
-      ->setCheckPermissions(FALSE)
-      ->addSelect('value')
-      ->addWhere('option_group_id:name', '=', 'activity_type')
-      ->addWhere('name', 'IN', $protectedActivityTypeNames)
-      ->execute();
-    $protectedActivityTypeIds = CRM_Utils_Array::collect('value', (array)$activityTypeOptionValues);
+  private static function RESPOND_4_afformsubmission_update(Civi\API\Event\RespondEvent $event) {
+    // note: here we will:
+    // - Close the step.
+    //
+    // note: ignore and return if any of:
+    // - we're not in a stepwise workflow
+    //
+    // note:val: validate afformsubmission.update respond (referer):
+    //  - Given Step is for this afform
+    //  -- ON VALIDATION FAILURE: throw an exception
+    //
 
-    $response = $event->getResponse();
-    foreach ((array)$response as $responseKey => $responseValue) {
-      $path = $responseValue['path'] ?? '';
-      if (empty($path)) {
-        // Path is never expected to be empty, but just in case:
-        continue;
-      }
-      $u = CRM_Utils_Url::parseUrl($path);
-      $pathParams = [];
-      parse_str($u->getQuery(), $pathParams);
-      if (in_array(($pathParams['atype'] ?? ''), $protectedActivityTypeIds)) {
-        unset($response[$responseKey]);
-      }
+    if (!CRM_Stepw_Utils_Userparams::isStepwiseWorkflow('referer')) {
+      // We're not in a workflowInstance (per referer), so there's nothing for us to do here.
+      return;
     }
-    $event->setResponse($response);
-  }
 
+    // Validation: on failure we'll throw an exception. Clearly somebody is mucking with params.
+    //
+    // validate: fail if: Given Step is not for this afform.
+    $workflowInstancePublicId = CRM_Stepw_Utils_Userparams::getUserParams('referer', CRM_Stepw_Utils_Userparams::QP_WORKFLOW_INSTANCE_ID);
+    $stepPublicId = CRM_Stepw_Utils_Userparams::getUserParams('referer', CRM_Stepw_Utils_Userparams::QP_STEP_ID);
+    $response = $event->getResponse();
+    $afformSubmissionId = ($response[0]['id'] ?? '');
+    if ($afformSubmissionId) {
+      $afformSubmission = \Civi\Api4\AfformSubmission::get()
+        ->setCheckPermissions(FALSE)
+        ->addWhere('id', '=', $afformSubmissionId)
+        ->execute()
+        ->first();
+      $afformName = ($afformSubmission['afform_name'] ?? '');
+    }
+    if (empty($afformName) || !CRM_Stepw_Utils_Validation::stepIsForAfformName($workflowInstancePublicId, $stepPublicId, $afformName)) {
+      throw new  CRM_Stepw_Exception("Referenced step is not for this affrom '$afformName', in " . __METHOD__, 'CRM_Stepw_APIWrapper_RESPOND_4.afformsubmission.create_mismatch-afform');
+    }
+    
+    // Complete this step in the workflowInstance.
+    $workflowInstance = CRM_Stepw_State::singleton()->getWorkflowInstance($workflowInstancePublicId);
+    $workflowInstance->completeStep($stepPublicId);
+    
+  }
 }

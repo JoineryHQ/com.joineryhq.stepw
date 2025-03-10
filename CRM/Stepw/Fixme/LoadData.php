@@ -18,7 +18,31 @@ class CRM_Stepw_Fixme_LoadData {
     else {
       $data = [];
     }
+    
+    // If any configured workflow is not already mirrored in a StepWorkflow entity,
+    // make it so. (Obviously this won't be needed after when we're storing configs
+    // in the DB instead of a file.
+    self::primeDbWorkflowEntities($data);
+    
     return $data;
+  }
+  
+  private static function primeDbWorkflowEntities($data) {
+    foreach ($data as $workflowId => $workflow) {
+      $stepwWorkflowCount = \Civi\Api4\StepwWorkflow::get()
+        ->setCheckPermissions(FALSE)
+        ->addWhere('id', '=', $workflowId)
+        ->execute()
+        ->count();
+      if (!$stepwWorkflowCount) {
+        $publicId = $workflow['settings']['public_id'];
+        $results = \Civi\Api4\StepwWorkflow::create()
+          ->setCheckPermissions(FALSE)
+          ->addValue('title', 'from file: '. $workflowId)
+          ->addValue('public_id', $publicId)
+          ->execute();        
+      }
+    }
   }
 }
 

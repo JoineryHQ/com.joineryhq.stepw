@@ -107,18 +107,29 @@ class CRM_Stepw_WorkflowInstanceStep {
    * 
    * @return String URL for this step with all appropriate params.
    */  
-  public function getUrl() {
+  public function getBaseUrl() {
     $option = $this->getSelectedOption();
-    
     $baseUrl = $option['url'];
-    
+    return $baseUrl;
+  }
+  
+  /**
+   * Build and return the URL for the selected option in this step, i.e., to a WP post or afform, with all 
+   * appropriate query params and afform params.
+   * 
+   * @return String URL for this step with all appropriate params.
+   */  
+  public function getUrl() {
+    $baseUrl = $this->getBaseUrl();
+
     // Define stepw instance and step parameters to append to url.
     $params = [
       'i' => $this->workflowInstance->getPublicId(),
       's' => $this->publicId,
     ];
+
     $afformParams = [];
-    
+    $option = $this->getSelectedOption();    
     if($option['type'] == 'afform') {
       $afformParams = [];
       // If this option is afform, and if ->workflowInstance has a created contactId, append that in the
@@ -166,6 +177,12 @@ class CRM_Stepw_WorkflowInstanceStep {
     $option['afformSids'][] = $afformSubmissionId;
     $this->updateOption($option);
   }
+
+  public function setCreatedActivityId($activityId) {
+    $option = $this->getSelectedOption();
+    $option['createdActivityId'] = $activityId;
+    $this->updateOption($option);
+  }
   
   public function setSelectedOptionId(string $optionPublicId) {
     if (!array_key_exists($optionPublicId, $this->options)) {
@@ -178,5 +195,11 @@ class CRM_Stepw_WorkflowInstanceStep {
     $option = $this->getSelectedOption();
     $sids = ($option['afformSids'] ?? []);
     return ($sids[array_key_last($sids)] ?? NULL);
+  }
+
+  public function getCreatedActivityId() {
+    $option = $this->getSelectedOption();
+    $createdActivityId = ($option['createdActivityId'] ?? NULL);
+    return $createdActivityId;
   }
 }

@@ -183,8 +183,8 @@ function stepw_civicrm_alterAngular(\Civi\Angular\Manager $angular) {
  */
 function _stepw_afform_submit_late(\Civi\Afform\Event\AfformSubmitEvent $event) {
   // Note: here we will:
-  // - Determine what step was submitted, and timestamp this step submission in the workflow intance.
   // - Determine any created contact ID, and set this as a workflowInstance property.
+  // - Determine any created activity ID, and record this in the step.
 
   // note:val: validate _stepw_afform_submit_late.                                                                                                                                        
   //  - Given Step is for this afform ($afformName matches step/option['afformName'])
@@ -206,17 +206,31 @@ function _stepw_afform_submit_late(\Civi\Afform\Event\AfformSubmitEvent $event) 
   if (!CRM_Stepw_Utils_Validation::stepIsForAfformName($workflowInstancePublicId, $stepPublicId, $afformName)) {
     throw new  CRM_Stepw_Exception("Referenced step is not for this affrom: '$afformName', in " . __METHOD__, 'stepw_afform_submit_late_mismatch-afform');
   }
-  
-  // Complete this step in the workflowInstance.
+
   $workflowInstance = CRM_Stepw_State::singleton()->getWorkflowInstance($workflowInstancePublicId);
-  $workflowInstance->completeStep($stepPublicId);
-  // Determine any created contact ID, and set this as a workflowInstance property.
-  $entityIds = $event->getEntityIds('Individual1');
-  $individualContactId = ($entityIds[0] ?? NULL);
-  if (!empty($individualContactId)) {
-    $workflowInstance->setCreatedIndividualCid($individualContactId);
+  
+  $event->getEntityIds();
+  
+  $entityType = $event->getEntityType();
+  switch ($entityType) {
+    case 'Individual':
+      // Determine any created contact ID, and set this as a workflowInstance property.
+      $entityIds = $event->getEntityIds('Individual1');
+      $individualContactId = ($entityIds[0] ?? NULL);
+      if (!empty($individualContactId)) {
+        $workflowInstance->setCreatedIndividualCid($individualContactId);
+      }
+      break;
+    case 'Activity':
+      // Determine any created activity ID, and record this in the step.
+      $entityIds = $event->getEntityIds('Activity1');
+      $activityId = ($entityIds[0] ?? NULL);
+      if (!empty($activityId)) {
+        $workflowInstance->setStepCreatedActivityId($stepPublicId, $activityId);
+      }
+      break;
   }
-  // fixme: should we also record the created activity Ids? Might be needed for workflow instance closure / final recording.
+
 }
 
 /**

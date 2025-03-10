@@ -41,6 +41,7 @@ class CRM_Stepw_WorkflowData {
     foreach ($rawData as $workflowId => $workflow) {
       $publicId = $workflow['settings']['public_id'];
       $data[$publicId] = $workflow;
+      $data[$publicId]['id'] = $workflowId;
       foreach (($workflow['steps'] ?? []) as $stepId => $step) {
         foreach ($step['options'] as $optionId => $option) {
           if (($option['type'] ?? '') == 'afform' && ($afformName = ($option['afformName'] ?? FALSE))) {

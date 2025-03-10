@@ -9,7 +9,12 @@ class CRM_Stepw_WorkflowInstance {
   // fixme: we need to support post-submit validation handling (e.g. demographics) for each afform step/option.
   //
   
+  /**
+   * StepwWorkflow id for this intance's workflow
+   * @var Int
+   */
   private $workflowId;
+
   private $publicId;
   private $lastModified;
   private $isClosed = FALSE;
@@ -41,14 +46,14 @@ class CRM_Stepw_WorkflowInstance {
    */
   private $stepNumbersByPublicId = [];
   
-  public function __construct(String $workflowId) {
-    $workflowConfig = CRM_Stepw_WorkflowData::singleton()->getWorkflowConfigById($workflowId);
+  public function __construct(String $publicWorkflowId) {
+    $workflowConfig = CRM_Stepw_WorkflowData::singleton()->getWorkflowConfigById($publicWorkflowId);
     if (empty($workflowConfig)) {
       // If we're given an invaild workflowId, throw an exception.
-      throw new  CRM_Stepw_Exception("Given QP_START_WORKFLOW_ID ('$workflowId') does not match an available configured workflow, in " . __METHOD__, 'CRM_Stepw_WorkflowInstance_construct_invalid-workflow-id');
+      throw new  CRM_Stepw_Exception("Given QP_START_WORKFLOW_ID ('$publicWorkflowId') does not match an available configured workflow, in " . __METHOD__, 'CRM_Stepw_WorkflowInstance_construct_invalid-workflow-id');
     }
     $this->updateLastModified();
-    $this->workflowId = $workflowId;
+    $this->workflowId = $workflowConfig['id'];
     $this->publicId = CRM_Stepw_Utils_General::generatePublicId();
     foreach ($workflowConfig['steps'] as $configStepNumber => &$configStep) {
       // Create a new Step object, store ->steps and map the ids in ->stepNumbersByPublicId
@@ -231,9 +236,15 @@ class CRM_Stepw_WorkflowInstance {
     return $url;
   }
 
-  public function setStepAfformSubmissionId(int $afformSubmissionId, string $stepKey) {
+  public function setStepAfformSubmissionId(string $stepKey, int $afformSubmissionId) {
     $step = $this->getStepByKey($stepKey);
     $step->setAfformSubmissionId($afformSubmissionId);
+    $this->updateLastModified();
+  }
+
+  public function setStepCreatedActivityId(string $stepKey, int $activityId) {
+    $step = $this->getStepByKey($stepKey);
+    $step->setCreatedActivityId($activityId);
     $this->updateLastModified();
   }
   
@@ -334,9 +345,36 @@ class CRM_Stepw_WorkflowInstance {
   }  
 
   public function close() {
+    if ($this->isClosed) {
+      // We're already closed. Nothing to do here.
+      return;
+    }
+
     $this->isClosed = TRUE;
     // fixme: need to record everything correctly in civicrm, upon closure of this instance
     //  (i.e., when the user has completed the workflow).
+    
+    // create a workflowInstance entity for this instance.
+    $workflowInstanceCreate = \Civi\Api4\StepwWorkflowInstance::create()
+      ->setCheckPermissions(FALSE)
+      ->addValue('contact_id', $this->createdIndividualCid)
+      ->addValue('workflow_id', $this->workflowId)
+      ->execute();
+    
+    // create workflowinstanceStep entities for each step in this instance
+    foreach ($this->steps as $zeroBasedstepId => $step) {
+      $stepNubmer = ($zeroBasedstepId + 1);
+      $activityId = $step->getCreatedActivityId();
+      $url = $step->getBaseUrl();
+
+      $results = \Civi\Api4\StepwWorkflowInstanceStep::create()
+        ->setCheckPermissions(FALSE)
+        ->addValue('workflow_instance_id', $workflowInstanceCreate[0]['id'])
+        ->addValue('step_number', $stepNubmer)
+        ->addValue('activity_id', $activityId)
+        ->addValue('url', $url)
+        ->execute();  
+    }
   }
 
   /**
