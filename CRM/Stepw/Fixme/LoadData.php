@@ -36,9 +36,10 @@ class CRM_Stepw_Fixme_LoadData {
         ->count();
       if (!$stepwWorkflowCount) {
         $publicId = $workflow['settings']['public_id'];
+        $title = $workflow['settings']['title'];
         $results = \Civi\Api4\StepwWorkflow::create()
           ->setCheckPermissions(FALSE)
-          ->addValue('title', 'from file: '. $workflowId)
+          ->addValue('title', $title)
           ->addValue('public_id', $publicId)
           ->execute();        
       }
