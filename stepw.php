@@ -379,3 +379,14 @@ function stepw_civicrm_install(): void {
 function stepw_civicrm_enable(): void {
   _stepw_civix_civicrm_enable();
 }
+
+use Symfony\Component\DependencyInjection\ContainerBuilder;
+use Symfony\Component\DependencyInjection\Definition;
+
+function stepw_civicrm_container(ContainerBuilder $container) {
+  $workflowGet = \Civi\Api4\Service\Spec\Provider\StepwWorkflowGetSpecProvider::class;
+
+  $container->setDefinition($workflowGet, new Definition($workflowGet))
+    ->setPublic(TRUE)
+    ->addTag('spec_provider');
+}
