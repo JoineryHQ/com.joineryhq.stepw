@@ -5,9 +5,6 @@
  */
 class CRM_Stepw_WorkflowInstance {
   
-  // fixme: we need to support post-submit validation handling (e.g. demographics) for each afform step/option.
-  //
-  
   /**
    * StepwWorkflow id for this intance's workflow
    * @var Int
@@ -368,8 +365,6 @@ class CRM_Stepw_WorkflowInstance {
     }
 
     $this->isClosed = TRUE;
-    // fixme: need to record everything correctly in civicrm, upon closure of this instance
-    //  (i.e., when the user has completed the workflow).
     
     // create a workflowInstance entity for this instance.
     $workflowInstanceCreate = \Civi\Api4\StepwWorkflowInstance::create()
