@@ -37,3 +37,6 @@ of the following terms:
 
 Inconsistent use of these and other terms (such as 'next', which is not used)
 can lead to confusion, which this section aims to avoid.
+
+
+fixme: qr codes via api? https://goqr.me/api/doc/create-qr-code/
