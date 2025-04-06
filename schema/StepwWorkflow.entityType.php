@@ -7,8 +7,8 @@ return [
   'table' => 'civicrm_stepw_workflow',
   'class' => 'CRM_Stepw_DAO_StepwWorkflow',
   'getInfo' => fn() => [
-    'title' => E::ts('StepwWorkflow'),
-    'title_plural' => E::ts('StepwWorkflows'),
+    'title' => E::ts('Stepwise Workflow'),
+    'title_plural' => E::ts('Stepwise Workflows'),
     'description' => E::ts('Stewise workflow'),
     'log' => TRUE,
     'label_field' => 'title',
