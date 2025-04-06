@@ -47,7 +47,20 @@ return [
         'on_delete' => 'CASCADE',
       ],
     ],
+    'created' => [
+      'title' => E::ts('Workflow ID'),
+      'sql_type' => 'datetime',
+      'input_type' => 'Select Date',
+      'description' => E::ts('Date/time this WI was created (WI entry is created upon WI closure/completion'),
+      'default' => 'CURRENT_TIMESTAMP',
+    ],
   ],
-  'getIndices' => fn() => [],
+  'getIndices' => fn() => [
+    'index_stepwWorkflowinstance_created' => [
+      'fields' => [
+        'created' => TRUE,
+      ],
+    ],
+  ],
   'getPaths' => fn() => [],
 ];
