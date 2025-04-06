@@ -1,0 +1,126 @@
+<?php
+use CRM_Stepw_ExtensionUtil as E;
+
+return [
+  [
+    'name' => 'SavedSearch_StepwWorkflows',
+    'entity' => 'SavedSearch',
+    'cleanup' => 'unused',
+    'update' => 'unmodified',
+    'params' => [
+      'version' => 4,
+      'values' => [
+        'name' => 'StepwWorkflows',
+        'label' => E::ts('Stepwise Workflows'),
+        'api_entity' => 'StepwWorkflow',
+        'api_params' => [
+          'version' => 4,
+          'select' => ['id', 'title', 'url', 'is_active'],
+          'orderBy' => [],
+          'where' => [],
+          'groupBy' => [],
+          'join' => [],
+          'having' => [],
+        ],
+      ],
+      'match' => ['name'],
+    ],
+  ],
+  [
+    'name' => 'SavedSearch_StepwWorkflows_SearchDisplay_StepwWorkflow_Search_by_a_example_com_Table_1',
+    'entity' => 'SearchDisplay',
+    'cleanup' => 'unused',
+    'update' => 'unmodified',
+    'params' => [
+      'version' => 4,
+      'values' => [
+        'name' => 'StepwWorkflow_Search_by_a_example_com_Table_1',
+        'label' => E::ts('StepwWorkflows Table1'),
+        'saved_search_id.name' => 'StepwWorkflows',
+        'type' => 'table',
+        'settings' => [
+          'description' => E::ts(''),
+          'sort' => [],
+          'limit' => 50,
+          'pager' => [],
+          'placeholder' => 5,
+          'columns' => [
+            [
+              'type' => 'field',
+              'key' => 'id',
+              'dataType' => 'Integer',
+              'label' => E::ts('ID'),
+              'sortable' => TRUE,
+            ],
+            [
+              'type' => 'field',
+              'key' => 'title',
+              'dataType' => 'String',
+              'label' => E::ts('Title'),
+              'sortable' => TRUE,
+            ],
+            [
+              'type' => 'field',
+              'key' => 'url',
+              'dataType' => 'String',
+              'label' => E::ts('Url'),
+              'sortable' => TRUE,
+              'rewrite' => '',
+            ],
+            [
+              'type' => 'field',
+              'key' => 'is_active',
+              'dataType' => 'Boolean',
+              'label' => E::ts('Enabled'),
+              'sortable' => TRUE,
+            ],
+            [
+              'text' => E::ts(''),
+              'style' => 'default',
+              'size' => 'btn-xs',
+              'icon' => 'fa-bars',
+              'links' => [
+                [
+                  'path' => '',
+                  'icon' => 'fa-toggle-off',
+                  'text' => E::ts('Disable'),
+                  'style' => 'default',
+                  'condition' => ['is_active', '=', TRUE],
+                  'task' => 'disable',
+                  'entity' => 'StepwWorkflow',
+                  'action' => '',
+                  'join' => '',
+                  'target' => 'crm-popup',
+                ],
+                [
+                  'task' => 'enable',
+                  'entity' => 'StepwWorkflow',
+                  'join' => '',
+                  'target' => 'crm-popup',
+                  'icon' => 'fa-toggle-on',
+                  'text' => E::ts('Enable'),
+                  'style' => 'default',
+                  'path' => '',
+                  'action' => '',
+                  'condition' => ['is_active', '=', FALSE],
+                ],
+              ],
+              'type' => 'menu',
+              'alignment' => 'text-right',
+            ],
+          ],
+          'actions' => ['disable', 'enable'],
+          'classes' => ['table', 'table-striped'],
+          'actions_display_mode' => 'menu',
+          'cssRules' => [
+            ['disabled', 'is_active', '=', FALSE],
+          ],
+        ],
+      ],
+      'match' => [
+        'saved_search_id',
+        'name',
+      ],
+    ],
+  ],
+];

@@ -1,0 +1,11 @@
+{
+    "type": "search",
+    "title": "Stepwise Workflows",
+    "placement": [],
+    "icon": "fa-list-alt",
+    "server_route": "civicrm/stepwise/admin/workflows",
+    "permission": [
+        "administer CiviCRM"
+    ],
+    "permission_operator": "AND"
+}
