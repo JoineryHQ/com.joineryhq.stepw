@@ -38,6 +38,16 @@ return [
       'description' => E::ts('Long unguessable string identifier'),
       'required' => TRUE,
     ],
+    'is_active' => [
+      'title' => ts('Workflow Is Active'),
+      'sql_type' => 'boolean',
+      'input_type' => 'CheckBox',
+      'description' => ts('Is this workflow active?'),
+      'default' => TRUE,
+      'input_attrs' => [
+        'label' => ts('Enabled'),
+      ],
+    ],
   ],
   'getIndices' => fn() => [
     'index_stepwWorkflow_title' => [
@@ -51,6 +61,11 @@ return [
         'public_id' => TRUE,
       ],
       'unique' => TRUE,
+    ],
+    'index_stepwWorkflow_is_active' => [
+      'fields' => [
+        'is_active' => TRUE,
+      ],
     ],
   ],
   'getPaths' => fn() => [],
