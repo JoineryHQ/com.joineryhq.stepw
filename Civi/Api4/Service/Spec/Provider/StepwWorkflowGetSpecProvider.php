@@ -46,7 +46,7 @@ class StepwWorkflowGetSpecProvider extends \Civi\Core\Service\AutoService implem
    * @return string
    */
   public static function calculateUrl(array $field, $query): string {
-    $baseUrl = \CRM_Utils_System::url('civicrm/stepwise/step', 'stepw_wid=', TRUE, NULL, FALSE);
+    $baseUrl = \CRM_Utils_System::url('civicrm/stepwise/step', 'stepw_wid=', TRUE, NULL, FALSE, TRUE);
     return "CONCAT('$baseUrl', " . $field['sql_name'] . ")";
   }
 
