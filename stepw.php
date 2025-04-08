@@ -1,7 +1,5 @@
 <?php
 
-// fixme: add a tool for generating qr codes in-app?
-
 require_once 'stepw.civix.php';
 
 use CRM_Stepw_ExtensionUtil as E;
@@ -390,3 +388,100 @@ function stepw_civicrm_container(ContainerBuilder $container) {
     ->setPublic(TRUE)
     ->addTag('spec_provider');
 }
+
+/**
+ * Implements hook_civicrm_navigationMenu().
+ *
+ * @link https://docs.civicrm.org/dev/en/latest/hooks/hook_civicrm_navigationMenu/
+ */
+function stepw_civicrm_navigationMenu(&$menu) {
+  $customizeDataPath = "";
+  _stepw_findMenuItemPathByIName($menu, ["Customize data and screens"], $customizeDataPath);
+ 
+  if ($customizeDataPath) {
+    $items = [];
+    $items[] = [
+      'parent' => $customizeDataPath,
+      'properties' => [
+        'label' => E::ts('Stepwise Workflows'),
+        'name' => 'Stepwise Workflows',
+        'url' => NULL,
+        'permission' => 'administer civicrm',
+        'operator' => 'AND',
+        'separator' => NULL,
+      ],
+    ];
+    $items[] = [
+      'parent' => "{$customizeDataPath}/Stepwise Workflows",
+      'properties' => [
+        'label' => E::ts('Workflows'),
+        'name' => 'Workflows',
+        'url' => CRM_Utils_System::url('civicrm/stepwise/admin/workflows'),
+        'permission' => 'administer civicrm',
+        'operator' => 'AND',
+        'separator' => NULL,
+        'icon' => 'crm-i fa-arrows-turn-to-dots fa-flip-vertical',
+      ],
+    ];
+    foreach ($items as $item) {
+      _stepw_civix_insert_navigation_menu($menu, $item['parent'], $item['properties']);
+    }
+    _stepw_civix_navigationMenu($menu);
+  }
+}
+
+ /**
+  * Case-insensitive recursive function to find the full menu path for a given item(s).
+  * E.g. searching for 'New Individual' would typicaly yield 'Contacts/New Individual'.
+  *
+  * The matching full path is stored in $result.
+  *
+  * The given menu tree is searched depth-first, so that e.g. an item under Search
+  * will be tested before an item under Administrator (per default installed menu
+  * structure).
+  *
+  * @param Array $menu CiviCRM menu array, as e.g. passed to hook_civicrm_navigationMenu($menu).
+  * @param Array $labels A list of one or more menut item labels. Behavior:
+  *   - If this array contains multiple values, the search will look for ANY of them
+  *     and return the path to the FIRST matching menu item.
+  *   - Matching is case-insensitive.
+  * @param String $result Passed by reference; the matching full path to the first matching menu item.
+  * @param String $parentPath Expected to be used internally, not by function consumers.
+  *   The path build up so far for parent menu items.
+  * @param Boolean $isChild DO NOT USE. For internal use only, to know whether we're being
+  *   called recursively or by a function consumer.
+  *
+  * @return void
+  */
+ function _stepw_findMenuItemPathByIName(array $menu, array $labels, &$result, string $parentPath = "", $isChild = FALSE) {
+   if (!empty($result)) {
+     // We have our final result; no need to continue here.
+     return;
+   }
+   if (!$isChild) {
+     // On first run (top-level), ensure labels are lowercased for insensitive matching.
+     foreach ($labels as &$label) {
+       $label = strtolower($label);
+     }
+   }
+   foreach ($menu as $menuKey => $menuItem) {
+     // Identify the menu item name and append it to the parent path.
+     $menuItemName = $menuItem['attributes']['name'];
+     $menuItemLabel = $menuItem['attributes']['label'];
+     $subPath = "{$parentPath}/{$menuItemName}";
+     // If we have a match, then our subpath is the final result, so populate
+     // $result and return.
+     if (in_array(strtolower($menuItemName), $labels)) {
+       $result = trim($subPath, '/');
+       return;
+     }
+     else {
+       // If we have a child menu structure, recurse into that, passing
+       // $subPath as parent path.
+       if ($child = ($menuItem['child'] ?? NULL)) {
+         $func = __FUNCTION__;
+         $func($child, $labels, $result, $subPath, TRUE);
+       }
+     }
+   }
+ }
