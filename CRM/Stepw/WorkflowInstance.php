@@ -409,6 +409,7 @@ class CRM_Stepw_WorkflowInstance {
     $lastCompletedStep = $this->getLastCompletedStep();
     
     if ($lastCompletedStep) {
+      // FIXME: do this with Smart Groups, not where clauses (it's more flexible, and less development)
       $postSubmitValidation = $lastCompletedStep->getSelectedOptionVar('postSubmitValidation');
       
       if ($this->createdIndividualCid && ($individualWhere = $postSubmitValidation['where']['Individual1'])) {

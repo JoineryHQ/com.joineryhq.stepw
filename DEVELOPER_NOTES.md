@@ -39,4 +39,11 @@ Inconsistent use of these and other terms (such as 'next', which is not used)
 can lead to confusion, which this section aims to avoid.
 
 
-fixme: qr codes via api? https://goqr.me/api/doc/create-qr-code/
+fixme/TODO:
+- qr codes via api? https://goqr.me/api/doc/create-qr-code/
+- add forms for Workflow entity management https://docs.civicrm.org/dev/en/latest/step-by-step/create-entity/#7-add-a-form  
+  but note that we'll also need a full-featured "workflow configuration" interface
+  that probably goes beyond that simple form.
+- support custom fields on WorkflowInstance, so we can track award distribution.
+- build a report for tracking award distribution
+- add WorkflowInstance data on contact summary: https://docs.civicrm.org/dev/en/latest/step-by-step/create-entity/#10-add-a-tab-on-contact-summary

@@ -57,6 +57,7 @@
                 'Submit and Go to afform 2',
               ],
               'postSubmitValidation' => [
+                // FIXME: do this with Smart Groups, not where clauses (it's more flexible, and less development)
                 'where' => [
                   'Individual1' => [
                     ['age_years', '>=', 18],
