@@ -60,12 +60,12 @@ return [
               'sortable' => TRUE,
             ],
             [
-              'type' => 'field',
+              'type' => 'html',
               'key' => 'url',
               'dataType' => 'String',
               'label' => E::ts('Url'),
               'sortable' => TRUE,
-              'rewrite' => '',
+              'rewrite' => '<span class="stepw-workflow-url">[url]</span><a class="stepw-workflow-url-copy action-item crm-hover-button" href="#copy"> <i class="crm-i fa-clipboard"></i> Copy URL</a>',
             ],
             [
               'type' => 'field',

@@ -1,0 +1,9 @@
+/**
+ * CSS Styles for stepwAfsearchStepwiseWorkflows angularjs module.
+ */
+afsearch-stepwise-workflows tr a.stepw-workflow-url-copy {
+  margin-left: .5em;
+}
+afsearch-stepwise-workflows tr a.stepw-workflow-url-copy i.crm-i {
+  margin-right: .5em;
+}
