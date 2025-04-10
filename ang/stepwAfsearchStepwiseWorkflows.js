@@ -6,7 +6,26 @@
 })(angular, CRM.$, CRM._);
 
 CRM.$(function ($) {
-  var copyFailMessage = ts('Sometimes this happens. Could be because of some setting in your browser? You\'ll need to copy the URL manually.');
+
+  function showCopyClipboardStatus(status, messageHtml) {
+    if (status === true) {
+      CRM.stepwAlert.fire({
+        title: 'Copied',
+        html: messageHtml,
+        icon: 'success',
+        confirmButtonText: 'OK'
+      });      
+    }
+    else {
+      messageHtml = ts("Sometimes this happens. Could be because of some setting in your browser? You'll need to copy the URL manually.");
+      CRM.stepwAlert.fire({
+        title: 'Could not copy',
+        html: messageHtml,
+        icon: 'error',
+        confirmButtonText: 'Close'
+      });
+    }
+  }
 
   /**
    * Fallback copy-to-clipboard function when browser doesn't provide navigator.clipboard.
@@ -14,10 +33,8 @@ CRM.$(function ($) {
    * from https://deanmarktaylor.github.io/clipboard-test/, referenced in https://stackoverflow.com/a/30810322/6476602
    *
    * @param String text Text to be written to clipboard.
-   * @return True on success; False on failure.
    */
-  function fallbackCopyTextToClipboard(text) {
-    var ret = false;
+  function fallbackCopyTextToClipboard(text, successMessageHtml) {
     var textArea = document.createElement("textarea");
     textArea.value = text;
 
@@ -32,20 +49,13 @@ CRM.$(function ($) {
 
     try {
       document.execCommand('copy');
-      ret = true;
+      showCopyClipboardStatus(true, successMessageHtml);
     } catch (err) {
-      CRM.stepwAlert.fire({
-        title: 'Could not copy URL',
-        html: copyFailMessage,
-        text: copyFailMessage,
-        icon: 'error',
-        confirmButtonText: 'Close'
-      });
+      showCopyClipboardStatus(false);
     }
 
     document.body.removeChild(textArea);
 
-    return ret;
   }
 
   /**
@@ -54,26 +64,17 @@ CRM.$(function ($) {
    * from https://deanmarktaylor.github.io/clipboard-test/, referenced in https://stackoverflow.com/a/30810322/6476602
    *
    * @param String text Text to be written to clipboard.
-   * @return True on success; False on failure.
    */
-  function copyTextToClipboard(text) {
-    var ret = false;
+  function copyTextToClipboard(text, successMessageHtml) {
     if (!navigator.clipboard) {
-      ret = fallbackCopyTextToClipboard(text);
+      fallbackCopyTextToClipboard(text, successMessageHtml);
     } else {
       navigator.clipboard.writeText(text).then(function () {
-        ret = true;
+        showCopyClipboardStatus(true, successMessageHtml);
       }, function (err) {
-        CRM.stepwAlert.fire({
-          title: 'Could not copy URL',
-          html: copyFailMessage,
-          text: copyFailMessage,
-          icon: 'error',
-          confirmButtonText: 'Close'
-        });
+        showCopyClipboardStatus(false);
       });
     }
-    return ret;
   }
 
   /**
@@ -86,16 +87,7 @@ CRM.$(function ($) {
 
     // Get the text field
     var url = $(this).closest('td').find('span.stepw-workflow-url').text();
-    if (copyTextToClipboard(url)) {
-      // Alert the copied text
-      CRM.stepwAlert.fire({
-        title: 'Copied URL',
-        html: ts('This URL is now in your clipboard:') + "\n<br>\n<br>" + url,
-        text: ts('This URL is now in your clipboard:') + "\n\n" + url,
-        icon: 'success',
-        confirmButtonText: 'OK'
-      });
-    }
+    copyTextToClipboard(url, ts('This URL is now in your clipboard:') + "\n<br>\n<br>" + url);
   }
 
   $('body').on('click', 'afsearch-stepwise-workflows tr a.stepw-workflow-url-copy', copyUrlToClipboard);
