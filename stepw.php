@@ -467,7 +467,6 @@ function stepw_civicrm_navigationMenu(&$menu) {
    foreach ($menu as $menuKey => $menuItem) {
      // Identify the menu item name and append it to the parent path.
      $menuItemName = $menuItem['attributes']['name'];
-     $menuItemLabel = $menuItem['attributes']['label'];
      $subPath = "{$parentPath}/{$menuItemName}";
      // If we have a match, then our subpath is the final result, so populate
      // $result and return.
