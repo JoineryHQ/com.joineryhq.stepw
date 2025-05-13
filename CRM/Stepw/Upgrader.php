@@ -64,12 +64,12 @@ class CRM_Stepw_Upgrader extends \CRM_Extension_Upgrader_Base {
    * @return TRUE on success
    * @throws CRM_Core_Exception
    */
-  // public function upgrade_4200(): bool {
-  //   $this->ctx->log->info('Applying update 4200');
-  //   CRM_Core_DAO::executeQuery('UPDATE foo SET bar = "whiz"');
-  //   CRM_Core_DAO::executeQuery('DELETE FROM bang WHERE willy = wonka(2)');
-  //   return TRUE;
-  // }
+   public function upgrade_4200(): bool {
+     $this->ctx->log->info('Applying update 4200');
+     CRM_Core_DAO::executeQuery('ALTER TABLE civicrm_stepw_workflow ADD report_instance_id int(10) unsigned NULL COMMENT "FK to report_instance ID" AFTER public_id');
+     CRM_Core_DAO::executeQuery('ALTER TABLE civicrm_stepw_workflow ADD CONSTRAINT FK_civicrm_stepw_workflow_report_instance_id FOREIGN KEY (report_instance_id) REFERENCES civicrm_report_instance (id) ON DELETE SET NULL');
+     return TRUE;
+   }
 
   /**
    * Example: Run an external SQL script.

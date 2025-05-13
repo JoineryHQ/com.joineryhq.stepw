@@ -38,6 +38,20 @@ return [
       'description' => E::ts('Long unguessable string identifier'),
       'required' => TRUE,
     ],
+    'report_instance_id' => [
+      'title' => E::ts('Report'),
+      'sql_type' => 'int unsigned',
+      'input_type' => 'EntityRef',
+      'description' => ts('FK to report_instance ID'),
+      'input_attrs' => [
+        'label' => E::ts('Report'),
+      ],
+      'entity_reference' => [
+        'entity' => 'ReportInstance',
+        'key' => 'id',
+        'on_delete' => 'SET NULL',
+      ],
+    ],
     'is_active' => [
       'title' => ts('Workflow Is Active'),
       'sql_type' => 'boolean',
