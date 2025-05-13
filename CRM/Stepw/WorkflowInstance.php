@@ -413,6 +413,8 @@ class CRM_Stepw_WorkflowInstance {
       $postSubmitValidation = $lastCompletedStep->getSelectedOptionVar('postSubmitValidation');
       
       if ($this->createdIndividualCid && ($individualWhere = $postSubmitValidation['where']['Individual1'])) {
+      // FIXME: modify api4 call to specify smart group id.
+      // LIKE SO: if ($this->createdIndividualCid && ($smartGroupId = $postSubmitValidation['smartGroupId'])) {
         $individualGet = \Civi\Api4\Individual::get()
           ->setCheckPermissions(FALSE)
           ->addWhere('id', '=', $this->createdIndividualCid);
