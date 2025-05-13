@@ -82,5 +82,9 @@ return [
       ],
     ],
   ],
-  'getPaths' => fn() => [],
+  'getPaths' => fn() => [
+    // FIXME: define fb forms for these, and correct the paths
+    // 'add' => 'civicrm/contact/add?reset=1&ct=[contact_type]',
+    // 'update' => 'civicrm/contact/add?reset=1&action=update&cid=[id]',
+  ],
 ];
