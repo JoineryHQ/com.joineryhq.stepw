@@ -48,6 +48,7 @@ fixme/TODO:
 - add WorkflowInstance data on contact summary: https://docs.civicrm.org/dev/en/latest/step-by-step/create-entity/#10-add-a-tab-on-contact-summary
 - define (and use) permission 'administer stepwise workflows'
 - in civicrm/stepwise/admin/workflows , add:
-  - "report" link to configured report
   - "settings" link for workflow core properties
   - "configure steps" link for steps configuration
+- Find a way to handle weekly emailed reports (hopefully only one scheduled job for all workflow reports,
+  which should be possible now that we have "report_instance_id" on workflow entity.)
