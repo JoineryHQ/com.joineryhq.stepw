@@ -173,7 +173,10 @@ class CRM_Stepw_APIWrapper {
     }
 
     $q = CRM_Utils_Request::retrieve('q', 'String', '');
-    if ($q != 'civicrm/ajax/api4/Afform/prefill') {
+    if (
+      $q != 'civicrm/ajax/api4/Afform/prefill'
+      && $q != 'civicrm/ajax/api4/Afform/submit'
+    ) {
       // This is not an afform prefill operation, so there's nothing for us to do here.
       // Only in prefill do we care about this. Otherwise, hook_civicrm_alterAngluar()
       // is modifying the form as we need; but in prefill, that hook has no effect.
@@ -217,6 +220,7 @@ class CRM_Stepw_APIWrapper {
     $afformProperties['layout'] = $converter->convertHtmlToArray($newHtmlLayout);
 
     // Update the api response with our modified values.
+    $response[0] = $afformProperties;
     $event->setResponse($response);
   }
 
