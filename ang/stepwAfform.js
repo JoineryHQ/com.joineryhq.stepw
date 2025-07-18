@@ -56,7 +56,7 @@
             && (sid !== CRM.vars.stepw.stepAfformSid)
           ){
             // URL tampering detected. Replace the afform with an "invalid" message.
-            CRM.$('af-form').replaceWith('<p>Invaild request</p>');            
+            CRM.$('af-form').replaceWith('<p>Invalid request</p>');
           }
           
         }
