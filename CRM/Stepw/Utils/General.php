@@ -11,6 +11,8 @@ class CRM_Stepw_Utils_General {
     $ret = bin2hex(random_bytes(18));
     
     // append a pseudo-random letter to the string so it's guaranteed to never be numeric.
+    // (Important for things like CRM_Stepw_WorkflowInstance::getStepByKey(), which
+    // treats its arguments differently based on whether they are numeric or not.)
     $chars = 'abcdefghijklmnopqrstuvwxyz';
     $alpha = substr(str_shuffle($chars), 0, 1);
     
