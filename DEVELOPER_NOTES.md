@@ -52,3 +52,12 @@ fixme/TODO:
   - "configure steps" link for steps configuration
 - Find a way to handle weekly emailed reports (hopefully only one scheduled job for all workflow reports,
   which should be possible now that we have "report_instance_id" on workflow entity.)
+- Per Note "Post-incident report" in F#1796:
+  - Log steps as soon as they are completed (not merely on workflow instance closure), and include:
+    - afform submission id
+    - timestamp
+  - Note workflow instance closure by a boolean column dediicated to this purpose (e.g. "is_closed")
+    - Alter in-app detection of workflow intance closure to be based on this boolean value.
+    - Alter workflow reports likewise.
+- improve logging so that:
+  - errors can be more easily monitored (use an extension-dedicated error log file?)
