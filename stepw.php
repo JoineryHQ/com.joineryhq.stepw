@@ -151,7 +151,6 @@ function _stepw_alterAfformHtml(phpQueryObject $doc, $path) {
   CRM_Stepw_Utils_Afform::alterForm($doc);
 }
 
-
 function stepw_civicrm_alterAngular(\Civi\Angular\Manager $angular) {
   // fixme: test everything to verify that we're not breaking afform in its normal usage...
   //   This testing should cover evertying this extension does.
