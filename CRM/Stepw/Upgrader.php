@@ -59,7 +59,7 @@ class CRM_Stepw_Upgrader extends \CRM_Extension_Upgrader_Base {
   // }
 
   /**
-   * Example: Run a couple simple queries.
+   * Alter civicrm_stepw_workflow for reporting.
    *
    * @return TRUE on success
    * @throws CRM_Core_Exception
@@ -68,6 +68,48 @@ class CRM_Stepw_Upgrader extends \CRM_Extension_Upgrader_Base {
      $this->ctx->log->info('Applying update 4200');
      CRM_Core_DAO::executeQuery('ALTER TABLE civicrm_stepw_workflow ADD report_instance_id int(10) unsigned NULL COMMENT "FK to report_instance ID" AFTER public_id');
      CRM_Core_DAO::executeQuery('ALTER TABLE civicrm_stepw_workflow ADD CONSTRAINT FK_civicrm_stepw_workflow_report_instance_id FOREIGN KEY (report_instance_id) REFERENCES civicrm_report_instance (id) ON DELETE SET NULL');
+     return TRUE;
+   }
+
+  /**
+   * Alter civicrm_stepw_workflow for active step logging.
+   *
+   * @return TRUE on success
+   * @throws CRM_Core_Exception
+   */
+   public function upgrade_4201(): bool {
+     $this->ctx->log->info('Applying update 4201');
+     // civicrm_stepw_workflow_instance: add `closed` column and change comment on `created`
+     CRM_Core_DAO::executeQuery("
+      ALTER TABLE civicrm_stepw_workflow_instance
+      CHANGE contact_id contact_id int(10) unsigned NULL COMMENT 'FK to Contact' AFTER id,
+      CHANGE  created created datetime DEFAULT current_timestamp() COMMENT 'Date/time this WI was created (WI is created upon opening of first step)',
+      ADD closed datetime NULL comment 'Date/time this WI was closed (WI is closed when next-to-last step (before thank-you) is completed)'
+    ");
+     // civicrm_stepw_workflow_instance: for all existign rows, set `closed` = `created`, because they were previously
+     // the same thing.
+     CRM_Core_DAO::executeQuery("
+      UPDATE civicrm_stepw_workflow_instance
+      SET closed = created
+      WHERE closed IS NULL
+    ");
+
+     // civicrm_stepw_workflow_instance_step:
+     // add columns `afform_submission_id`, `dreated`
+     CRM_Core_DAO::executeQuery("
+      ALTER TABLE civicrm_stepw_workflow_instance_step
+      ADD afform_submission_id int(10) unsigned COMMENT 'FK to Afform Submission',
+      ADD created datetime DEFAULT current_timestamp() comment 'Date/time this step was initiated by user.',
+      ADD completed datetime NULL comment 'Date/time this step was most recently completed.'
+    ");
+     CRM_Core_DAO::executeQuery("
+      ALTER TABLE civicrm_stepw_workflow_instance_step
+      ADD FOREIGN KEY (afform_submission_id) REFERENCES civicrm_afform_submission (id) ON DELETE CASCADE ON UPDATE RESTRICT
+    ");
+     CRM_Core_DAO::executeQuery("
+      ALTER TABLE civicrm_stepw_workflow_instance_step
+      ADD UNIQUE index_step_number_workflow_instance_id (step_number, workflow_instance_id);
+    ");
      return TRUE;
    }
 

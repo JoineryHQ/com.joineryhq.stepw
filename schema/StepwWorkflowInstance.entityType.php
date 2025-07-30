@@ -28,7 +28,7 @@ return [
       'sql_type' => 'int unsigned',
       'input_type' => 'EntityRef',
       'description' => E::ts('FK to Contact'),
-      'required' => TRUE,
+      'required' => FALSE,
       'entity_reference' => [
         'entity' => 'Contact',
         'key' => 'id',
@@ -48,11 +48,18 @@ return [
       ],
     ],
     'created' => [
-      'title' => E::ts('Workflow ID'),
+      'title' => E::ts('Created'),
       'sql_type' => 'datetime',
       'input_type' => 'Select Date',
-      'description' => E::ts('Date/time this WI was created (WI entry is created upon WI closure/completion'),
+      'description' => E::ts('Date/time this WI was created (WI is created upon opening of first step'),
       'default' => 'CURRENT_TIMESTAMP',
+    ],
+    'closed' => [
+      'title' => E::ts('Closed'),
+      'sql_type' => 'datetime',
+      'input_type' => 'Select Date',
+      'description' => E::ts('Date/time this WI was closed (WI is closed when next-to-last step (before thank-you) is completed)'),
+      'default' => NULL,
     ],
   ],
   'getIndices' => fn() => [

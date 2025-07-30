@@ -60,7 +60,41 @@ return [
       'description' => ts('URL'),
       'required' => TRUE,
     ],
+    'afform_submission_id' => [
+      'title' => E::ts('Afform Submission ID'),
+      'sql_type' => 'int unsigned',
+      'input_type' => 'EntityRef',
+      'description' => E::ts('FK to Afform Submission'),
+      'required' => FALSE,
+      'entity_reference' => [
+        'entity' => 'AfformSubmission',
+        'key' => 'id',
+        'on_delete' => 'CASCADE',
+      ],
+    ],
+    'created' => [
+      'title' => E::ts('Created'),
+      'sql_type' => 'datetime',
+      'input_type' => 'Select Date',
+      'description' => E::ts('Date/time this step was initiated by user'),
+      'default' => 'CURRENT_TIMESTAMP',
+    ],
+    'completed' => [
+      'title' => E::ts('completed'),
+      'sql_type' => 'datetime',
+      'input_type' => 'Select Date',
+      'description' => E::ts('Date/time this step was most recenlty completed'),
+      'default' => NULL,
+    ],
   ],
-  'getIndices' => fn() => [],
+  'getIndices' => fn() => [
+    'index_step_number_workflow_instance_id' => [
+      'fields' => [
+        'step_number' => TRUE,
+        'workflow_instance_id' => TRUE,
+      ],
+      'unique' => TRUE,
+    ],
+  ],
   'getPaths' => fn() => [],
 ];

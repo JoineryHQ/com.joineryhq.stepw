@@ -4,18 +4,18 @@ use CRM_Stepw_ExtensionUtil as E;
 class CRM_Stepw_Page_Step extends CRM_Core_Page {
 
   public function run() {
-  // note: here we will:
-  // - If we're given 'start_workflow_id',
-  //   - ensure the relevant workflow is inabled, or exit with a message.
-  //   - initialize a workflow instance and use that $wi
-  // - else
-  //   - get workflowintance $wi based on given 'stepw_wiid'
-  // - if we're given step_done_step_id:
-  //   - timestamp step completed in $wi
-  // - get $wi first uncompleted step url, and redirect thence.
-  //
-  // note:val: none; WI and Step classes will throw exceptions on invalid publicIds
-  //
+    // note: here we will:
+    // - If we're given 'start_workflow_id',
+    //   - ensure the relevant workflow is inabled, or exit with a message.
+    //   - initialize a workflow instance and use that $wi
+    // - else
+    //   - get workflowintance $wi based on given 'stepw_wiid'
+    // - if we're given step_done_step_id:
+    //   - timestamp step completed in $wi
+    // - get $wi first uncompleted step url, and redirect thence.
+    //
+    // note:val: none; WI and Step classes will throw exceptions on invalid publicIds
+    //
 
     parent::run();
 
@@ -46,12 +46,13 @@ class CRM_Stepw_Page_Step extends CRM_Core_Page {
     }
 
     $errors = [];
-    if(!$workflowInstance->validateLastCompletedStep($errors)) {
+    if (!$workflowInstance->validateLastCompletedStep($errors)) {
       // We've presumably just completed one step, so we should perform any input
       // validation of that step, here. On failure, redirect to ValidationError page.
       CRM_Stepw_Utils_General::redirectToValidationError($errors);
     }
 
+    $workflowInstance->createFirstUncompletedStepEntity();
     $firstUncompletedStepUrl = $workflowInstance->getFirstUncompletedStepUrl();
     CRM_Utils_System::redirect($firstUncompletedStepUrl);
 

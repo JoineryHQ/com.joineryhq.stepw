@@ -4,28 +4,35 @@
  * WorkflowInstance class
  */
 class CRM_Stepw_WorkflowInstance {
-  
+
   /**
    * StepwWorkflow id for this intance's workflow
-   * @var Int
+   * @var int
    */
   private $workflowId;
+
+  /**
+   * DB entity
+   * @var array
+   */
+  private $entity;
 
   private $publicId;
   private $modifiedTimestamp;
   private $isClosed = FALSE;
-  
+
   private $createdIndividualCid;
 
-  /* Workflow configuration for the workflow used by this WorkflowInstance.
-   * @var Array
+  /**
+   * Workflow configuration for the workflow used by this WorkflowInstance.
+   * @var array
    */
   private $workflowConfig;
-  
+
   /**
    * Array of steps in this workflowInstance, keyed by stepNumber. Each step has
    * is a WorkflowInstanceStep object.
-   * @var Array
+   * @var array
    */
   private $steps = [];
 
@@ -35,22 +42,23 @@ class CRM_Stepw_WorkflowInstance {
    * @var WorkflowInstanceStep
    */
   private $pseudoFinalStep;
-  
+
   /**
    * Map of step numbers per public id, for easier reference to steps.
-   * @var Array
+   * @var array
    */
   private $stepNumbersByPublicId = [];
-  
+
   public function __construct(String $publicWorkflowId) {
     $workflowConfig = CRM_Stepw_WorkflowData::singleton()->getWorkflowConfigById($publicWorkflowId);
     if (empty($workflowConfig)) {
       // If we're given an invaild workflowId, throw an exception.
-      throw new  CRM_Stepw_Exception("Given QP_START_WORKFLOW_ID ('$publicWorkflowId') does not match an available configured workflow, in " . __METHOD__, 'CRM_Stepw_WorkflowInstance_construct_invalid-workflow-id');
+      throw new CRM_Stepw_Exception("Given QP_START_WORKFLOW_ID ('$publicWorkflowId') does not match an available configured workflow, in " . __METHOD__, 'CRM_Stepw_WorkflowInstance_construct_invalid-workflow-id');
     }
     $this->updateModifiedTimestamp();
     $this->workflowId = $workflowConfig['id'];
     $this->publicId = CRM_Stepw_Utils_General::generatePublicId();
+    $this->saveEntity();
     foreach ($workflowConfig['steps'] as $configStepNumber => &$configStep) {
       // Create a new Step object, store ->steps and map the ids in ->stepNumbersByPublicId
       $step = new CRM_Stepw_WorkflowInstanceStep($this, $configStepNumber, $configStep);
@@ -58,10 +66,10 @@ class CRM_Stepw_WorkflowInstance {
       $this->steps[$configStepNumber] = $step;
       $this->stepNumbersByPublicId[$stepPublicId] = $configStepNumber;
     }
-    
+
     // Define the fallback 'final' step object.
     $this->pseudoFinalStep = new CRM_Stepw_WorkflowInstanceStep($this, -1, CRM_Stepw_WorkflowData::getPseudoFinalStepConfig());
-    
+
     // Store the workflow config for easy reference.
     $this->workflowConfig = $workflowConfig;
 
@@ -69,7 +77,7 @@ class CRM_Stepw_WorkflowInstance {
     $state = CRM_Stepw_State::singleton();
     $state->storeWorkflowInstance($this);
   }
-  
+
   private function updateModifiedTimestamp() {
     $this->modifiedTimestamp = time();
   }
@@ -87,7 +95,7 @@ class CRM_Stepw_WorkflowInstance {
         $stepsToSort[] = $step;
       }
     }
-    if(empty($stepsToSort)) {
+    if (empty($stepsToSort)) {
       // If we're here, it means no steps have been completed, so return null;
       $lastCompletedStep = NULL;
     }
@@ -95,9 +103,9 @@ class CRM_Stepw_WorkflowInstance {
       array_multisort($stepsTimestamps, $stepsToSort);
       $lastCompletedStep = array_pop($stepsToSort);
     }
-    return $lastCompletedStep;    
+    return $lastCompletedStep;
   }
- 
+
   /**
    * Determine most-recently completed step (if any), and return the subsequent
    * step to that one, if any, or else pseudoFinal step (as a fallback)
@@ -114,8 +122,8 @@ class CRM_Stepw_WorkflowInstance {
       return $firstUncompletedStep;
     }
     $lastCompletedStep = $this->getLastCompletedStep();
-    if(is_null($lastCompletedStep)) {
-      // If we're here, it means no steps have been completed, so first uncompleted 
+    if (is_null($lastCompletedStep)) {
+      // If we're here, it means no steps have been completed, so first uncompleted
       // step is step 0.
       $firstUncompletedStep = $this->steps[0];
     }
@@ -125,23 +133,23 @@ class CRM_Stepw_WorkflowInstance {
       // Note that if $lastCompletedStep was really the last step in the workflow,
       // $firstUncompletedStep will be NULL.
       $firstUncompletedStep = ($this->steps[$firstUncompletedStepNumber] ?? NULL);
-    }    
+    }
     if (!$firstUncompletedStep) {
       // If we really could not find any ucompleted step, use the fall-back
       // pseudoFinal step.
       $firstUncompletedStep = $this->pseudoFinalStep;
     }
     if (empty($firstUncompletedStep) || !is_a($firstUncompletedStep, 'CRM_Stepw_WorkflowInstanceStep')) {
-      throw new  CRM_Stepw_Exception("When calculating 'First Uncompleted Step', no valid step was found, in " . __METHOD__, 'CRM_Stepw_WorkflowInstance_getFirstUncompletedStep_invalid');
+      throw new CRM_Stepw_Exception("When calculating 'First Uncompleted Step', no valid step was found, in " . __METHOD__, 'CRM_Stepw_WorkflowInstance_getFirstUncompletedStep_invalid');
     }
     return $firstUncompletedStep;
   }
-    
+
   /**
    * Given an identifier, return the matching workflowInstancance step.
-   * 
+   *
    * @param String $stepKey Either a stepNumber (which is an integer), or a publicId
-   * @param Boolean $abort (Default TRUE); if true, an invalid $stepkey will throw an exception.  
+   * @param Boolean $abort (Default TRUE); if true, an invalid $stepkey will throw an exception.
    * @return CRM_Stepw_WorkflowInstanceStep|NULL The matching step (or null if no such step)
    */
   private function getStepByKey(String $stepKey, bool $abort = TRUE) {
@@ -153,11 +161,11 @@ class CRM_Stepw_WorkflowInstance {
       $step = ($this->steps[$stepNumber] ?? NULL);
     }
     if ($abort && !is_a($step, 'CRM_Stepw_WorkflowInstanceStep')) {
-      throw new CRM_Stepw_Exception("Provided stepKey '$stepKey' does not match a step in this workflowInstance, in " . __METHOD__, 'CRM_Stepw_WorkflowInstance_getStepByKey-mismatch-stepkey');      
+      throw new CRM_Stepw_Exception("Provided stepKey '$stepKey' does not match a step in this workflowInstance, in " . __METHOD__, 'CRM_Stepw_WorkflowInstance_getStepByKey-mismatch-stepkey');
     }
     return $step;
   }
-  
+
   public function getSubsequentStepOptionButtonProperties($stepPublicId) {
     $stepNumber = $this->stepNumbersByPublicId[$stepPublicId];
     $subsequentStepNumber = $stepNumber + 1;
@@ -168,7 +176,7 @@ class CRM_Stepw_WorkflowInstance {
       return [];
     }
     $subsequentOptions = $subsequentStep->getVar('options');
-    
+
     $buttonsDisabled = $this->getStepButtonsDisabled($stepPublicId);
     $currentStepOptionLabels = $this->getStepButtonLabels($stepPublicId);
     $i = 0;
@@ -178,25 +186,24 @@ class CRM_Stepw_WorkflowInstance {
     }
     return $subsequentOptions;
   }
-  
+
   public function setSubsequentStepOptionId($stepPublicId, $optionPublicId) {
     $stepNumber = $this->stepNumbersByPublicId[$stepPublicId];
     $subsequentStepNumber = $stepNumber + 1;
     $subsequentStep = $this->steps[$subsequentStepNumber];
     $subsequentStep->setSelectedOptionId($optionPublicId);
   }
-    
+
   public function getModifiedTimestamp() {
     return $this->modifiedTimestamp;
   }
-  
-  
+
   public function getPublicId() {
     return $this->publicId;
   }
-  
+
   /**
-   * Given a contactId, store it as the cid of the Individual created in this 
+   * Given a contactId, store it as the cid of the Individual created in this
    * workflowInstance (we assume there will be only one).
    *
    * @param int $contactId
@@ -210,12 +217,13 @@ class CRM_Stepw_WorkflowInstance {
         'given cid' => $contactId,
         'existing_cid' => $this->createdIndividualCid,
       ];
-      throw new  CRM_Stepw_Exception("Invalid attempt to alter workflowInstance:createdIndividualCid". __METHOD__, 'CRM_Stepw_WorkflowInstance_setCreatedIndividualCid_invalid', $exceptionExtra);      
+      throw new CRM_Stepw_Exception("Invalid attempt to alter workflowInstance:createdIndividualCid" . __METHOD__, 'CRM_Stepw_WorkflowInstance_setCreatedIndividualCid_invalid', $exceptionExtra);
     }
     $this->createdIndividualCid = $contactId;
     $this->updateModifiedTimestamp();
+    $this->saveEntity(['contact_id' => $this->createdIndividualCid]);
   }
-  
+
   /**
    * Return the cid of the Individual created in this workflowInstance, if any
    * (we assume there will be only one).
@@ -228,22 +236,27 @@ class CRM_Stepw_WorkflowInstance {
 
   /**
    * Given an identifier, mark the matching workflowInstancance step as completed.
-   * 
+   *
    * @param String $stepKey Either a stepNumber (which is an integer), or a publicId
    * @return void
-   */  
+   */
   public function completeStep($stepKey) {
     $step = $this->getStepByKey($stepKey);
     $step->complete();
-    $this->updateModifiedTimestamp();    
+    $this->updateModifiedTimestamp();
   }
-  
+
+  public function createFirstUncompletedStepEntity() {
+    $step = $this->getFirstUncompletedStep();
+    $step->saveEntity();
+  }
+
   public function getFirstUncompletedStepUrl() {
     $step = $this->getFirstUncompletedStep();
     $url = $step->getUrl();
     return $url;
   }
-    
+
   public function getStepUrl($stepKey) {
     $step = $this->getStepByKey($stepKey);
     $url = $step->getUrl();
@@ -261,7 +274,7 @@ class CRM_Stepw_WorkflowInstance {
     $step->setCreatedActivityId($activityId);
     $this->updateModifiedTimestamp();
   }
-  
+
   public function getProgress($stepKey) {
     $step = $this->getStepByKey($stepKey);
     $stepNumber = $step->getVar('stepNumber');
@@ -271,7 +284,7 @@ class CRM_Stepw_WorkflowInstance {
       'stepOrdinal' => ($stepNumber + 1),
       'stepTotalCount' => $stepTotalCount,
     ];
-    
+
     if ($this->workflowConfig['settings']['progressOmitFirstStep']) {
       if ($stepNumber == 0) {
         $ret['omitProgressbar'] = TRUE;
@@ -279,22 +292,22 @@ class CRM_Stepw_WorkflowInstance {
       $ret['stepOrdinal']--;
       $ret['stepTotalCount']--;
     }
-    
+
     return $ret;
   }
-  
+
   public function getStepLastAfformSubmissionId ($stepKey) {
     $step = $this->getStepByKey($stepKey);
     return $step->getLastAfformSubmissionId();
   }
-  
+
   public function stepHasAfformSubmissionId ($stepKey, $submissionId) {
     $step = $this->getStepByKey($stepKey);
     $sids = $step->getSelectedOptionVar('afformSids');
     $ret = in_array($submissionId, $sids);
     return $ret;
   }
-  
+
   public function getStepAfformName ($stepKey) {
     $ret = NULL;
     $step = $this->getStepByKey($stepKey);
@@ -304,50 +317,50 @@ class CRM_Stepw_WorkflowInstance {
     }
     return $ret;
   }
-  
+
   public function stepRequiresOnpageEnforcer ($stepKey) {
     $step = $this->getStepByKey($stepKey);
-    $ret = (bool)$step->getSelectedOptionVar('requireOnpageEnforcer');
+    $ret = (bool) $step->getSelectedOptionVar('requireOnpageEnforcer');
     return $ret;
   }
-  
+
   public function getStepButtonLabels($stepKey) {
     $step = $this->getStepByKey($stepKey);
     $optionLabels = $step->getSelectedOptionVar('optionLabels');
     return ($optionLabels);
   }
-  
+
   private static function getDefaultOptionButtonLabel() {
     return 'Continue';
   }
-  
+
   private function getStepButtonsDisabled($stepPublicId) {
     // This gets the disabled status for the CURRENTLY VIEWED step/option,
     // (i.e. not for the subsequent step/option).
-    
+
     $step = $this->getStepByKey($stepPublicId);
 
     // button is disabled by default; it is only enabled if:
     //   - option has been completed (ever, in this workflowInstance), OR
     //   - option does NOT require onpage enforcement.
     $disabled = TRUE;
-    
+
     if ($step->getSelectedOptionVar('mostRecentlyCompletedTimestamp')) {
       // Option has been completed.
       $disabled = FALSE;
     }
     else {
-      
+
       $requireOnpageEnforcer = ($this->stepRequiresOnpageEnforcer($stepPublicId) ?? FALSE);
       if (!$requireOnpageEnforcer) {
         // option does NOT require onpage enforcement.
         $disabled = FALSE;
       }
     }
-    
+
     return $disabled;
   }
-  
+
   /**
    * Determine if stepKey represents an existing step in this workflowInstance.
    * @param String $stepKey Either a stepNumber (which is an integer), or a publicId
@@ -356,37 +369,37 @@ class CRM_Stepw_WorkflowInstance {
   public function hasStep ($stepKey) {
     $step = $this->getStepByKey($stepKey, FALSE);
     return (!empty($step));
-  }  
+  }
+
+  private function saveEntity($updateProperties = []) {
+    if (empty($this->entity)) {
+      // No entity exists. Create a new one.
+      $workflowInstance = \Civi\Api4\StepwWorkflowInstance::create()
+        ->setCheckPermissions(FALSE)
+        ->addValue('workflow_id', $this->workflowId)
+        ->execute()
+        ->first();
+      $this->entity = (array) $workflowInstance;
+    }
+    else {
+      $this->entity += $updateProperties;
+      $result = civicrm_api4('StepwWorkflowInstance', 'update', [
+        'checkPermissions' => FALSE,
+        'values' => $this->entity,
+      ]);
+    }
+  }
 
   public function close() {
     if ($this->isClosed) {
       // We're already closed. Nothing to do here.
       return;
     }
+    // update db that this workflow instance is closed.
+    $this->entity['closed'] = CRM_Utils_Date::currentDBDate();
+    $this->saveEntity();
 
     $this->isClosed = TRUE;
-    
-    // create a workflowInstance entity for this instance.
-    $workflowInstanceCreate = \Civi\Api4\StepwWorkflowInstance::create()
-      ->setCheckPermissions(FALSE)
-      ->addValue('contact_id', $this->createdIndividualCid)
-      ->addValue('workflow_id', $this->workflowId)
-      ->execute();
-    
-    // create workflowinstanceStep entities for each step in this instance
-    foreach ($this->steps as $zeroBasedstepId => $step) {
-      $stepNubmer = ($zeroBasedstepId + 1);
-      $activityId = $step->getCreatedActivityId();
-      $url = $step->getBaseUrl();
-
-      $results = \Civi\Api4\StepwWorkflowInstanceStep::create()
-        ->setCheckPermissions(FALSE)
-        ->addValue('workflow_instance_id', $workflowInstanceCreate[0]['id'])
-        ->addValue('step_number', $stepNubmer)
-        ->addValue('activity_id', $activityId)
-        ->addValue('url', $url)
-        ->execute();  
-    }
   }
 
   /**
@@ -398,43 +411,43 @@ class CRM_Stepw_WorkflowInstance {
    */
   public function getVar(string $name) {
     if (!property_exists($this, $name)) {
-      throw new  CRM_Stepw_Exception("Invalid variable name requested in ". __METHOD__, 'CRM_Stepw_WorkflowInstance_getVar_invalid', ['requested var name' => $name]);
+      throw new CRM_Stepw_Exception("Invalid variable name requested in " . __METHOD__, 'CRM_Stepw_WorkflowInstance_getVar_invalid', ['requested var name' => $name]);
     }
     return ($this->$name ?? NULL);
   }
-  
+
   public function validateLastCompletedStep(&$errors) : bool {
     $isError = FALSE;
-    
+
     $lastCompletedStep = $this->getLastCompletedStep();
-    
+
     if ($lastCompletedStep) {
       // FIXME: do this with Smart Groups, not where clauses (it's more flexible, and less development)
       $postSubmitValidation = $lastCompletedStep->getSelectedOptionVar('postSubmitValidation');
-      
+
       if ($this->createdIndividualCid && ($individualWhere = $postSubmitValidation['where']['Individual1'])) {
-      // FIXME: modify api4 call to specify smart group id.
-      // LIKE SO: if ($this->createdIndividualCid && ($smartGroupId = $postSubmitValidation['smartGroupId'])) {
+        // FIXME: modify api4 call to specify smart group id.
+        // LIKE SO: if ($this->createdIndividualCid && ($smartGroupId = $postSubmitValidation['smartGroupId'])) {
         $individualGet = \Civi\Api4\Individual::get()
           ->setCheckPermissions(FALSE)
           ->addWhere('id', '=', $this->createdIndividualCid);
         foreach ($individualWhere as $whereArgs) {
           list($fieldName, $op, $value, $isExpression) = $whereArgs;
-          $individualGet = $individualGet->addWhere($fieldName, $op, $value, (bool)$isExpression);
+          $individualGet = $individualGet->addWhere($fieldName, $op, $value, (bool) $isExpression);
         }
         $individualGet = $individualGet->execute()->count();
         if (!$individualGet) {
           $isError = TRUE;
         }
       }
-      
+
       if (($activityId = $lastCompletedStep->getCreatedActivityId()) && ($activityWhere = $postSubmitValidation['where']['Activity1'])) {
         $activityGet = \Civi\Api4\Individual::get()
           ->setCheckPermissions(FALSE)
           ->addWhere('id', '=', $activityId);
         foreach ($activityWhere as $whereArgs) {
           list($fieldName, $op, $value, $isExpression) = $whereArgs;
-          $activityGet = $activityGet->addWhere($fieldName, $op, $value, (bool)$isExpression);
+          $activityGet = $activityGet->addWhere($fieldName, $op, $value, (bool) $isExpression);
         }
         $activityGet = $activityGet->execute()->count();
         if (!$activityGet) {
@@ -442,11 +455,12 @@ class CRM_Stepw_WorkflowInstance {
         }
       }
     }
-    
+
     if ($isError) {
       $errors[] = $postSubmitValidation['failureMessage'];
     }
-    
+
     return ($isError == FALSE);
   }
+
 }

@@ -1,5 +1,5 @@
 <?php
-/*
+/**
  * Copied/forked from CRM_Report_Form_Activity, CiviCRM 5.81.0
  */
 
@@ -16,7 +16,7 @@ class CRM_Stepw_Form_Report_WorkflowInstances extends CRM_Report_Form {
 
   /**
    * Comment copied from CRM_Report_Form_Activity:
-   * 
+   *
    * This report has not been optimised for group filtering.
    *
    * The functionality for group filtering has been improved but not
@@ -162,7 +162,6 @@ class CRM_Stepw_Form_Report_WorkflowInstances extends CRM_Report_Form {
       ],
     ];
 
-
     $this->_groupFilter = TRUE;
     $this->_tagFilter = TRUE;
     $this->_tagFilterTable = 'civicrm_activity';
@@ -176,7 +175,7 @@ class CRM_Stepw_Form_Report_WorkflowInstances extends CRM_Report_Form {
       'deselectButtonHtml' => $smarty->fetch('string:{crmButton title="Deselect All" icon="fa-square-o" href="#" class="stepw-set-select-all" data-select=0}Deselect All{/crmButton}'),
     ];
     CRM_Core_Resources::singleton()->addVars(E::LONG_NAME, $settings);
-    CRM_Core_Resources::singleton()->addScriptFile(E::LONG_NAME, 'js/'. __CLASS__ . '.js');
+    CRM_Core_Resources::singleton()->addScriptFile(E::LONG_NAME, 'js/' . __CLASS__ . '.js');
   }
 
   /**
@@ -195,16 +194,15 @@ class CRM_Stepw_Form_Report_WorkflowInstances extends CRM_Report_Form {
                      {$this->_aliases['civicrm_activity_contact']}.record_type_id = {$sourceRecordTypeID}
            INNER JOIN civicrm_contact {$this->_aliases['civicrm_contact']}
                   ON {$this->_aliases['civicrm_activity_contact']}.contact_id = {$this->_aliases['civicrm_contact']}.id
-           {$this->_aclFrom}";
-
-    $this->_from .= "
-      INNER JOIN civicrm_stepw_workflow_instance_step
-        ON civicrm_stepw_workflow_instance_step.activity_id = {$this->_aliases['civicrm_activity']}.id
-      INNER JOIN civicrm_stepw_workflow_instance AS {$this->_aliases['civicrm_stepw_workflow_instance']}
-        ON {$this->_aliases['civicrm_stepw_workflow_instance']}.id = civicrm_stepw_workflow_instance_step.workflow_instance_id
-      INNER JOIN civicrm_stepw_workflow AS {$this->_aliases['civicrm_stepw_workflow']}
-        ON {$this->_aliases['civicrm_stepw_workflow_instance']}.workflow_id = {$this->_aliases['civicrm_stepw_workflow']}.id
-    ";
+           {$this->_aclFrom}
+          INNER JOIN civicrm_stepw_workflow_instance_step wis
+            ON wis.activity_id = {$this->_aliases['civicrm_activity']}.id
+          INNER JOIN civicrm_stepw_workflow_instance AS {$this->_aliases['civicrm_stepw_workflow_instance']}
+            ON {$this->_aliases['civicrm_stepw_workflow_instance']}.id = wis.workflow_instance_id
+              AND {$this->_aliases['civicrm_stepw_workflow_instance']}.closed IS NOT NULL
+          INNER JOIN civicrm_stepw_workflow AS {$this->_aliases['civicrm_stepw_workflow']}
+            ON {$this->_aliases['civicrm_stepw_workflow_instance']}.workflow_id = {$this->_aliases['civicrm_stepw_workflow']}.id
+        ";
 
     if ($this->isTableSelected('civicrm_email')) {
       $this->_from .= "
@@ -229,9 +227,9 @@ class CRM_Stepw_Form_Report_WorkflowInstances extends CRM_Report_Form {
   }
 
   /**
-   * Re-work SELECT clause to account for GROUP BY workflow_instance.id. Because 
+   * Re-work SELECT clause to account for GROUP BY workflow_instance.id. Because
    * most of the fields in this report are attached to one of several activities
-   * in the workflow instance, merely grouping by worfklow_instance.id has the 
+   * in the workflow instance, merely grouping by worfklow_instance.id has the
    * effect of displaying NULL values for all but one of those activity's fields.
    * To remedy this, we wrap all fields in max(), so as to remove NULL values.
    * As for fields NOT attached to activities, those should all be the same (e.g.

@@ -7,10 +7,11 @@ use CRM_Stepw_ExtensionUtil as E;
  *
  */
 class CRM_Stepw_Utils_WpShortcode {
+
   public static function getStepwiseButtonHtml() {
     // note: here we will:
     //  - Build and return html for one or more buttons, for replacement of WP [stepwise-button] shortcode.
-    // 
+    //
 
     // Use a static cache here, because the WP plugin may call this method multiple
     // times in a single page load.
@@ -21,7 +22,7 @@ class CRM_Stepw_Utils_WpShortcode {
       // If we're debugging (e.g. for design), do some special handling.
       $debugParams = self::getDebugParams();
       if (!empty($debugParams)) {
-        $buttonHref = '#';      
+        $buttonHref = '#';
         if ($debugParams['buttonDisabled']) {
           $buttonHref64 = base64_encode($buttonHref);
         }
@@ -36,7 +37,7 @@ class CRM_Stepw_Utils_WpShortcode {
       else {
         if (!self::isValidParams()) {
           return '';
-        }      
+        }
 
         $workflowInstancePublicId = CRM_Stepw_Utils_Userparams::getUserParams('request', CRM_Stepw_Utils_Userparams::QP_WORKFLOW_INSTANCE_ID);
         $stepPublicId = CRM_Stepw_Utils_Userparams::getUserParams('request', CRM_Stepw_Utils_Userparams::QP_STEP_ID);
@@ -45,7 +46,7 @@ class CRM_Stepw_Utils_WpShortcode {
         $subsequentStepOptions = $workflowInstance->getSubsequentStepOptionButtonProperties($stepPublicId);
         foreach ($subsequentStepOptions as $subsequentStepOption) {
           $hrefQueryParams = [
-            CRM_Stepw_Utils_Userparams::QP_WORKFLOW_INSTANCE_ID=> $workflowInstancePublicId,
+            CRM_Stepw_Utils_Userparams::QP_WORKFLOW_INSTANCE_ID => $workflowInstancePublicId,
             CRM_Stepw_Utils_Userparams::QP_DONE_STEP_ID => CRM_Stepw_Utils_Userparams::getUserParams('request', CRM_Stepw_Utils_Userparams::QP_STEP_ID),
           ];
           if (count($subsequentStepOptions) > 1) {
@@ -60,7 +61,7 @@ class CRM_Stepw_Utils_WpShortcode {
             // the template where JS can get at it. The onpage enforcer js will then:
             // 1. do enforcement;
             // 2. set the href
-            // 3. enable the button    
+            // 3. enable the button
             $buttonHref64 = base64_encode($buttonHref);
             $buttonHref = '#';
           }
@@ -68,7 +69,7 @@ class CRM_Stepw_Utils_WpShortcode {
             'href64' => ($buttonHref64 ?? NULL),
             'href' => $buttonHref,
             'text' => $subsequentStepOption['buttonLabel'],
-            'disabled' => $buttonDisabled,        
+            'disabled' => $buttonDisabled,
           ];
 
           $buttons[] = $button;
@@ -82,13 +83,13 @@ class CRM_Stepw_Utils_WpShortcode {
       $ret = $buttonHtml;
     }
     return $ret;
-    
+
   }
-  
+
   public static function getProgressBarHtml() {
     // note: here we will:
     //  - Build and return html for a progress bar to appear at the top of the page.
-    // 
+    //
 
     // If we're debugging (e.g. for design), do some special handling.
     $debugParams = self::getDebugParams();
@@ -100,7 +101,7 @@ class CRM_Stepw_Utils_WpShortcode {
       if (!self::isValidParams()) {
         return '';
       }
-    
+
       $workflowInstancePublicId = CRM_Stepw_Utils_Userparams::getUserParams('request', CRM_Stepw_Utils_Userparams::QP_WORKFLOW_INSTANCE_ID);
       $stepPublicId = CRM_Stepw_Utils_Userparams::getUserParams('request', CRM_Stepw_Utils_Userparams::QP_STEP_ID);
       $workflowInstance = CRM_Stepw_State::singleton()->getWorkflowInstance($workflowInstancePublicId);
@@ -110,7 +111,7 @@ class CRM_Stepw_Utils_WpShortcode {
     }
 
     $percentage = round(($stepOrdinal / $stepTotalCount * 100));
-    
+
     $ret = '';
     $tpl = CRM_Core_Smarty::singleton();
     $tpl->assign('percentage', $percentage);
@@ -120,30 +121,32 @@ class CRM_Stepw_Utils_WpShortcode {
     $ret = $tpl->fetch('CRM/Stepw/snippet/StepwiseProgressBar.tpl');
     return $ret;
   }
-  
+
   public static function getPageAssets($type = 'all') {
     $ret = [];
     if (!self::isValidParams() && empty(self::getDebugParams())) {
       return $ret;
     }
-    
-    switch($type) {
+
+    switch ($type) {
       case 'button':
         $isButton = TRUE;
         break;
+
       case 'progressbar':
         $isProgress = TRUE;
         break;
+
       case 'all':
-        $isButton = TRUE;        
+        $isButton = TRUE;
         $isProgress = TRUE;
         break;
     }
-    
+
     if ($isButton) {
       $ret[] = [
         'type'   => 'style',
-        'handle' => 'stepwise-button-css', 
+        'handle' => 'stepwise-button-css',
         'src'    => E::url('cms_resources/WordPress/css/stepwise-button.css'),
       ];
       $ret[] = [
@@ -160,7 +163,7 @@ class CRM_Stepw_Utils_WpShortcode {
     if ($isProgress) {
       $ret[] = [
         'type'   => 'style',
-        'handle' => 'stepwise-progressbar-css', 
+        'handle' => 'stepwise-progressbar-css',
         'src'    => E::url('cms_resources/WordPress/css/stepwise-progressbar.css'),
       ];
       $ret[] = [
@@ -172,14 +175,14 @@ class CRM_Stepw_Utils_WpShortcode {
         'type'   => 'script',
         'handle' => 'stepwise-progressbar-js',
         'src'    => E::url('cms_resources/WordPress/js/stepwise-progressbar.js'),
-      ];      
+      ];
     }
-    
+
     // if this step/option requires onpage enforcement, also add onpage enforcer JS.
     $workflowInstancePublicId = CRM_Stepw_Utils_Userparams::getUserParams('request', CRM_Stepw_Utils_Userparams::QP_WORKFLOW_INSTANCE_ID);
     $stepPublicId = CRM_Stepw_Utils_Userparams::getUserParams('request', CRM_Stepw_Utils_Userparams::QP_STEP_ID);
     $workflowInstance = CRM_Stepw_State::singleton()->getWorkflowInstance($workflowInstancePublicId);
-    if($workflowInstance->stepRequiresOnpageEnforcer($stepPublicId)) {
+    if ($workflowInstance->stepRequiresOnpageEnforcer($stepPublicId)) {
       $ret[] = [
         'type'   => 'script',
         'handle' => 'stepwise-onpage-enforcer-sdk',
@@ -191,7 +194,7 @@ class CRM_Stepw_Utils_WpShortcode {
         'src'    => E::url('cms_resources/WordPress/js/stepwise-video-enforcer-sdk.js'),
       ];
     }
-    
+
     return $ret;
   }
 
@@ -205,8 +208,8 @@ class CRM_Stepw_Utils_WpShortcode {
         $ret['buttonText'] = $_GET['stepwise-button-text'] ?? 'Continue';
         $ret['buttonCount'] = $_GET['stepwise-button-count'] ?? 1;
         $ret['stepOrdinal'] = $_GET['stepwise-step'] ?? 1;
-        $ret['stepTotalCount'] = $_GET['stepwise-step-count'] ?? 10;        
-      }      
+        $ret['stepTotalCount'] = $_GET['stepwise-step-count'] ?? 10;
+      }
     }
     return $ret;
   }
@@ -232,9 +235,9 @@ class CRM_Stepw_Utils_WpShortcode {
       }
       // if we're still here, return true (params are valid)
       $ret = TRUE;
-      return $ret;      
+      return $ret;
     }
-    return $ret;    
+    return $ret;
   }
 
 }

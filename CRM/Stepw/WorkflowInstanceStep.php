@@ -4,43 +4,49 @@
  * WorkflowInstanceStep class
  */
 class CRM_Stepw_WorkflowInstanceStep {
-  
+
   /**
    * The workflowInstance to which this step is attached.
-   * @var Object CRM_Stepw_WorkflowInstance
+   * @var CRM_Stepw_WorkflowInstance
    */
   private $workflowInstance;
-  
+
   /**
    * Configuration from this step, per workflow config.
-   * @var Array
+   * @var array
    */
   private $config;
-  
+
   /**
    * Sequential, zero-based indicator of step order.
-   * @var Int
+   * @var int
    */
   private $stepNumber;
-  
+
   /**
    * Unique public identifier
-   * @var String
+   * @var string
    */
-   private $publicId;
-   
-   /**
-    * Microtimestamp representing the moment this step was most recently completed.
-    * (NULL if never submitted)
-    * @var Float
-    */
-   private $mostRecentCompletedTimestamp;
+  private $publicId;
 
-   private $options = [];
-   private $selectedOptionId = NULL;
-  
-  public function __construct(CRM_Stepw_WorkflowInstance $workflow, Int $stepNumber, array $config) {
-    $this->workflowInstance = $workflow;
+  /**
+   * DB entity
+   * @var array
+   */
+  private $entity;
+
+  /**
+   * Microtimestamp representing the moment this step was most recently completed.
+   * (NULL if never submitted)
+   * @var Float
+   */
+  private $mostRecentCompletedTimestamp;
+
+  private $options = [];
+  private $selectedOptionId = NULL;
+
+  public function __construct(CRM_Stepw_WorkflowInstance $workflowInstance, Int $stepNumber, array $config) {
+    $this->workflowInstance = $workflowInstance;
     $this->publicId = CRM_Stepw_Utils_General::generatePublicId();
     $this->stepNumber = $stepNumber;
     $this->config = $config;
@@ -50,7 +56,7 @@ class CRM_Stepw_WorkflowInstanceStep {
       $option['mostRecentlyCompletedTimestamp'] = '';
       // For this option, define an array to hold Afform submission ids (if any),
       // which will be populated when the step-option type is afform and the form
-      // has been submitted. 
+      // has been submitted.
       // Note: When a form step is submitted more than once in a workflowInstance (e.g.
       // by use of the back button), a new afformsubmission is created, with a new id,
       // and the most recent id is appended to this array.
@@ -64,9 +70,34 @@ class CRM_Stepw_WorkflowInstanceStep {
       $this->selectedOptionId = array_key_first($this->options);
     }
   }
-  
+
+  public function saveEntity($updateProperties = []) {
+    if (empty($this->entity)) {
+      $humanStepNumber = ($this->stepNumber + 1);
+      $workflowinstanceId = $this->workflowInstance->getVar('entity')['id'];
+
+      // create a workflowInstanceStep entity for this step.
+      $selectedOption = $this->getSelectedOption();
+      $stepwWorkflowInstanceStep = \Civi\Api4\StepwWorkflowInstanceStep::create()
+        ->setCheckPermissions(FALSE)
+        ->addValue('workflow_instance_id', $workflowinstanceId)
+        ->addValue('step_number', ($humanStepNumber))
+        ->addValue('url', $selectedOption['url'])
+        ->execute()
+        ->first();
+      $this->entity = $stepwWorkflowInstanceStep;
+    }
+    else {
+      $this->entity += $updateProperties;
+      $result = civicrm_api4('StepwWorkflowInstanceStep', 'update', [
+        'checkPermissions' => FALSE,
+        'values' => $this->entity,
+      ]);
+    }
+  }
+
   /**
-   * 
+   *
    * Get a property of this object by name.
    *
    * @param string $name
@@ -74,21 +105,21 @@ class CRM_Stepw_WorkflowInstanceStep {
    */
   public function getVar(string $name) {
     if (!property_exists($this, $name)) {
-      throw new  CRM_Stepw_Exception("Invalid variable name requested in ". __METHOD__, 'CRM_Stepw_WorkflowInstanceStep_getVar_invalid', ['requested var name' => $name]);
+      throw new CRM_Stepw_Exception("Invalid variable name requested in " . __METHOD__, 'CRM_Stepw_WorkflowInstanceStep_getVar_invalid', ['requested var name' => $name]);
     }
     return ($this->$name ?? NULL);
   }
-  
+
   /**
    * Get an array member, by the given name, for the selected option in this step.
-   * 
+   *
    * @param string $name
    */
   public function getSelectedOptionVar(string $name) {
     $option = $this->getSelectedOption();
     return ($option[$name] ?? NULL);
   }
-  
+
   /**
    * Get the option which has been selected for this step.
    * @return Array A member of $this->options, per key in $this->selectedOptionId
@@ -96,29 +127,29 @@ class CRM_Stepw_WorkflowInstanceStep {
    */
   private function getSelectedOption() {
     if (empty($this->selectedOptionId)) {
-      throw new  CRM_Stepw_Exception("No option has been selected for this step, ". __METHOD__, 'CRM_Stepw_WorkflowInstanceStep_getOption_no-selected-option-id');      
+      throw new CRM_Stepw_Exception("No option has been selected for this step, " . __METHOD__, 'CRM_Stepw_WorkflowInstanceStep_getOption_no-selected-option-id');
     }
     return $this->options[$this->selectedOptionId];
   }
-  
+
   /**
-   * Build and return the URL for the selected option in this step, i.e., to a WP post or afform, with all 
+   * Build and return the URL for the selected option in this step, i.e., to a WP post or afform, with all
    * appropriate query params and afform params.
-   * 
+   *
    * @return String URL for this step with all appropriate params.
-   */  
+   */
   public function getBaseUrl() {
     $option = $this->getSelectedOption();
     $baseUrl = $option['url'];
     return $baseUrl;
   }
-  
+
   /**
-   * Build and return the URL for the selected option in this step, i.e., to a WP post or afform, with all 
+   * Build and return the URL for the selected option in this step, i.e., to a WP post or afform, with all
    * appropriate query params and afform params.
-   * 
+   *
    * @return String URL for this step with all appropriate params.
-   */  
+   */
   public function getUrl() {
     $baseUrl = $this->getBaseUrl();
 
@@ -129,8 +160,8 @@ class CRM_Stepw_WorkflowInstanceStep {
     ];
 
     $afformParams = [];
-    $option = $this->getSelectedOption();    
-    if($option['type'] == 'afform') {
+    $option = $this->getSelectedOption();
+    if ($option['type'] == 'afform') {
       $afformParams = [];
       // If this option is afform, and if ->workflowInstance has a created contactId, append that in the
       // afform #? params.
@@ -145,9 +176,9 @@ class CRM_Stepw_WorkflowInstanceStep {
     if (!empty($baseUrl)) {
       $ret = CRM_Stepw_Utils_Userparams::appendParamsToUrl($baseUrl, $params, $afformParams);
     }
-    
+
     if (empty($ret)) {
-      throw new  CRM_Stepw_Exception("When calculating 'Step url', the result was empty, in " . __METHOD__, 'CRM_Stepw_WorkflowInstanceStep_getUrl_empty');        
+      throw new CRM_Stepw_Exception("When calculating 'Step url', the result was empty, in " . __METHOD__, 'CRM_Stepw_WorkflowInstanceStep_getUrl_empty');
     }
     return $ret;
   }
@@ -156,20 +187,26 @@ class CRM_Stepw_WorkflowInstanceStep {
     $optionPublicId = $option['publicId'];
     $this->options[$optionPublicId] = $option;
   }
-  
+
   public function complete() {
     $timestamp = microtime(TRUE);
-    
+
     $option = $this->getSelectedOption();
     $option['mostRecentlyCompletedTimestamp'] = $timestamp;
     $this->updateOption($option);
-    
+
     // If called for in the step config, close the WorkflowInstance.
     if ($this->config['closeWorkflowInstanceOnComplete']) {
       $this->workflowInstance->close();
     }
 
     $this->mostRecentCompletedTimestamp = $timestamp;
+    $this->saveEntity([
+      'afform_submission_id' => $this->getLastAfformSubmissionId(),
+      'completed' => CRM_Utils_Date::currentDBDate(),
+      'activity_id' => $this->getCreatedActivityId(),
+    ]);
+
   }
 
   public function setAfformSubmissionId($afformSubmissionId) {
@@ -183,7 +220,7 @@ class CRM_Stepw_WorkflowInstanceStep {
     $option['createdActivityId'] = $activityId;
     $this->updateOption($option);
   }
-  
+
   public function setSelectedOptionId(string $optionPublicId) {
     if (!array_key_exists($optionPublicId, $this->options)) {
       throw new CRM_Stepw_Exception("Attempting to select invalid option '$optionPublicId', in " . __METHOD__);
@@ -202,4 +239,5 @@ class CRM_Stepw_WorkflowInstanceStep {
     $createdActivityId = ($option['createdActivityId'] ?? NULL);
     return $createdActivityId;
   }
+
 }
