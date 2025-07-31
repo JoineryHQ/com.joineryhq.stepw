@@ -194,6 +194,7 @@ class CRM_Stepw_Form_Report_WorkflowInstances extends CRM_Report_Form {
                      {$this->_aliases['civicrm_activity_contact']}.record_type_id = {$sourceRecordTypeID}
            INNER JOIN civicrm_contact {$this->_aliases['civicrm_contact']}
                   ON {$this->_aliases['civicrm_activity_contact']}.contact_id = {$this->_aliases['civicrm_contact']}.id
+                    AND NOT {$this->_aliases['civicrm_contact']}.is_deleted
            {$this->_aclFrom}
           INNER JOIN civicrm_stepw_workflow_instance_step wis
             ON wis.activity_id = {$this->_aliases['civicrm_activity']}.id

@@ -40,6 +40,7 @@ can lead to confusion, which this section aims to avoid.
 
 
 fixme/TODO:
+- reports should not show contacts who are [in trash | deleted]
 - add forms for Workflow entity management https://docs.civicrm.org/dev/en/latest/step-by-step/create-entity/#7-add-a-form  
   but note that we'll also need a full-featured "workflow configuration" interface
   that probably goes beyond that simple form.
