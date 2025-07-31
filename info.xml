@@ -17,8 +17,8 @@
     <url desc="Support">https://github.com/JoineryHQ/com.joineryhq.stepw/issues</url>
     <url desc="Licensing">https://www.gnu.org/licenses/gpl-3.0.html</url>
   </urls>
-  <releaseDate>2025-03-02</releaseDate>
-  <version>0.0.1</version>
+  <releaseDate>2025-07-30</releaseDate>
+  <version>0.0.2</version>
   <develStage>alpha</develStage>
   <compatibility>
     <ver>5.81</ver>
