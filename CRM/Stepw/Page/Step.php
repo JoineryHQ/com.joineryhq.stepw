@@ -16,7 +16,6 @@ class CRM_Stepw_Page_Step extends CRM_Core_Page {
     //
     // note:val: none; WI and Step classes will throw exceptions on invalid publicIds
     //
-
     parent::run();
 
     // If we're given 'start_workflow_id', initialize a workflow instance and use this workflowInstance
@@ -27,6 +26,14 @@ class CRM_Stepw_Page_Step extends CRM_Core_Page {
     }
     // Otherwise, get workflowintance based on given 'stepw_wiid' param
     else {
+      // We're loading some real page in the workflow (step > 0), so there really
+      // should be some referer values. If not, assume the browser is refusing to
+      // send referer data. This will break the workflow eventually, so just
+      // error here.
+      if (empty(CRM_Stepw_Utils_Userparams::getUserParams('referer'))) {
+        CRM_Stepw_Utils_General::throwExceptionWithPublicMessage('This form is not compatible with your browser (referer data unavailable).');
+      }
+
       $workflowInstancePublicId = CRM_Stepw_Utils_Userparams::getUserParams('request', CRM_Stepw_Utils_Userparams::QP_WORKFLOW_INSTANCE_ID);
       $workflowInstance = CRM_Stepw_State::singleton()->getWorkflowInstance($workflowInstancePublicId);
     }
@@ -72,10 +79,7 @@ class CRM_Stepw_Page_Step extends CRM_Core_Page {
       ->execute()
       ->count();
     if (!$workflowCount) {
-      // Todo: Manually calling storePublicErrorMessage() feels sloppy, but this works for now.
-      CRM_Stepw_State::singleton()->storePublicErrorMessage(E::ts('Sorry, the content you have requested is not available'));
-      $redirect = CRM_Utils_System::url('civicrm/stepwise/invalid', '', TRUE, NULL, FALSE);
-      CRM_Utils_System::redirect($redirect);
+      CRM_Stepw_Utils_General::throwExceptionWithPublicMessage(E::ts('Sorry, the content you have requested is not available'));
     }
   }
 
