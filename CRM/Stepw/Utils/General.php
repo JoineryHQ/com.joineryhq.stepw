@@ -107,6 +107,17 @@ class CRM_Stepw_Utils_General {
     CRM_Utils_System::redirect($redirect);
   }
 
+  /**
+   * Set a public error message, then thrown an exception.
+   *
+   * @param String $message
+   * @throws CRM_Stepw_Exception
+   */
+  public static function throwExceptionWithPublicMessage($message) {
+    CRM_Stepw_State::singleton()->storePublicErrorMessage($message);
+    throw new CRM_Stepw_Exception($message);
+  }
+
   public static function redirectToValidationError($errors) {
     // Store errors for display on the page.
     foreach ($errors as $error) {
