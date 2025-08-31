@@ -97,10 +97,18 @@ class CRM_Stepw_State {
     return $workflowInstance;
   }
 
-  public function storePublicErrorMessage(string $message) {
+  /**
+   * Store a message which is suitable for display to end-users.
+   *
+   * @param string $message
+   * @param bool $allowRedundant If true, allow redundant identical messages to be displayed.
+   */
+  public function storePublicErrorMessage(string $message, $allowRedundant = FALSE) {
     $messages = ($this->get('publicErrorMessages') ?? []);
-    $messages[] = $message;
-    $this->set('publicErrorMessages', $messages);
+    if ($allowRedundant || !in_array($message, $messages)) {
+      $messages[] = $message;
+      $this->set('publicErrorMessages', $messages);
+    }
   }
 
   public function getPublicErrorMessages(bool $clear = TRUE) {
