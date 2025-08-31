@@ -26,6 +26,35 @@ class CRM_Stepw_Utils_General {
     return $errorId;
   }
   
+  /**
+   * Handle verbose logging if enabled.
+   * 
+   * @param Array|String $message The value to be logged
+   * @param String $label Optional label (if null, E::SHORT_NAME will be used)
+   * 
+   * @return bool True if verbose logging is enabled; otherwise FALSE.
+   */
+  public static function debugLog($message, $label = E::SHORT_NAME) {
+    if (!Civi::settings()->get('stepw_debug_log')) {
+      return FALSE;
+    }
+    
+    if (is_string($message)) {
+      CRM_Core_Error::debug_var($label, $message, FALSE, TRUE, E::SHORT_NAME);
+    }
+    else {
+      // Convert $vars to a dump string; this has the desirable side effect
+      // of exposing $e exception properties that are otherwise protected from
+      // the output.
+      $message = (new \Symfony\Component\VarDumper\Dumper\CliDumper('php://output'))
+        ->dump(
+          (new \Symfony\Component\VarDumper\Cloner\VarCloner())->cloneVar($message),
+          TRUE);
+      CRM_Core_Error::debug_log_message("$label :: " . $message, FALSE, E::SHORT_NAME);
+    }
+    
+    return TRUE;
+  }
   public static function redirectToInvalid(CRM_Stepw_Exception $e) {
     
     // Add a uniq log identifier both to the logMessage and to a publicMessage.
@@ -53,8 +82,17 @@ class CRM_Stepw_Utils_General {
       $debugContext['error_data'] = $errorData;
     }
     $debugContext['_REQUEST'] = $_REQUEST;
-    
-    \Civi::log()->debug(E::LONG_NAME .': '. $logMessage, $debugContext);
+
+    $vars = [
+      'debugContext' => $debugContext,
+      'exception' => $e,
+    ];    
+
+    // Log error message EITHER to our own verbose log OR to civicrm's ConfigAndLog.
+    $doOwnLogging = self::debugLog($vars, "Stepw details for Log Reference Number $errorId");
+    if (!$doOwnLogging) {
+      \Civi::log()->debug(E::LONG_NAME .': '. $logMessage, $vars);
+    }
     
     // Store an additional informative message for display to the user.
     CRM_Stepw_State::singleton()->storePublicErrorMessage($publicMessage);

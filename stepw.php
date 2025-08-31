@@ -422,6 +422,18 @@ function stepw_civicrm_navigationMenu(&$menu) {
         'icon' => 'crm-i fa-arrows-turn-to-dots fa-flip-vertical',
       ],
     ];
+    $items[] = [
+      'parent' => "{$customizeDataPath}/Stepwise Workflows",
+      'properties' => [
+        'label' => E::ts('Settings'),
+        'name' => 'Settings',
+        'url' => CRM_Utils_System::url('civicrm/stepwise/admin/settings'),
+        'permission' => 'administer civicrm',
+        'operator' => 'AND',
+        'separator' => NULL,
+        'icon' => 'crm-i fa-gears',
+      ],
+    ];
     foreach ($items as $item) {
       _stepw_civix_insert_navigation_menu($menu, $item['parent'], $item['properties']);
     }

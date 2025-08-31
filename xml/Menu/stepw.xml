@@ -28,4 +28,11 @@
     <access_callback>1</access_callback>
     <is_public>1</is_public>
   </item>
+  <item>
+    <path>civicrm/stepwise/admin/settings</path>
+    <page_callback>CRM_Stepw_Form_Settings</page_callback>
+    <title>Stepwise Workflow: Settings</title>
+    <access_arguments>administer civicrm</access_arguments>
+    <is_public>0</is_public>
+  </item>
 </menu>
