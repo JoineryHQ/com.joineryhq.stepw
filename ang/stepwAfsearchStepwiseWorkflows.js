@@ -88,7 +88,7 @@ CRM.$(function ($) {
     // Get the text field
     var url = $(this).closest('td').find('span.stepw-workflow-url').text();
     copyTextToClipboard(url, ts('This URL is now in your clipboard:') + "\n<br>\n<br>" + url);
-  }
+  };
 
   $('body').on('click', 'afsearch-stepwise-workflows tr a.stepw-workflow-url-copy', copyUrlToClipboard);
 

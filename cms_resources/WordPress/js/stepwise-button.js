@@ -27,7 +27,7 @@ jQuery(function ($) {
         e.preventDefault();
       }
     }
-  }
+  };
 
   // Add a click handler for disabled step links.
   $('a.stepwise-button.stepwise-button-disabled').click(stepwEnforcer.clickHandler);

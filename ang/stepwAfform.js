@@ -59,8 +59,8 @@
             CRM.$('af-form').replaceWith('<p>Invalid request</p>');
           }
           
-        }
-      }
+        };
+      };
       $scope.init();
 
     });  

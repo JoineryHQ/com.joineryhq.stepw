@@ -15,7 +15,7 @@ CRM.$(function($) {
       checkboxes = $(this).closest('table').find('input[type="checkbox"]');
     }
     checkboxes.prop('checked', $(this).data('select'));
-  }
+  };
   
   
   CRM.$('div.crm-report-criteria div#report-tab-col-groups').prepend('<div id="stepw-top-columns"></div>');

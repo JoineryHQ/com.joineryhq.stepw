@@ -3,26 +3,25 @@
 /**
  * Class to handle workflow configuration data.
  */
-
 use CRM_Stepw_ExtensionUtil as E;
 
 class CRM_Stepw_WorkflowData {
-  static $_singleton;
-  
+
+  static public $_singleton;
+
   /**
    * Array of all workflow data
-   * @var Array
+   * @var array
    */
   private $data;
-  
+
   /**
    * List of afformNames used in workflow data.
-   * @var Array
+   * @var array
    */
   private $allAfformNames = [];
-  
   private $workflowIdsWithBadConfig = [];
-  
+
   private function __construct() {
 
     // fixme: somewhere (perhaps not here?) we need a data structure validator:
@@ -35,7 +34,7 @@ class CRM_Stepw_WorkflowData {
     // - wp page configuration:
     //   - must include [stepwise-button] shortcode
     //
-    
+
     $rawData = CRM_Stepw_Fixme_LoadData::getSampleData();
     $data = [];
     foreach ($rawData as $workflowId => $workflow) {
@@ -89,7 +88,6 @@ class CRM_Stepw_WorkflowData {
    *
    * @see __construct()
    *
-   * @param Int $workflowId
    * @return object This
    */
   public static function &singleton() {
@@ -98,14 +96,14 @@ class CRM_Stepw_WorkflowData {
     }
     return self::$_singleton;
   }
-  
+
   public function getWorkflowConfigById(String $workflowId) {
-    if (!empty($this->workflowIdsWithBadConfig[$workflowId])) {      
-      throw new CRM_Stepw_Exception('Workflow has bad configuration. For more info, see error log entries for error_id '. $this->workflowIdsWithBadConfig[$workflowId], 'CRM_Stepw_WorkflowData_getWorkflowConfigById_bad-workflow-config');
+    if (!empty($this->workflowIdsWithBadConfig[$workflowId])) {
+      throw new CRM_Stepw_Exception('Workflow has bad configuration. For more info, see error log entries for error_id ' . $this->workflowIdsWithBadConfig[$workflowId], 'CRM_Stepw_WorkflowData_getWorkflowConfigById_bad-workflow-config');
     }
     return ($this->data[$workflowId] ?? NULL);
   }
-  
+
   public function getAllAfformNames() {
     return $this->allAfformNames;
   }
@@ -116,11 +114,11 @@ class CRM_Stepw_WorkflowData {
         [
           'type' => 'url',
           'url' => CRM_Utils_System::url('civicrm/stepwise/final', '', TRUE, NULL, FALSE, TRUE),
-        ]
+        ],
       ],
     ];
   }
-  
+
   private static function afformExists(string $afformName) {
     $afformCount = \Civi\Api4\Afform::get()
       ->setCheckPermissions(FALSE)
@@ -130,10 +128,10 @@ class CRM_Stepw_WorkflowData {
       ->count();
     return ($afformCount ? TRUE : FALSE);
   }
-  
+
   private function getsetWorkflowConfigErrorId(string $workflowId) {
     if (empty($this->workflowIdsWithBadConfig[$workflowId])) {
-      $this->workflowIdsWithBadConfig[$workflowId] = CRM_Stepw_Utils_General::generateErrorId();    
+      $this->workflowIdsWithBadConfig[$workflowId] = CRM_Stepw_Utils_General::generateErrorId();
     }
     return $this->workflowIdsWithBadConfig[$workflowId];
   }

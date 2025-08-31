@@ -5,27 +5,25 @@
  *
  * @author as
  */
-
-
 class CRM_Stepw_Utils_Userparams {
-  
+
   /**
    * A workflow ID matching a confgiured workflow. Presence of this parameter
    * implies we're biginning a new worfkflowInstance.
    */
   const QP_START_WORKFLOW_ID = 'stepw_wid';
-  
+
   /**
    * PublicId for an existing workflowInstance.
    */
   const QP_WORKFLOW_INSTANCE_ID = 'stepw_wiid';
-  
+
   /**
    * PublicId for a given step within the current workflowInstance; indicates the
    * step currently being loaded/viewed.
    */
   const QP_STEP_ID = 'stepw_sid';
-  
+
   /**
    * PublicId for a given step within the current workflowInstance; indicates that
    * this step has been completed. (Designed to support completion of wp-page steps
@@ -33,7 +31,7 @@ class CRM_Stepw_Utils_Userparams {
    * [stepwise-button] shortcode.)
    */
   const QP_DONE_STEP_ID = 'stepw_dsid';
-  
+
   /**
    * PublicId for a given option in the subsequent step; indicates that when the
    * subsequent step is displayed, it should use properties for this option.
@@ -41,21 +39,21 @@ class CRM_Stepw_Utils_Userparams {
    * where multiple buttons are displayed by the [stepwise-button] shortcode.)
    */
   const QP_SUBSEQUENT_STEP_SELECTED_OPTION_ID = 'stepw_soid';
-  
+
   /**
-   * Afform submission id for a the step represented by QP_STEP_ID, as it was 
+   * Afform submission id for a the step represented by QP_STEP_ID, as it was
    * most recently saved in the step's afformSid property. (Note
    * that this extension supports prefilling of afforms with submission data,
    * and the saving of those forms; such saving creates a new afformsubmission,
    * which id is then stored (ovewritten) in the step's afformSid property).
    * Designed to allow our APIWrappers and other event listeners, called during
    * the prefill of such forms and during the processing of such form submissions,
-   * to recognize that this is a valid re-load/re-submission, and therefore to 
+   * to recognize that this is a valid re-load/re-submission, and therefore to
    * alter (after proper validation) api parameters or permissions in order to
    * allow the prefill/re-submission.)
    */
   const QP_AFFORM_RELOAD_SID = 'stepw_r';
-  
+
   private static function getValidParams() {
     $validParams = [];
     $relectionClass = new ReflectionClass(__CLASS__);
@@ -67,7 +65,7 @@ class CRM_Stepw_Utils_Userparams {
     }
     return $validParams;
   }
-  
+
   private static function getRefererQueryParams($name = '') {
     static $params = [];
     if (empty($params)) {
@@ -85,7 +83,7 @@ class CRM_Stepw_Utils_Userparams {
       return $params;
     }
   }
-  
+
   private static function getUrlQueryParams($name = '') {
     static $params = [];
     if (empty($params)) {
@@ -101,7 +99,7 @@ class CRM_Stepw_Utils_Userparams {
       return $params;
     }
   }
-  
+
   /**
    * Get one or all parameters supplied by user in the given source, limited only
    * to parameters named in QP_* constants of this class.
@@ -123,12 +121,12 @@ class CRM_Stepw_Utils_Userparams {
       return NULL;
     }
   }
-  
+
   /**
    * Append given query parameters to a given url.
-   * 
+   *
    * @param srtring $url The url to be modified
-   * @param array $params Query parameters to append. 
+   * @param array $params Query parameters to append.
    *   Query parameter names are controlled by this class, and correspond to
    *   supported keys in the $params array:
    *     s: step id
@@ -152,29 +150,29 @@ class CRM_Stepw_Utils_Userparams {
         \Civi::log()->warning(__METHOD__ . ': Unsupported parameter found', [$paramKey => $paramValue]);
       }
     }
-    
+
     $u = \Civi::url($url, 'a');
     $u->addQuery($queryParams);
     $u->addFragmentQuery($fragmentQuery);
-    return (string)$u;
+    return (string) $u;
   }
 
   /**
    * Determine whether the current context purports to be a workflowInstance, without
    * validating anything else in particular (such as the existing of the purported
    * workflowInstance in current state)
-   * 
+   *
    * @staticvar Array $cache
-   * @param String $source The source of information from which we should make our 
-   *   determination of context. One of: 
-   *     - request (context is $_REQUEST); 
-   *     - referer (context is $_SERVER['HTTP_REFERER']); 
-   *     - any (context is either of the other two options); 
+   * @param String $source The source of information from which we should make our
+   *   determination of context. One of:
+   *     - request (context is $_REQUEST);
+   *     - referer (context is $_SERVER['HTTP_REFERER']);
+   *     - any (context is either of the other two options);
    * @return Boolean
    */
   public static function isStepwiseWorkflow($source = 'any') {
     static $cache;
-    
+
     if (empty($cache[$source])) {
       if ($source == 'any') {
         $cache[$source] = (self::isStepwiseWorkflow('referer') || self::isStepwiseWorkflow('request'));
@@ -184,9 +182,8 @@ class CRM_Stepw_Utils_Userparams {
         $cache[$source] = (!empty($workflowInstancePublicId));
       }
     }
-    
+
     return $cache[$source];
   }
 
-  
 }

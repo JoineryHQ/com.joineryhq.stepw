@@ -15,44 +15,42 @@ function stepw_civicrm_pageRun(CRM_Core_Page $page) {
     //    only knows it from #fragment, which is not visible here.)
     //  - Set crm.vars for stepwAfform module.
     //
-    // note:val: validate hook_pageRun.                                                                                                                                                     
-    //  - If given "reload" param:                                                                                                                                                           
-    //      - "reload" param is for given step                                                                                                                                               
-    //      - step has an afform sid.                                                                                                                                                        
-    //  - Given Step is for this afform ($q matches step['url'])                                                                                                                             
+    // note:val: validate hook_pageRun.
+    //  - If given "reload" param:
+    //      - "reload" param is for given step
+    //      - step has an afform sid.
+    //  - Given Step is for this afform ($q matches step['url'])
     //  -- VALIDATION FAILURE: throw an exception
-    //  
-
+    //
     // If is not stepwise workflow: return.
     if (!CRM_Stepw_Utils_Userparams::isStepwiseWorkflow('request')) {
       // We're not in a stepwise workflow. Nothing for us to do here.
       return;
     }
-    
+
     // Validation: on failure we'll throw an exception
-    // 
+    //
     // validate: fail if: Given Step is not for this afform.
     $workflowInstancePublicId = CRM_Stepw_Utils_Userparams::getUserParams('request', CRM_Stepw_Utils_Userparams::QP_WORKFLOW_INSTANCE_ID);
     $stepPublicId = CRM_Stepw_Utils_Userparams::getUserParams('request', CRM_Stepw_Utils_Userparams::QP_STEP_ID);
     $menuItem = CRM_Core_Invoke::getItem($page->urlPath);
     $pageArgs = CRM_Core_Menu::getArrayForPathArgs($menuItem['page_arguments']);
-    $pageAfformName = $pageArgs['afform'];    
+    $pageAfformName = $pageArgs['afform'];
     if (!CRM_Stepw_Utils_Validation::stepIsForAfformName($workflowInstancePublicId, $stepPublicId, $pageAfformName)) {
       throw new CRM_Stepw_Exception(__METHOD__ . ": Step, per publicId, is not for this afform: $pageAfformName");
     }
-    
-    // validate: fail if: the 'reload' param is given and step has no sid. (i.e., 
+
+    // validate: fail if: the 'reload' param is given and step has no sid. (i.e.,
     // reload is only valid on steps that have already been submitted at least once.)
     $reloadSubmissionId = CRM_Stepw_Utils_Userparams::getUserParams('request', CRM_Stepw_Utils_Userparams::QP_AFFORM_RELOAD_SID);
     $workflowInstance = CRM_Stepw_State::singleton()->getWorkflowInstance($workflowInstancePublicId);
     $stepSubmissionId = $workflowInstance->getStepLastAfformSubmissionId($stepPublicId);
     if (
-      (!empty($reloadSubmissionId))
-      && (empty($stepSubmissionId))
+      (!empty($reloadSubmissionId)) && (empty($stepSubmissionId))
     ) {
       throw new CRM_Stepw_Exception(__METHOD__ . ": Reload parameter given, but step has no existing submissionId: $afformName");
     }
-    
+
     // If workflowInstance is closed, redirect to last step.
     if ($workflowInstance->getVar('isClosed')) {
       $closedWorkflowInstanceStepUrl = $workflowInstance->getFirstUncompletedStepUrl();
@@ -62,17 +60,16 @@ function stepw_civicrm_pageRun(CRM_Core_Page $page) {
     // If the given step has already been submitted, and we were NOT given QP_AFFORM_RELOAD_SID (with the current sid of the step),
     // redirect to $workflowInstance->getStepUrl(stepPublicId). See notes on
     // $step->options[]['afformSid'].
-    // This redirection is part of our security/validation protocol, because it 
+    // This redirection is part of our security/validation protocol, because it
     // ensures that the value of QP_AFFORM_RELOAD_SID is corret, which is important
     // because that value is later checked by our validation process.
     if (
-      $stepSubmissionId
-      && ($reloadSubmissionId != $stepSubmissionId)
+      $stepSubmissionId && ($reloadSubmissionId != $stepSubmissionId)
     ) {
       $stepReloadUrl = $workflowInstance->getStepUrl($stepPublicId);
       CRM_Utils_System::redirect($stepReloadUrl);
     }
-      
+
     // If we'er still here, it means we'll display the afform page (fresh, not
     // for review/re-submission).
     // Build redirect url to our step handler for this workflowInstance
@@ -87,11 +84,11 @@ function stepw_civicrm_pageRun(CRM_Core_Page $page) {
     // Determine the button label so we can send it to JS.
     // Since this is an afform, we can only support one button label (indeed,
     // there should be only one in the config for this step/option). So we'll
-    // fetch the array of labels, and just use the first one (there should be 
+    // fetch the array of labels, and just use the first one (there should be
     // only one.)
     $buttonLabels = $workflowInstance->getStepButtonLabels($stepPublicId);
     $buttonLabel = $buttonLabels[0];
-    
+
     $jsVars = [
       'submitButtonLabel' => $buttonLabel,
       'redirectUrl' => $redirectUrl,
@@ -121,8 +118,8 @@ function stepw_civicrm_alterContent(&$content, $context, $tplName, &$object) {
   if (!CRM_Stepw_Utils_Userparams::isStepwiseWorkflow('request')) {
     // If we're not in a stepwise workflow, there's nothing for us to do here.
     return;
-  }  
-  
+  }
+
   if (CIVICRM_UF == 'WordPress') {
     // Currently this is only supported in WordPress.
     $progressBarHtml = CRM_Stepw_Utils_WpShortcode::getProgressBarHtml();
@@ -141,7 +138,7 @@ function stepw_civicrm_angularModules(&$angularModules) {
 
 /**
  * Callback for afform modification, defined in stepw_civicrm_alterAngular().
- * 
+ *
  * @param phpQueryObject $doc
  * @param string $path
  */
@@ -154,7 +151,6 @@ function _stepw_alterAfformHtml(phpQueryObject $doc, $path) {
 function stepw_civicrm_alterAngular(\Civi\Angular\Manager $angular) {
   // fixme: test everything to verify that we're not breaking afform in its normal usage...
   //   This testing should cover evertying this extension does.
-
   // This hook fires only when afform cache is rebuilt.
   // For any afform defined in any step of any workflow, add our alterAfformHtml callback.
   $hookedAfformNames = CRM_Stepw_WorkflowData::singleton()->getAllAfformNames();
@@ -168,16 +164,16 @@ function stepw_civicrm_alterAngular(\Civi\Angular\Manager $angular) {
     $alterHtmlFile = array_keys($partials)[0];
     \Civi::$statics['STEPW_AFFORM_FORM_NAME_BY_PATH'][$alterHtmlFile] = $hookedAfformName;
     $angular->add(\Civi\Angular\ChangeSet::create('stepw_changeset_' . $hookedAfformName)
-        ->alterHtml($alterHtmlFile, '_stepw_alterAfformHtml')
+      ->alterHtml($alterHtmlFile, '_stepw_alterAfformHtml')
     );
   }
 }
 
 /**
  * Early (high-priority) listener on 'civi.afform.submit' event (bound in stepw_civicrm_config()).
- * 
+ *
  * FLAG_STEPW_AFFORM_BRITTLE
- * 
+ *
  * @param \Civi\Afform\Event\AfformSubmitEvent $event
  * @return void
  */
@@ -187,15 +183,15 @@ function _stepw_afform_submit_early(\Civi\Afform\Event\AfformSubmitEvent $event)
   //
   // note: ignore and return if any of:
   //  - we're not in a stepwise workflow.
-  //  - $event is for an activity (we don't currently support any other entities here.)                                                                                                    
+  //  - $event is for an activity (we don't currently support any other entities here.)
   //  - afformsubmission.sid is not provided (in referer QP_AFFORM_RELOAD_SID; i.e., this is not a re-submission)
   //
-  // note:val: validate _stepw_afform_submit_early.                                                                                                                                       
-  //  - Given Step is for this afform ($afformName matches step/option['afformName'])                                                                                                            
+  // note:val: validate _stepw_afform_submit_early.
+  //  - Given Step is for this afform ($afformName matches step/option['afformName'])
   //  - given afformsubmission.sid is not the sid already saved for this step.
   //
   //  -- VALIDATION FAILURE: throw an exception.
-  //                                                                                                                                                                                       
+  //
 
   if (!CRM_Stepw_Utils_Userparams::isStepwiseWorkflow('referer')) {
     // We're not in a workflowInstance, so there's nothing for us to do here.
@@ -205,7 +201,7 @@ function _stepw_afform_submit_early(\Civi\Afform\Event\AfformSubmitEvent $event)
     // $event is not for an activity (we don't currently support any other entities here.)
     return;
   }
-  // 
+
   $reloadSubmissionId = CRM_Stepw_Utils_Userparams::getUserParams('referer', CRM_Stepw_Utils_Userparams::QP_AFFORM_RELOAD_SID);
   if (empty($reloadSubmissionId)) {
     // afformsubmission.sid is not provided (in referer QP_AFFORM_RELOAD_SID); this is not a re-submission.
@@ -213,25 +209,25 @@ function _stepw_afform_submit_early(\Civi\Afform\Event\AfformSubmitEvent $event)
   }
 
   // Validation: on failure we will: throw an exception. clearly someone is mucking with params.
-  // 
+  //
   // validate: fail if: Given Step is not for this afform.
   $workflowInstancePublicId = CRM_Stepw_Utils_Userparams::getUserParams('referer', CRM_Stepw_Utils_Userparams::QP_WORKFLOW_INSTANCE_ID);
   $stepPublicId = CRM_Stepw_Utils_Userparams::getUserParams('referer', CRM_Stepw_Utils_Userparams::QP_STEP_ID);
   $afform = $event->getAfform();
   $afformName = ($afform['name'] ?? NULL);
   if (!CRM_Stepw_Utils_Validation::stepIsForAfformName($workflowInstancePublicId, $stepPublicId, $afformName)) {
-    throw new  CRM_Stepw_Exception("Referenced step is not for this affrom: '$afformName', in " . __METHOD__, 'stepw_afform_submit_early_mismatch-afform');
+    throw new CRM_Stepw_Exception("Referenced step is not for this affrom: '$afformName', in " . __METHOD__, 'stepw_afform_submit_early_mismatch-afform');
   }
 
   // validate: fail if: afformsubmission.sid is not an sid already saved for this step.
   if (!CRM_Stepw_Utils_Validation::stepHasAfformSubmissionId($workflowInstancePublicId, $stepPublicId, $reloadSubmissionId)) {
-    throw new  CRM_Stepw_Exception("Provided afform submission sid does not match existing sid in step, in " . __METHOD__, 'stepw_afform_submit_early_mismatch-submission-id');
+    throw new CRM_Stepw_Exception("Provided afform submission sid does not match existing sid in step, in " . __METHOD__, 'stepw_afform_submit_early_mismatch-submission-id');
   }
 
   // This code allows us to re-save afforms that are prefilled
   // with an existing submission Id, and to allow that re-submission to update
   // the related entity. This code:
-  // - causes an existing activity (the one linked to the submission) to actually be overwritten. 
+  // - causes an existing activity (the one linked to the submission) to actually be overwritten.
   // - causes the creation of a new submission on the afform.
   $records = $event->getRecords();
   foreach ($records as &$record) {
@@ -271,15 +267,15 @@ function stepw_civicrm_config(&$config): void {
 }
 
 /**
- * Implements hook_civicrm_permission-check().
- * 
+ * Implements hook_civicrm_permission_check().
+ *
  * FLAG_STEPW_AFFORM_BRITTLE
- * 
+ *
  * @link https://docs.civicrm.org/dev/en/latest/hooks/hook_civicrm_permission_check/
- * 
+ *
  */
 function stepw_civicrm_permission_check($permission, &$granted) {
-  
+
   // note: here we will:
   //  - Grant certain permissions so that afform submissions can be prefilled.
   //
@@ -287,13 +283,12 @@ function stepw_civicrm_permission_check($permission, &$granted) {
   //  - we're not being asked about one of a small set of permissions
   //  - we're not in an afform 'prefill' operation
   //  - we're not in a stepwise workflow
-  //                                                                                                                                                                                         
-  // note:val: validate stepw_civicrm_permission_check.                                                                                                                                     
-  //  - Given Step is for this afform ($afformName matches step/option['afformName']), where afform name is in json_decode($_POST['params'])                                                       
-  //  - afform sid is associated with this step (sid is in json_decode($_POST['params'])['args'], and in QP_AFFORM_RELOAD_SID)                                                               
-  //  -- VALIDATION FAILURE: take no action and return.                                                                                                                                      
-  //                
-
+  //
+  // note:val: validate stepw_civicrm_permission_check.
+  //  - Given Step is for this afform ($afformName matches step/option['afformName']), where afform name is in json_decode($_POST['params'])
+  //  - afform sid is associated with this step (sid is in json_decode($_POST['params'])['args'], and in QP_AFFORM_RELOAD_SID)
+  //  -- VALIDATION FAILURE: take no action and return.
+  //
   // Only take action on afform.submission.prefill, which is actually a POST.
   static $uri;
   if (!isset($uri) && $_SERVER['REQUEST_METHOD'] == 'POST') {
@@ -324,7 +319,7 @@ function stepw_civicrm_permission_check($permission, &$granted) {
   }
 
   // Validation: on failure we will: do nothing and return.
-  // 
+  //
   // validate: fail if: Given Step is not for this afform.
   $workflowInstancePublicId = CRM_Stepw_Utils_Userparams::getUserParams('referer', CRM_Stepw_Utils_Userparams::QP_WORKFLOW_INSTANCE_ID);
   $stepPublicId = CRM_Stepw_Utils_Userparams::getUserParams('referer', CRM_Stepw_Utils_Userparams::QP_STEP_ID);
@@ -339,7 +334,7 @@ function stepw_civicrm_permission_check($permission, &$granted) {
   if (empty($afformSid)) {
     return;
   }
-  
+
   // validate: fail if: afformsubmission.sid is not an sid already saved for this step.
   if (!CRM_Stepw_Utils_Validation::stepHasAfformSubmissionId($workflowInstancePublicId, $stepPublicId, $afformSid)) {
     return;
@@ -396,7 +391,7 @@ function stepw_civicrm_container(ContainerBuilder $container) {
 function stepw_civicrm_navigationMenu(&$menu) {
   $customizeDataPath = "";
   _stepw_findMenuItemPathByIName($menu, ["Customize data and screens"], $customizeDataPath);
- 
+
   if ($customizeDataPath) {
     $items = [];
     $items[] = [
@@ -441,57 +436,57 @@ function stepw_civicrm_navigationMenu(&$menu) {
   }
 }
 
- /**
-  * Case-insensitive recursive function to find the full menu path for a given item(s).
-  * E.g. searching for 'New Individual' would typicaly yield 'Contacts/New Individual'.
-  *
-  * The matching full path is stored in $result.
-  *
-  * The given menu tree is searched depth-first, so that e.g. an item under Search
-  * will be tested before an item under Administrator (per default installed menu
-  * structure).
-  *
-  * @param Array $menu CiviCRM menu array, as e.g. passed to hook_civicrm_navigationMenu($menu).
-  * @param Array $labels A list of one or more menut item labels. Behavior:
-  *   - If this array contains multiple values, the search will look for ANY of them
-  *     and return the path to the FIRST matching menu item.
-  *   - Matching is case-insensitive.
-  * @param String $result Passed by reference; the matching full path to the first matching menu item.
-  * @param String $parentPath Expected to be used internally, not by function consumers.
-  *   The path build up so far for parent menu items.
-  * @param Boolean $isChild DO NOT USE. For internal use only, to know whether we're being
-  *   called recursively or by a function consumer.
-  *
-  * @return void
-  */
- function _stepw_findMenuItemPathByIName(array $menu, array $labels, &$result, string $parentPath = "", $isChild = FALSE) {
-   if (!empty($result)) {
-     // We have our final result; no need to continue here.
-     return;
-   }
-   if (!$isChild) {
-     // On first run (top-level), ensure labels are lowercased for insensitive matching.
-     foreach ($labels as &$label) {
-       $label = strtolower($label);
-     }
-   }
-   foreach ($menu as $menuKey => $menuItem) {
-     // Identify the menu item name and append it to the parent path.
-     $menuItemName = $menuItem['attributes']['name'];
-     $subPath = "{$parentPath}/{$menuItemName}";
-     // If we have a match, then our subpath is the final result, so populate
-     // $result and return.
-     if (in_array(strtolower($menuItemName), $labels)) {
-       $result = trim($subPath, '/');
-       return;
-     }
-     else {
-       // If we have a child menu structure, recurse into that, passing
-       // $subPath as parent path.
-       if ($child = ($menuItem['child'] ?? NULL)) {
-         $func = __FUNCTION__;
-         $func($child, $labels, $result, $subPath, TRUE);
-       }
-     }
-   }
- }
+/**
+ * Case-insensitive recursive function to find the full menu path for a given item(s).
+ * E.g. searching for 'New Individual' would typicaly yield 'Contacts/New Individual'.
+ *
+ * The matching full path is stored in $result.
+ *
+ * The given menu tree is searched depth-first, so that e.g. an item under Search
+ * will be tested before an item under Administrator (per default installed menu
+ * structure).
+ *
+ * @param Array $menu CiviCRM menu array, as e.g. passed to hook_civicrm_navigationMenu($menu).
+ * @param Array $labels A list of one or more menut item labels. Behavior:
+ *   - If this array contains multiple values, the search will look for ANY of them
+ *     and return the path to the FIRST matching menu item.
+ *   - Matching is case-insensitive.
+ * @param String $result Passed by reference; the matching full path to the first matching menu item.
+ * @param String $parentPath Expected to be used internally, not by function consumers.
+ *   The path build up so far for parent menu items.
+ * @param Boolean $isChild DO NOT USE. For internal use only, to know whether we're being
+ *   called recursively or by a function consumer.
+ *
+ * @return void
+ */
+function _stepw_findMenuItemPathByIName(array $menu, array $labels, &$result, string $parentPath = "", $isChild = FALSE) {
+  if (!empty($result)) {
+    // We have our final result; no need to continue here.
+    return;
+  }
+  if (!$isChild) {
+    // On first run (top-level), ensure labels are lowercased for insensitive matching.
+    foreach ($labels as &$label) {
+      $label = strtolower($label);
+    }
+  }
+  foreach ($menu as $menuKey => $menuItem) {
+    // Identify the menu item name and append it to the parent path.
+    $menuItemName = $menuItem['attributes']['name'];
+    $subPath = "{$parentPath}/{$menuItemName}";
+    // If we have a match, then our subpath is the final result, so populate
+    // $result and return.
+    if (in_array(strtolower($menuItemName), $labels)) {
+      $result = trim($subPath, '/');
+      return;
+    }
+    else {
+      // If we have a child menu structure, recurse into that, passing
+      // $subPath as parent path.
+      if ($child = ($menuItem['child'] ?? NULL)) {
+        $func = __FUNCTION__;
+        $func($child, $labels, $result, $subPath, TRUE);
+      }
+    }
+  }
+}

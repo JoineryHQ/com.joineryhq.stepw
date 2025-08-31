@@ -41,8 +41,9 @@ class StepwWorkflowGetSpecProvider extends \Civi\Core\Service\AutoService implem
   }
 
   /**
-   * Generate SQL for balance field
+   * Generate SQL for url field
    * @param array $field
+   * @param Civi\Api4\Query\Api4SelectQuery $query
    * @return string
    */
   public static function calculateUrl(array $field, $query): string {

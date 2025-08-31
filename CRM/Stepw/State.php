@@ -1,19 +1,16 @@
 <?php
 
-
 /**
  * State handler for stepw extension
  */
-
 use CRM_Stepw_ExtensionUtil as E;
-
 
 class CRM_Stepw_State {
 
   const maxWorkflowAgeSeconds = (60 * 60);
   const maxWorkflowCount = 5;
 
-  static $_singleton;
+  public static $_singleton;
   private $scopeKey;
   private $serializedVarName;
   private $storage;
@@ -34,7 +31,6 @@ class CRM_Stepw_State {
       $this->storage->set($this->scopeKey, $state);
       $this->storage->set($this->serializedVarName, NULL);
     }
-
   }
 
   public function __destruct() {
@@ -62,7 +58,6 @@ class CRM_Stepw_State {
    *
    * @see __construct()
    *
-   * @param Int $workflowId
    * @return object This
    */
   public static function &singleton() {
@@ -89,7 +84,7 @@ class CRM_Stepw_State {
   }
 
   /**
-   * 
+   *
    * @param type $workflowInstancePublicId
    * @return CRM_Stepw_WorkflowInstance
    */
@@ -97,7 +92,7 @@ class CRM_Stepw_State {
     $stateWorkflows = $this->get('workflowInstances');
     $workflowInstance = ($stateWorkflows[$workflowInstancePublicId] ?? NULL);
     if (!is_a($workflowInstance, 'CRM_Stepw_WorkflowInstance')) {
-      throw new  CRM_Stepw_Exception("Provided workflowInstancePublicId '$workflowInstancePublicId' does not match a workflowInstance in state, in " . __METHOD__, 'CRM_Stepw_State_getWorkflowInstance-mismatch-workflowInstancePublicId');
+      throw new CRM_Stepw_Exception("Provided workflowInstancePublicId '$workflowInstancePublicId' does not match a workflowInstance in state, in " . __METHOD__, 'CRM_Stepw_State_getWorkflowInstance-mismatch-workflowInstancePublicId');
     }
     return $workflowInstance;
   }
@@ -111,11 +106,11 @@ class CRM_Stepw_State {
   public function getPublicErrorMessages(bool $clear = TRUE) {
     $messages = ($this->get('publicErrorMessages') ?? []);
     if ($clear) {
-      $this->set('publicErrorMessages', []);      
+      $this->set('publicErrorMessages', []);
     }
     return $messages;
   }
-  
+
   /**
    * For a given array of state data, remove unneeded/outdated data, to prevent session storage abuse.
    *
@@ -129,15 +124,15 @@ class CRM_Stepw_State {
 
     // Ignore any workflowInstances that aren't the right class (which should never happen anyway),
     // and prepare to sort by age.
-    foreach  ($stateWorkflowInstances as $key => $workflowInstance) {
-      $retain = true;
+    foreach ($stateWorkflowInstances as $key => $workflowInstance) {
+      $retain = TRUE;
       if (!is_a($workflowInstance, 'CRM_Stepw_WorkflowInstance')) {
         // not a valid instance.
-        $retain = false;
+        $retain = FALSE;
       }
       elseif ((time() - ($workflowInstance->getModifiedTimestamp() ?? 0)) > self::maxWorkflowAgeSeconds) {
         // instance is too old.
-        $retain = false;
+        $retain = FALSE;
       }
 
       if ($retain) {
