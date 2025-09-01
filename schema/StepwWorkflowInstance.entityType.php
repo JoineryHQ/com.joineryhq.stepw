@@ -61,6 +61,13 @@ return [
       'description' => E::ts('Date/time this WI was closed (WI is closed when next-to-last step (before thank-you) is completed)'),
       'default' => NULL,
     ],
+    'public_id' => [
+      'title' => E::ts('Public ID'),
+      'sql_type' => 'varchar(255)',
+      'input_type' => 'Text',
+      'description' => E::ts('Long unguessable string identifier'),
+      'required' => TRUE,
+    ],
   ],
   'getIndices' => fn() => [
     'index_stepwWorkflowinstance_created' => [

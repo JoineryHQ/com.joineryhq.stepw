@@ -114,6 +114,22 @@ class CRM_Stepw_Upgrader extends \CRM_Extension_Upgrader_Base {
    }
 
   /**
+   * Add columns in stepw_workflow_instance and stepw_workflow_instance_step,
+   * for better tracking.
+   *
+   * @return TRUE on success
+   * @throws CRM_Core_Exception
+   */
+   public function upgrade_4202(): bool {
+     $this->ctx->log->info('Applying update 4202: Add columns in stepw_workflow_instance and stepw_workflow_instance_step');
+     // civicrm_stepw_workflow_instance: add `public_id` column
+     CRM_Core_DAO::executeQuery('ALTER TABLE civicrm_stepw_workflow_instance ADD public_id varchar(255) NOT NULL COMMENT "Long unguessable string identifier" AFTER closed');
+     // civicrm_stepw_workflow_instance_step: add `public_id` column
+     CRM_Core_DAO::executeQuery('ALTER TABLE civicrm_stepw_workflow_instance_step ADD public_id varchar(255) NOT NULL COMMENT "Long unguessable string identifier" AFTER completed');
+     return TRUE;
+   }
+
+  /**
    * Example: Run an external SQL script.
    *
    * @return TRUE on success

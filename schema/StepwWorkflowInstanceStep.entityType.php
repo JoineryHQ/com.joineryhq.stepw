@@ -86,6 +86,13 @@ return [
       'description' => E::ts('Date/time this step was most recenlty completed'),
       'default' => NULL,
     ],
+    'public_id' => [
+      'title' => E::ts('Public ID'),
+      'sql_type' => 'varchar(255)',
+      'input_type' => 'Text',
+      'description' => E::ts('Long unguessable string identifier'),
+      'required' => TRUE,
+    ],
   ],
   'getIndices' => fn() => [
     'index_step_number_workflow_instance_id' => [
