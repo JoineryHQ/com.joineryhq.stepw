@@ -254,7 +254,7 @@ class CRM_Stepw_WorkflowInstanceStep {
     $messageData = [
       'message' => "event: $eventName, on " . __CLASS__,
       'workflow id' => $this->workflowInstance->getVar('workflowId'),
-      'workflow_instance public_id' => $this->publicId,
+      'workflow_instance public_id' => $this->workflowInstance->getPublicId(),
       'step number' => $this->stepNumber,
       'step public_id' => $this->publicId,
     ];
