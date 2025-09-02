@@ -56,6 +56,8 @@ class CRM_Stepw_WorkflowInstance {
     $this->updateModifiedTimestamp();
     $this->workflowId = $workflowConfig['id'];
     $this->publicId = CRM_Stepw_Utils_General::generatePublicId();
+    // Store the workflow config for easy reference.
+    $this->workflowConfig = $workflowConfig;
     $this->saveEntity();
     foreach ($workflowConfig['steps'] as $configStepNumber => &$configStep) {
       // Create a new Step object, store ->steps and map the ids in ->stepNumbersByPublicId
@@ -67,9 +69,6 @@ class CRM_Stepw_WorkflowInstance {
 
     // Define the fallback 'final' step object.
     $this->pseudoFinalStep = new CRM_Stepw_WorkflowInstanceStep($this, -1, CRM_Stepw_WorkflowData::getPseudoFinalStepConfig());
-
-    // Store the workflow config for easy reference.
-    $this->workflowConfig = $workflowConfig;
 
     // Store this workflowInstance in state.
     $state = CRM_Stepw_State::singleton();
@@ -475,7 +474,7 @@ class CRM_Stepw_WorkflowInstance {
   private function debugLogEvent($eventName, $eventData = NULL) {
     $messageData = [
       'message' => "event: $eventName, on " . __CLASS__,
-      'workflow public_id' => $publicWorkflowId,
+      'workflow public_id' => $this->workflowConfig['settings']['public_id'],
       'workflow id' => $this->workflowId,
       'workflow_instance public_id' => $this->publicId,
     ];
