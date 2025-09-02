@@ -16,11 +16,9 @@ class CRM_Stepw_WorkflowInstance {
    * @var array
    */
   private $entity;
-
   private $publicId;
   private $modifiedTimestamp;
   private $isClosed = FALSE;
-
   private $createdIndividualCid;
 
   /**
@@ -296,19 +294,19 @@ class CRM_Stepw_WorkflowInstance {
     return $ret;
   }
 
-  public function getStepLastAfformSubmissionId ($stepKey) {
+  public function getStepLastAfformSubmissionId($stepKey) {
     $step = $this->getStepByKey($stepKey);
     return $step->getLastAfformSubmissionId();
   }
 
-  public function stepHasAfformSubmissionId ($stepKey, $submissionId) {
+  public function stepHasAfformSubmissionId($stepKey, $submissionId) {
     $step = $this->getStepByKey($stepKey);
     $sids = $step->getSelectedOptionVar('afformSids');
     $ret = in_array($submissionId, $sids);
     return $ret;
   }
 
-  public function getStepAfformName ($stepKey) {
+  public function getStepAfformName($stepKey) {
     $ret = NULL;
     $step = $this->getStepByKey($stepKey);
     $optionType = $step->getSelectedOptionVar('type');
@@ -318,7 +316,7 @@ class CRM_Stepw_WorkflowInstance {
     return $ret;
   }
 
-  public function stepRequiresOnpageEnforcer ($stepKey) {
+  public function stepRequiresOnpageEnforcer($stepKey) {
     $step = $this->getStepByKey($stepKey);
     $ret = (bool) $step->getSelectedOptionVar('requireOnpageEnforcer');
     return $ret;
@@ -366,7 +364,7 @@ class CRM_Stepw_WorkflowInstance {
    * @param String $stepKey Either a stepNumber (which is an integer), or a publicId
    * @return Boolean True if step exists, otherwise false.
    */
-  public function hasStep ($stepKey) {
+  public function hasStep($stepKey) {
     $step = $this->getStepByKey($stepKey, FALSE);
     return (!empty($step));
   }
@@ -377,9 +375,11 @@ class CRM_Stepw_WorkflowInstance {
       $workflowInstance = \Civi\Api4\StepwWorkflowInstance::create()
         ->setCheckPermissions(FALSE)
         ->addValue('workflow_id', $this->workflowId)
+        ->addValue('public_id', $this->publicId)
         ->execute()
         ->first();
       $this->entity = (array) $workflowInstance;
+      $this->debugLogEvent(__FUNCTION__ . '.create');
     }
     else {
       $this->entity += $updateProperties;
@@ -387,6 +387,7 @@ class CRM_Stepw_WorkflowInstance {
         'checkPermissions' => FALSE,
         'values' => $this->entity,
       ]);
+      $this->debugLogEvent(__FUNCTION__ . '.update', $updateProperties);
     }
   }
 
@@ -400,6 +401,8 @@ class CRM_Stepw_WorkflowInstance {
     $this->saveEntity();
 
     $this->isClosed = TRUE;
+
+    $this->debugLogEvent(__FUNCTION__);
   }
 
   /**
@@ -416,7 +419,7 @@ class CRM_Stepw_WorkflowInstance {
     return ($this->$name ?? NULL);
   }
 
-  public function validateLastCompletedStep(&$errors) : bool {
+  public function validateLastCompletedStep(&$errors): bool {
     $isError = FALSE;
 
     $lastCompletedStep = $this->getLastCompletedStep();
@@ -461,6 +464,25 @@ class CRM_Stepw_WorkflowInstance {
     }
 
     return ($isError == FALSE);
+  }
+
+  /**
+   * Log an event message to our custom logger.
+   *
+   * @param string $eventName The name of the event
+   * @param array|null $eventData Additional data to be logged, if any.
+   */
+  private function debugLogEvent($eventName, $eventData = NULL) {
+    $messageData = [
+      'message' => "event: $eventName, on " . __CLASS__,
+      'workflow public_id' => $publicWorkflowId,
+      'workflow id' => $this->workflowId,
+      'workflow_instance public_id' => $this->publicId,
+    ];
+    if (!is_null($eventData)) {
+      $messageData['eventData'] = $eventData;
+    }
+    CRM_Stepw_Utils_General::debugLog($messageData);
   }
 
 }

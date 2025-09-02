@@ -22,7 +22,7 @@ class CRM_Stepw_Utils_General {
     return $ret;
   }
 
-  public static function generateErrorId() {
+  public static function generateLogId() {
     $errorId = rtrim(chunk_split(CRM_Utils_String::createRandom(12, CRM_Utils_String::ALPHANUMERIC), 4, '-'), '-');
     return $errorId;
   }
@@ -32,38 +32,78 @@ class CRM_Stepw_Utils_General {
    *
    * @param Array|String $message The value to be logged
    * @param String $label Optional label (if null, E::SHORT_NAME will be used)
+   * @param bool $coreLog If true, log to civicrm core log; otherwise log to our own log.
    *
    * @return bool True if verbose logging is enabled; otherwise FALSE.
    */
-  public static function debugLog($message, $label = E::SHORT_NAME) {
+  public static function debugLog($message, $label = E::SHORT_NAME, $coreLog = FALSE) {
     if (!Civi::settings()->get('stepw_debug_log')) {
       return FALSE;
     }
 
+    $prefix = ($coreLog ? '' : E::SHORT_NAME);
+
     if (is_string($message)) {
-      CRM_Core_Error::debug_var($label, $message, FALSE, TRUE, E::SHORT_NAME);
+      $message = ['message' => $message];
     }
-    else {
-      // Convert $vars to a dump string; this has the desirable side effect
-      // of exposing $e exception properties that are otherwise protected from
-      // the output.
-      $message = (new \Symfony\Component\VarDumper\Dumper\CliDumper('php://output'))
-        ->dump(
-          (new \Symfony\Component\VarDumper\Cloner\VarCloner())->cloneVar($message),
-          TRUE);
-      CRM_Core_Error::debug_log_message("$label :: " . $message, FALSE, E::SHORT_NAME);
+
+    $extraDataKey = __FUNCTION__ . '_extra';
+    $message[$extraDataKey] = [
+      'ip address' => $_SERVER['REMOTE_ADDR'],
+      'workflow instance identifier' => self::getLogWorkflowLabel(),
+    ];
+    if (!empty($message['exception'])) {
+      // If this is an exception message, append full stepw state for inspection.
+      $message[$extraDataKey]['com.joineryhq.stepw_STATE'] = $_SESSION['CiviCRM']['com.joineryhq.stepw_STATE'];
     }
+
+    // Convert $vars to a dump string; this has the desirable side effect
+    // of exposing the properties of any exception contained in $message, which
+    // properties are otherwise protected from the output.
+    $messageDump = (new \Symfony\Component\VarDumper\Dumper\CliDumper('php://output'))
+      ->dump(
+        (new \Symfony\Component\VarDumper\Cloner\VarCloner())->cloneVar($message),
+        TRUE);
+    CRM_Core_Error::debug_log_message("$label :: " . $messageDump, FALSE, $prefix);
 
     return TRUE;
   }
 
-  public static function redirectToInvalid(CRM_Stepw_Exception $e) {
+  /**
+   * Get a string indicating the closest we can to a useful public_id: for the
+   * workflow instance if possible, or else for the workflow.
+   *
+   * @return String e.g. "stepw_wiid=[public_id", "stepw_wid=[public_id]"
+   */
+  public static function getLogWorkflowLabel() {
+    $checkUserParams = [
+      ['request', CRM_Stepw_Utils_Userparams::QP_WORKFLOW_INSTANCE_ID],
+      ['referer', CRM_Stepw_Utils_Userparams::QP_WORKFLOW_INSTANCE_ID],
+      ['request', CRM_Stepw_Utils_Userparams::QP_START_WORKFLOW_ID],
+      ['referer', CRM_Stepw_Utils_Userparams::QP_START_WORKFLOW_ID],
+    ];
+    foreach ($checkUserParams as $checkUserParam) {
+      $val = CRM_Stepw_Utils_Userparams::getUserParams($checkUserParam[0], $checkUserParam[1]);
+      if ($val) {
+        return "{$checkUserParam[1]}=$val";
+      }
+    }
+  }
 
+  /**
+   * Handle our custom exception class.
+   *
+   * @param CRM_Stepw_Exception $e
+   * @param bool $isAjax If true, assume we're in an ajax call, and append an
+   *   identifiable error code message. If false, prepare to display that message
+   *   on-screen, and then redirect the user to our invalid/ page.
+   */
+  public static function handleException(CRM_Stepw_Exception $e, $isAjax = FALSE) {
     // Add a uniq log identifier both to the logMessage and to a publicMessage.
     // This will allow users to report something that will be meaningful in debugging/log-inspection.
     // This would be similar to what civicrm core does for ajax-context errors, as in
     // https://github.com/civicrm/civicrm-core/blob/5.81.0/CRM/Api4/Page/AJAX.php#L159
-    $errorId = self::generateErrorid();
+    $errorId = self::generateLogId();
     $publicMessage = E::ts('When requesting help with this issue, please provide Log Reference Number: %1', ['1' => $errorId]);
 
     $logMessage = $e->getMessage();
@@ -74,6 +114,7 @@ class CRM_Stepw_Utils_General {
     // Assemble context for the logged error.
     $debugContext = [
       'error_id' => $errorId,
+      'isAjax' => ($isAjax ? 'true' : 'false'),
     ];
     if (!empty($errorCode)) {
       // Add error_code, if any.
@@ -103,8 +144,18 @@ class CRM_Stepw_Utils_General {
       // If 'debug' is on, go ahead and show the original logged message to the user.
       CRM_Stepw_State::singleton()->storePublicErrorMessage("Debug message: " . $logMessage);
     }
-    $redirect = CRM_Utils_System::url('civicrm/stepwise/invalid', '', TRUE, NULL, FALSE);
-    CRM_Utils_System::redirect($redirect);
+
+    // If this is ajax, hide the original exception message and replace it with
+    // whatever is in publicErrorMessages (this matches the error display of
+    // non-ajax exceptions). Otherwise, redirect to invalid/, which will show
+    // those publicErrorMessages.
+    if ($isAjax) {
+      $e->alterMessage(implode("\n\n", CRM_Stepw_State::singleton()->getPublicErrorMessages()));
+    }
+    else {
+      $redirect = CRM_Utils_System::url('civicrm/stepwise/invalid', '', TRUE, NULL, FALSE);
+      CRM_Utils_System::redirect($redirect);
+    }
   }
 
   /**

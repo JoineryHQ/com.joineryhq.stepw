@@ -131,7 +131,7 @@ class CRM_Stepw_WorkflowData {
 
   private function getsetWorkflowConfigErrorId(string $workflowId) {
     if (empty($this->workflowIdsWithBadConfig[$workflowId])) {
-      $this->workflowIdsWithBadConfig[$workflowId] = CRM_Stepw_Utils_General::generateErrorId();
+      $this->workflowIdsWithBadConfig[$workflowId] = CRM_Stepw_Utils_General::generateLogId();
     }
     return $this->workflowIdsWithBadConfig[$workflowId];
   }

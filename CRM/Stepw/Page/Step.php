@@ -21,6 +21,7 @@ class CRM_Stepw_Page_Step extends CRM_Core_Page {
     // If we're given 'start_workflow_id', initialize a workflow instance and use this workflowInstance
     $startWorkflowId = CRM_Stepw_Utils_Userparams::getUserParams('request', CRM_Stepw_Utils_Userparams::QP_START_WORKFLOW_ID);
     if ($startWorkflowId) {
+      CRM_Stepw_Utils_General::debugLog('Received request to start new workflow_instance');
       $this->ensureEnabledOrError($startWorkflowId);
       $workflowInstance = new CRM_Stepw_WorkflowInstance($startWorkflowId);
     }

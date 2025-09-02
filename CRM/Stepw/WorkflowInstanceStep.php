@@ -83,9 +83,11 @@ class CRM_Stepw_WorkflowInstanceStep {
         ->addValue('workflow_instance_id', $workflowinstanceId)
         ->addValue('step_number', ($humanStepNumber))
         ->addValue('url', $selectedOption['url'])
+        ->addValue('public_id', $this->publicId)
         ->execute()
         ->first();
       $this->entity = $stepwWorkflowInstanceStep;
+      $this->debugLogEvent(__FUNCTION__ . '.create');
     }
     else {
       $this->entity += $updateProperties;
@@ -93,6 +95,7 @@ class CRM_Stepw_WorkflowInstanceStep {
         'checkPermissions' => FALSE,
         'values' => $this->entity,
       ]);
+      $this->debugLogEvent(__FUNCTION__ . '.update', $updateProperties);
     }
   }
 
@@ -206,6 +209,7 @@ class CRM_Stepw_WorkflowInstanceStep {
       'completed' => CRM_Utils_Date::currentDBDate(),
       'activity_id' => $this->getCreatedActivityId(),
     ]);
+    $this->debugLogEvent(__FUNCTION__);
 
   }
 
@@ -238,6 +242,26 @@ class CRM_Stepw_WorkflowInstanceStep {
     $option = $this->getSelectedOption();
     $createdActivityId = ($option['createdActivityId'] ?? NULL);
     return $createdActivityId;
+  }
+
+  /**
+   * Log an event message to our custom logger.
+   *
+   * @param string $eventName The name of the event
+   * @param array|null $eventData Additional data to be logged, if any.
+   */
+  private function debugLogEvent($eventName, $eventData = NULL) {
+    $messageData = [
+      'message' => "event: $eventName, on " . __CLASS__,
+      'workflow id' => $this->workflowInstance->getVar('workflowId'),
+      'workflow_instance public_id' => $this->publicId,
+      'step number' => $this->stepNumber,
+      'step public_id' => $this->publicId,
+    ];
+    if (!is_null($eventData)) {
+      $messageData['eventData'] = $eventData;
+    }
+    CRM_Stepw_Utils_General::debugLog($messageData);
   }
 
 }

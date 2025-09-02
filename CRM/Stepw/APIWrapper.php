@@ -1,5 +1,7 @@
 <?php
 
+use CRM_Stepw_ExtensionUtil as E;
+
 /**
  * Description of CRM_Stepw_APIWrapper
  *
@@ -61,6 +63,14 @@ class CRM_Stepw_APIWrapper {
       // We're not in a workflowInstance (per referer), so there's nothing for us to do here.
       return;
     }
+    // If our own verbose logging is enabled, CiviCRM may still log relevant messages
+    // to its own logger. So double-log a message in both logs for easy cross-referencing.
+    $logData = [
+      'message' => 'Received stepw afform submission in ' . __FUNCTION__,
+      'internal log id' => CRM_Stepw_Utils_General::generateLogId(),
+    ];
+    CRM_Stepw_Utils_General::debugLog($logData, E::SHORT_NAME, TRUE);
+    CRM_Stepw_Utils_General::debugLog($logData, E::SHORT_NAME);
 
     $reloadSubmissionId = CRM_Stepw_Utils_Userparams::getUserParams('referer', CRM_Stepw_Utils_Userparams::QP_AFFORM_RELOAD_SID);
     if (empty($reloadSubmissionId)) {
