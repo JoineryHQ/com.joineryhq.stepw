@@ -161,12 +161,23 @@ class CRM_Stepw_Utils_General {
   /**
    * Set a public error message, then thrown an exception.
    *
-   * @param String $message
+   * @param String $publicMessage Message for public display.
+   * @param String $exceptionMessage Optional extra message for Exception.
+   * @param String $errorCode Error code for the Exception.
    * @throws CRM_Stepw_Exception
    */
-  public static function throwExceptionWithPublicMessage($message) {
-    CRM_Stepw_State::singleton()->storePublicErrorMessage($message);
-    throw new CRM_Stepw_Exception($message);
+  public static function throwExceptionWithPublicMessage($publicMessage, $exceptionMessage = "", $errorCode = 0) {
+    CRM_Stepw_State::singleton()->storePublicErrorMessage($publicMessage);
+    if (!empty($exceptionMessage)) {
+      // If there's an exception message, it will be logged, but we also want to log
+      // the public message for good reference later.
+      self::debugLog("Public message: $publicMessage");
+    }
+    else {
+      // If there's no exception message, just throw with the public message.
+      $exceptionMessage = "Public message: $publicMessage";
+    }
+    throw new CRM_Stepw_Exception($exceptionMessage, $errorCode);
   }
 
   public static function redirectToValidationError($errors) {
