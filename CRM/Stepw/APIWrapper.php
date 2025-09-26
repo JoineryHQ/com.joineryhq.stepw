@@ -18,8 +18,8 @@ class CRM_Stepw_APIWrapper {
     // Pass event to the PREPARE handler for this api request, if one exists in this class.
     $requestSignature = $event->getApiRequestSig();
     $methodName = 'PREPARE_' . str_replace('.', '_', $requestSignature);
-    if (is_callable("self::$methodName")) {
-      call_user_func_array("self::$methodName", [$event]);
+    if (is_callable([self::class, $methodName])) {
+      call_user_func_array([self::class, $methodName], [$event]);
     }
   }
 
@@ -32,8 +32,8 @@ class CRM_Stepw_APIWrapper {
     // Pass event to the RESPOND handler for this api request, if one exists in this class.
     $requestSignature = $event->getApiRequestSig();
     $methodName = 'RESPOND_' . str_replace('.', '_', $requestSignature);
-    if (is_callable("self::$methodName")) {
-      call_user_func_array("self::$methodName", [$event]);
+    if (is_callable([self::class, $methodName])) {
+      call_user_func_array([self::class, $methodName], [$event]);
     }
   }
 
