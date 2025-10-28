@@ -134,6 +134,15 @@ class CRM_Stepw_Form_Report_WorkflowInstances extends CRM_Report_Form {
         ],
         'grouping' => 'contact-fields',
       ],
+      'civicrm_address' => [
+        'dao' => 'CRM_Core_DAO_Address',
+        'fields' => [
+          'postal_code' => [
+            'title' => E::ts('Postal Code'),
+          ],
+        ],
+        'grouping' => 'contact-fields',
+      ],
       'civicrm_employer' => [
         'dao' => 'CRM_Contact_DAO_Contact',
         'fields' => [
@@ -217,6 +226,13 @@ class CRM_Stepw_Form_Report_WorkflowInstances extends CRM_Report_Form {
           LEFT JOIN civicrm_phone {$this->_aliases['civicrm_phone']}
                  ON {$this->_aliases['civicrm_activity_contact']}.contact_id = {$this->_aliases['civicrm_phone']}.contact_id AND
                     {$this->_aliases['civicrm_phone']}.is_primary = 1 ";
+    }
+
+    if ($this->isTableSelected('civicrm_address')) {
+      $this->_from .= "
+          LEFT JOIN civicrm_address {$this->_aliases['civicrm_address']}
+                 ON {$this->_aliases['civicrm_activity_contact']}.contact_id = {$this->_aliases['civicrm_address']}.contact_id AND
+                    {$this->_aliases['civicrm_address']}.is_primary = 1 ";
     }
 
     if ($this->isTableSelected('civicrm_employer')) {
