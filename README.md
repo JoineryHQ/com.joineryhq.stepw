@@ -76,6 +76,20 @@ It's recommended that you test your FormBuilder forms individually, both in disp
 and in storage of submitted data, so that you can be sure they're working properly
 before testing the entire workflow.
 
+## WordPress pages for use in workflows:
+In order to allow the "next" button(s) to appear anywhere on the page, this extension
+expects that any page used in a workflow will contain the `[stepwise-button]`
+shortcode in the place where such button(s) should appear.
+
+WordPress pages used in any workflow may still be:
+- Used independently if you like; outside of an active workflow session, the
+  `[stepwise-button]` shortcode will be replaced with an empty string, so that
+  the page appears as a normal WordPress page.
+- Used in multiple workflows; in this usage, any workflow-based handling of the
+  page will be on a per-workflow basis. Thus you could, for example, have two
+  workflows which both use a common "Step 1" WordPress page to welcome users and
+  introduce the workflow, but which then each take the user down a very different
+  set of subsequent steps.
 
 ## Configuration:
 ### File-based configs
