@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <extension key="com.joineryhq.stepw" type="module">
   <file>stepw</file>
-  <name>Stepwise Workflow</name>
+  <name>Stepwise Workflows</name>
   <description>Provides for configuration of workflows consisting of CMS pages and CiviCRM FormBuilder forms.</description>
   <license>GPL-3.0</license>
   <authors>
