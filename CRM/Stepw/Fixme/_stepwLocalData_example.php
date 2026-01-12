@@ -4,7 +4,11 @@
 //
 // FYI: top-level array keys are for developer information only; they are not
 // used by the extension (civicrm_stepw_workflow.id is simple auto-increment).
-//
+
+
+// URLs must be complete with schema and FQDN; defining this variable makes it
+// a little easier to type those in below, and to retain confguration across, e.g.
+// developmen and live copies of a given site.
 $ufBaseUrl = rtrim(CIVICRM_UF_BASEURL, '/');
 return [
   '1' => [
@@ -157,9 +161,9 @@ return [
               // to some configured reqirememnt. Here we define that requirement.
               // This 'where' array will be passed to Api4 to ensure that the
               // contact defined in afform 'Individual1' meets the configured
-              // criteria. If it does not, this step/option will be displayed
-              // again with a valudiation error (which is also configured within
-              // this option).
+              // criteria. If it does not, this user's workflow is ended with
+              // display of a valudiation error (which is also configured within
+              // this option, see below).
               'where' => [
                 'Individual1' => [
                   ['age_years', '>=', 18],
